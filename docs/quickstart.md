@@ -136,7 +136,7 @@ _(כשאתה בונה אותו)_.
 
 ## הערה על גודל
 
-הסקילים מודעי-הגודל (`/architectural-analysis`, `/code-overview`, `/code-review`, `/code-walkthrough`, `/gap-analysis`, `/iterative-plan-review`, `/plan-a-feature`, `/plan-implementation`, `/research`) מסווגים את העבודה כ**קטנה**, **בינונית** או **גדולה** לפני שיגור הסוכנים. ברירת המחדל שלהם היא קטן, והם מגדילים את הצוות ואת עומק האיטרציות לפי הרצועה שנבחרה. העבר את הגודל כארגומנט המיקומי הראשון כדי לעקוף (`/code-review medium`, `/plan-a-feature large "describe the feature"`). ראה [Sizing](./sizing.md) למודל המלא.
+הסקילים מודעי-הגודל (`/architectural-analysis`, `/code-overview`, `/code-review`, `/code-walkthrough`, `/design-an-api`, `/gap-analysis`, `/iterative-plan-review`, `/plan-a-feature`, `/plan-implementation`, `/research`) מסווגים את העבודה כ**קטנה**, **בינונית** או **גדולה** לפני שיגור הסוכנים. ברירת המחדל שלהם היא קטן, והם מגדילים את הצוות ואת עומק האיטרציות לפי הרצועה שנבחרה. העבר את הגודל כארגומנט המיקומי הראשון כדי לעקוף (`/code-review medium`, `/plan-a-feature large "describe the feature"`). ראה [Sizing](./sizing.md) למודל המלא.
 
 ## הערה על YAGNI
 
