@@ -1,5 +1,7 @@
 # Han: For the Solo Product Engineer
 
+[קראו את המסמך הזה בעברית](./README.he.md)
+
 <img src="images/han-banner.png">
 
 Han is a suite of AI skills and agents for solo (or small-team) product engineers. It combines evidence-based planning,
@@ -147,4 +149,8 @@ Han is an open source product of [Test Double](https://testdouble.com), and main
 
 ## LEGAL NOTICES
 
+Han is an open source product of [Test Double, Inc](https://testdouble.com), originally published at [testdouble/han](https://github.com/testdouble/han). This repository carries a copy of that project, and the credit for the original work belongs to Test Double and to the contributors listed above.
+
 Copyright 2026 [Test Double, Inc](https://testdouble.com). Distributed under the [MIT license](./LICENSE).
+
+The MIT license grants you the right to use, copy, modify, and redistribute Han, on one condition: the copyright notice and the permission notice must stay in every copy or substantial portion of the software. In practice that means keeping [LICENSE](./LICENSE) in the repository unchanged, keeping this notice, and, if you distribute a modified version, adding your own copyright line beside Test Double's rather than in place of it.
