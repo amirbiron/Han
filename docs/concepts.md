@@ -1,78 +1,50 @@
-# Concepts
+# מושגי יסוד
 
-Han is built out of two kinds of things: **skills** and **agents**. If you read this page once before you pick a slash
-command, the rest of the documentation will make sense.
+Han בנויה משני סוגי דברים: **סקילים** ו**סוכנים**. אם תקרא את הדף הזה פעם אחת לפני שאתה בוחר slash command, כל שאר התיעוד יתחיל להתחבר.
 
-> See also: [Plugin landing page](../README.md) · [Choosing a plugin](./choosing-a-han-plugin.md) ·
-> [Quickstart](./quickstart.md) · [All skills](./skills/README.md) · [All agents](./agents/README.md)
+> ראה גם: [דף הנחיתה של הפלאגין](../README.md) · [בחירת פלאגין](./choosing-a-han-plugin.md) · [Quickstart](./quickstart.md) · [כל הסקילים](./skills/README.md) · [כל הסוכנים](./agents/README.md)
 
 ## TL;DR
 
-- A **skill** is a deterministic process you usually run with a slash command (like `/code-review`), though Claude can
-  also auto-invoke it when your request matches the skill's description. Think: flowchart.
-- An **agent** is a specialist persona with judgment, dispatched by a skill or by you (like
-  `adversarial-security-analyst`). Think: teammate.
-- Skills dispatch agents. The skill follows its flowchart, sends the agent off to do a judgment-heavy subtask
-  (investigate a bug, review architecture, critique a plan), then folds the finding back into its output.
-- **Sizing** decides how many agents get dispatched. The skills that fan out to a swarm classify the work as small,
-  medium, or large first, default to small, and scale the team and the iteration depth from there. See
-  [Sizing](./sizing.md) for the full model.
-- **YAGNI** decides what survives. Every skill that produces an artifact and every agent that reviews one applies an
-  evidence-based rule before committing items: features, plan steps, code recommendations, ADRs, coding standards,
-  runbooks, alerts, indexes, tests, abstractions. Items without evidence get deferred (recorded for later, not silently
-  dropped). See [YAGNI](./yagni.md).
-- **Evidence** decides how confident you are in what survives. Once YAGNI passes an item through, the evidence rule
-  names the trust class of the citation (codebase, web, provided) and applies a corroboration gate to web sources. It
-  also labels claims with no evidence at any tier as a distinct deferred state. See [Evidence](./evidence.md).
+- **סקיל** הוא תהליך דטרמיניסטי שאתה בדרך כלל מריץ עם slash command (כמו `/code-review`), אם כי Claude יכול גם להפעיל אותו לבד כשהבקשה שלך תואמת לתיאור של הסקיל. חשוב על זה כתרשים זרימה.
+- **סוכן** הוא פרסונה מומחית בעלת שיקול דעת, שסקיל משגר או שאתה משגר (כמו `adversarial-security-analyst`). חשוב על זה כחבר צוות.
+- סקילים משגרים סוכנים. הסקיל הולך לפי תרשים הזרימה שלו, שולח את הסוכן לבצע תת-משימה שדורשת שיקול דעת (לחקור באג, לסקור ארכיטקטורה, לבקר תוכנית), ואז מקפל את הממצא בחזרה לתוך הפלט שלו.
+- **גודל (Sizing)** קובע כמה סוכנים משוגרים. הסקילים שמתפרשים ל-swarm מסווגים קודם את העבודה כקטנה, בינונית או גדולה, ברירת המחדל היא קטנה, ומשם הם מגדילים את הצוות ואת עומק האיטרציות. ראה [Sizing](./sizing.md) למודל המלא.
+- **YAGNI** קובע מה שורד. כל סקיל שמייצר תוצר וכל סוכן שסוקר תוצר מחיל כלל YAGNI מבוסס-ראיות לפני שהוא מתחייב לפריטים: פיצ'רים, שלבי תוכנית, המלצות קוד, ADRs, תקני קוד, runbooks, התראות, אינדקסים, בדיקות והפשטות. פריטים בלי ראיות נדחים (מתועדים להמשך, לא נזרקים בשקט). ראה [YAGNI](./yagni.md).
+- **ראיות (Evidence)** קובעות כמה בטוח אתה במה ששרד. אחרי ש-YAGNI העביר פריט, כלל הראיות נוקב במחלקת האמון של הציטוט (בסיס הקוד, רשת, סופק) ומחיל שער אימות-הצלבה על מקורות מהרשת. הוא גם מתייג טענות שאין להן ראיות בשום דרג כמצב דחייה נפרד. ראה [Evidence](./evidence.md).
 
-Those three are the whole decision model. Everything else is vocabulary.
+שלושת אלה הם כל מודל ההחלטה. כל השאר הוא אוצר מילים.
 
-- **Readability** is a different kind of standard, not a fourth decision mechanic. Sizing, YAGNI, and evidence decide
-  _what happens_ to an item. Readability governs the _output_ of the skills whose deliverable is prose a non-author
-  reads, so that output leads with its main point, uses plain language, and reveals detail in layers. It is scoped to
-  those reader-facing skills, not near-universal like the three mechanics. See [Readability](./readability.md).
+- **קריאוּת (Readability)** היא תקן מסוג אחר, לא מנגנון החלטה רביעי. גודל, YAGNI וראיות מחליטים _מה קורה_ לפריט. קריאוּת שולטת ב*פלט* של הסקילים שהתוצר שלהם הוא טקסט שקורא שאינו הכותב קורא, כך שהפלט הזה פותח בעיקר, משתמש בשפה פשוטה, וחושף פרטים בשכבות. היא מוגבלת לאותם סקילים שפונים לקורא, ולא כמעט-אוניברסלית כמו שלושת המנגנונים. ראה [Readability](./readability.md).
 
-> **Evaluating Han for a larger org?** Han is built for solo product engineers and small teams, not for large teams or
-> enterprise. Read [Why solo and small teams, and not large teams or enterprise?](./why-solo-and-small-teams.md) for the
-> honest fit answer before going further.
+> **שוקל את Han לארגון גדול?** Han נבנתה למהנדסי מוצר יחידים ולצוותים קטנים, לא לצוותים גדולים או לארגונים. קרא את [Why solo and small teams, and not large teams or enterprise?](./why-solo-and-small-teams.md) לתשובה הכנה על ההתאמה לפני שאתה ממשיך.
 
-## Skills: the process layer
+## סקילים: שכבת התהליך
 
-A skill is a fixed sequence of steps that Claude Code runs. Typing the slash command is the primary way to trigger it,
-but not the only one.
+סקיל הוא רצף צעדים קבוע ש-Claude Code מריץ. הקלדת ה-slash command היא הדרך העיקרית להפעיל אותו, אבל לא היחידה.
 
-- You invoke it: `/code-review`, `/plan-a-feature`, `/investigate`. This is the deliberate, primary path.
-- Claude may also auto-invoke it. Skill descriptions are written to match user intent, so a request like "can you make
-  sure this code is solid?" can route into `/code-review` without you typing the command. This is on by default (the
-  frontmatter field `disable-model-invocation` defaults to `false`); no Han skill turns it off. Either way the skill
-  runs the same protocol.
-- It follows a defined protocol. Every reader who runs the same skill gets the same shape of output.
-- It is documented by a `SKILL.md` file inside its plugin's `skills/{name}/` directory (`han-documentation/skills/{name}/`,
-  `han-research/skills/{name}/`, `han-planning/skills/{name}/`, `han-coding/skills/{name}/`, `han-github/skills/{name}/`,
-  and the other plugins' `skills/{name}/` directories).
-- It may dispatch one or more agents for the steps that need judgment.
+- אתה מפעיל אותו: `/code-review`, `/plan-a-feature`, `/investigate`. זה המסלול המכוון והעיקרי.
+- Claude עשוי גם להפעיל אותו לבד. תיאורי הסקילים כתובים כך שיתאימו לכוונת המשתמש, ולכן בקשה כמו "אתה יכול לוודא שהקוד הזה תקין?" יכולה להתנתב ל-`/code-review` בלי שתקליד את הפקודה. זה פעיל כברירת מחדל (שדה ה-frontmatter‏ `disable-model-invocation` מוגדר כברירת מחדל ל-`false`); אף סקיל של Han לא מכבה את זה. כך או כך הסקיל מריץ את אותו פרוטוקול.
+- הוא הולך לפי פרוטוקול מוגדר. כל מי שמריץ את אותו סקיל מקבל את אותה צורת פלט.
+- הוא מתועד בקובץ `SKILL.md` בתוך תיקיית `skills/{name}/` של הפלאגין שלו (`han-documentation/skills/{name}/`, `han-research/skills/{name}/`, `han-planning/skills/{name}/`, `han-coding/skills/{name}/`, `han-github/skills/{name}/`, ותיקיות ה-`skills/{name}/` של יתר הפלאגינים).
+- הוא עשוי לשגר סוכן אחד או יותר לצעדים שדורשים שיקול דעת.
 
-**The test:** could you draw the whole thing as a flowchart? If yes, it is a skill.
+**המבחן:** האם היית יכול לצייר את כל הדבר כתרשים זרימה? אם כן, זה סקיל.
 
-## Agents: the judgment layer
+## סוכנים: שכבת שיקול הדעת
 
-An agent is a specialist teammate. A model with a persona, a narrow domain, and an explicit posture.
+סוכן הוא חבר צוות מומחה. מודל עם פרסונה, תחום צר ועמדה מוצהרת.
 
-- An agent has a name like `adversarial-security-analyst`, `plan-synthesizer`, or `junior-developer`.
-- An agent applies contextual judgment. _Is this finding really a problem? Does the plan address the risk? Should we ask
-  another specialist?_
-- An agent is documented by a single `.md` file inside its plugin's `agents/` directory (`han-core/agents/` for the
-  shared roster; the readability-editor lives in `han-communication/agents/`, the research-analyst in
-  `han-research/agents/`, and the discussion-facilitator in `han-planning/agents/`).
-- You can dispatch an agent directly with the `Agent` tool, but most agents get dispatched _for you_ when a skill needs
-  their input.
+- לסוכן יש שם כמו `adversarial-security-analyst`, `plan-synthesizer` או `junior-developer`.
+- סוכן מפעיל שיקול דעת תלוי-הקשר. _האם הממצא הזה באמת בעיה? האם התוכנית מטפלת בסיכון? האם כדאי לשאול מומחה נוסף?_
+- סוכן מתועד בקובץ `.md` אחד בתוך תיקיית ה-`agents/` של הפלאגין שלו (`han-core/agents/` עבור המערך המשותף; ה-readability-editor יושב ב-`han-communication/agents/`, ה-research-analyst ב-`han-research/agents/`, וה-discussion-facilitator ב-`han-planning/agents/`).
+- אתה יכול לשגר סוכן ישירות עם כלי ה-`Agent`, אבל את רוב הסוכנים משגרים _עבורך_ כשסקיל צריך את הקלט שלהם.
 
-**The test:** does this require reasoning about context rather than following a script? If yes, it is an agent.
+**המבחן:** האם זה דורש חשיבה על הקשר במקום ביצוע של סקריפט? אם כן, זה סוכן.
 
-## How they compose
+## איך הם מתחברים
 
-A skill runs its protocol and, at the steps that need judgment, dispatches an agent. The agent returns findings; the
-skill folds them into the final output.
+סקיל מריץ את הפרוטוקול שלו, ובצעדים שדורשים שיקול דעת הוא משגר סוכן. הסוכן מחזיר ממצאים; הסקיל מקפל אותם לתוך הפלט הסופי.
 
 ```
 You → /plan-a-feature → (interview loop, codebase discovery)
@@ -83,213 +55,106 @@ You → /plan-a-feature → (interview loop, codebase discovery)
       ←  feature-specification.md, decision-log.md, team-findings.md
 ```
 
-A few concrete pairings from the han plugin:
+כמה צמדים קונקרטיים מתוך הפלאגין:
 
-- **`/plan-a-feature` dispatches `junior-developer` and `plan-synthesizer` plus three to five specialists.** The
-  specialists are chosen based on what the feature touches. A data-heavy feature brings in `data-engineer`. A feature
-  with a production surface brings in `devops-engineer`. A user-visible flow brings in `user-experience-designer`.
-- **`/code-review` always dispatches `junior-developer` and `adversarial-security-analyst`, plus the rest of the roster
-  conditionally** (`test-engineer`, `edge-case-explorer`, `structural-analyst`, `behavioral-analyst`,
-  `concurrency-analyst`, `data-engineer`, `devops-engineer`, `on-call-engineer`) based on what the changed files touch.
-  The roster scales with the [size](./sizing.md): a small change runs the minimum roster; a large change runs the full
-  conditional roster. Each agent reviews the branch changes from its own lens, and the skill classifies their findings
-  into the review output.
-- **`/architectural-analysis` always dispatches a spine of `structural-analyst`, `behavioral-analyst`, `risk-analyst`,
-  and `software-architect`, plus the rest of the roster by signal** (`concurrency-analyst` when concurrency primitives
-  are present; `adversarial-security-analyst`, `data-engineer`, `devops-engineer` when the focus area touches auth/PII,
-  data contracts, or operational surface; `on-call-engineer` when application source in the focus area shows on-call
-  resilience signal; `codebase-explorer` for large unfamiliar areas; `system-architect` at large size when a
-  cross-service or bounded-context seam is present). The roster scales with the [size](./sizing.md): small runs the
-  spine plus concurrency; large runs every signalled specialist. The discovery analysts run first, `risk-analyst` scores
-  their findings, and the architects synthesize. When `system-architect` is not dispatched, cross-service and
-  bounded-context concerns are surfaced as deferred so you can dispatch it separately.
-- **`/investigate` dispatches `evidence-based-investigator` plus conditional specialists** (`concurrency-analyst`,
-  `behavioral-analyst`, `data-engineer`) based on the symptom, and follows up with `adversarial-validator` to prove the
-  proposed fix will fix the bug rather than mask it.
-- **`/gap-analysis` dispatches `gap-analyzer` once for the primary analysis, then fans out a validator-and-augmenter
-  swarm by default.** `adversarial-validator` and `junior-developer` (running an explicit actor-perspective sweep across
-  human users, API callers, AI agents, and other actor types) are required at every size. `evidence-based-investigator`
-  is required when the current state is concrete. `plan-synthesizer` is required at medium and large to consolidate
-  Section 4 of the report. Domain specialists (`adversarial-security-analyst`, `data-engineer`,
-  `user-experience-designer`, and others) are added based on what the gaps touch. Reply `no swarm` to opt out and fall
-  back to a lightweight gap-analyzer-only pass.
-- **`/plan-a-phased-build` dispatches `information-architect` once at runtime** against the rendered build-phase
-  outline, to verify findability, EPPO standalone-ness of phase entries, and progressive comprehension before presenting
-  the document to you. The skill applies plain-language leak findings as required edits, and structural findings when
-  they preserve the document's contract.
+- **`/plan-a-feature` משגר את `junior-developer` ואת `plan-synthesizer` ובנוסף שלושה עד חמישה מומחים.** המומחים נבחרים לפי מה שהפיצ'ר נוגע בו. פיצ'ר עתיר-נתונים מכניס את `data-engineer`. פיצ'ר עם משטח פרודקשן מכניס את `devops-engineer`. זרימה שהמשתמש רואה מכניסה את `user-experience-designer`.
+- **`/code-review` תמיד משגר את `junior-developer` ואת `adversarial-security-analyst`, ובנוסף את יתר המערך באופן מותנה** (`test-engineer`, `edge-case-explorer`, `structural-analyst`, `behavioral-analyst`, `concurrency-analyst`, `data-engineer`, `devops-engineer`, `on-call-engineer`) לפי מה שהקבצים שהשתנו נוגעים בו. המערך גדל עם [הגודל](./sizing.md): שינוי קטן מריץ את המערך המינימלי; שינוי גדול מריץ את כל המערך המותנה. כל סוכן סוקר את שינויי הענף מהעדשה שלו, והסקיל מסווג את הממצאים שלהם לתוך פלט הסקירה.
+- **`/architectural-analysis` תמיד משגר שדרה של `structural-analyst`, `behavioral-analyst`, `risk-analyst` ו-`software-architect`, ובנוסף את יתר המערך לפי אותות** (`concurrency-analyst` כשיש פרימיטיבים של מקביליות; `adversarial-security-analyst`, `data-engineer`, `devops-engineer` כשאזור המיקוד נוגע באימות/PII, בחוזי נתונים או במשטח תפעולי; `on-call-engineer` כשקוד המקור של האפליקציה באזור המיקוד מראה אות של חוסן כוננות; `codebase-explorer` לאזורים גדולים ולא מוכרים; `system-architect` בגודל גדול כשקיים תפר בין שירותים או בין הקשרים חסומים). המערך גדל עם [הגודל](./sizing.md): קטן מריץ את השדרה בתוספת מקביליות; גדול מריץ כל מומחה שקיבל אות. אנליסטי הגילוי רצים ראשונים, `risk-analyst` מנקד את הממצאים שלהם, והארכיטקטים מסנתזים. כש-`system-architect` לא משוגר, סוגיות של חצייה בין שירותים ובין הקשרים חסומים עולות כדחויות כדי שתוכל לשגר אותו בנפרד.
+- **`/investigate` משגר את `evidence-based-investigator` ובנוסף מומחים מותנים** (`concurrency-analyst`, `behavioral-analyst`, `data-engineer`) לפי הסימפטום, ואחריהם `adversarial-validator` כדי להוכיח שהתיקון המוצע יתקן את הבאג במקום להסתיר אותו.
+- **`/gap-analysis` משגר את `gap-analyzer` פעם אחת לניתוח הראשי, ואז פורש swarm של מאמתים ומרחיבים כברירת מחדל.** `adversarial-validator` ו-`junior-developer` (שמריץ סריקה מפורשת מנקודת מבטם של שחקנים שונים: משתמשים אנושיים, קוראי API, סוכני AI וסוגי שחקנים אחרים) נדרשים בכל גודל. `evidence-based-investigator` נדרש כשהמצב הקיים קונקרטי. `plan-synthesizer` נדרש בגודל בינוני וגדול כדי לאחד את סעיף 4 של הדוח. מומחי תחום (`adversarial-security-analyst`, `data-engineer`, `user-experience-designer` ואחרים) מתווספים לפי מה שהפערים נוגעים בו. השב `no swarm` כדי לוותר ולחזור למעבר קל של gap-analyzer בלבד.
+- **`/plan-a-phased-build` משגר את `information-architect` פעם אחת בזמן ריצה** מול מתאר שלבי הבנייה כפי שנוצר, כדי לוודא יכולת מציאה, עמידה עצמאית של רשומות השלבים לפי EPPO, והבנה הדרגתית, לפני שהמסמך מוצג לך. הסקיל מחיל ממצאים של דליפת שפה לא-פשוטה כעריכות חובה, וממצאים מבניים כשהם משמרים את החוזה של המסמך.
 
-You do not need to memorize these pairings to run a skill. You do need to know that they exist. That way, when the
-skill's output references "finding from `plan-synthesizer`" or "the architectural analysts flagged coupling," you know
-what that means.
+אתה לא צריך לשנן את הצמדים האלה כדי להריץ סקיל. אתה כן צריך לדעת שהם קיימים. כך, כשהפלט של הסקיל מזכיר "ממצא מ-`plan-synthesizer`" או "האנליסטים הארכיטקטוניים סימנו צימוד", אתה יודע מה זה אומר.
 
-## Sizing: the dispatch lever
+## גודל: ידית השיגור
 
-Every skill that dispatches an agent swarm classifies the work as **small**, **medium**, or **large** before
-dispatching, then uses the band to cap the team or swarm size, the iteration depth, and the severity bands the agents
-escalate.
+כל סקיל שמשגר swarm של סוכנים מסווג את העבודה כ**קטנה**, **בינונית** או **גדולה** לפני השיגור, ואז משתמש ברצועה כדי לתחום את גודל הצוות או ה-swarm, את עומק האיטרציות, ואת רצועות החומרה שהסוכנים מסלימים.
 
-- **Default is small.** Every sizing-aware skill starts the classification at small and only escalates when concrete
-  signals require it.
-- **Auto-classified, with a `$size` override.** Skills read signals (file count, subsystems touched, security/data/infra
-  surface) and announce the chosen size with a one-line justification. Pass `small`, `medium`, or `large` as the first
-  positional argument to override (`/code-review medium`, `/plan-a-feature large "describe the feature"`).
-- **Sizing-aware skills.** [`/architectural-analysis`](../han-coding/docs/skills/architectural-analysis.md),
-  [`/code-overview`](../han-coding/docs/skills/code-overview.md), [`/code-review`](../han-coding/docs/skills/code-review.md),
-  [`/code-walkthrough`](../han-coding/docs/skills/code-walkthrough.md),
-  [`/design-an-api`](../han-coding/docs/skills/design-an-api.md),
-  [`/gap-analysis`](../han-research/docs/skills/gap-analysis.md),
-  [`/iterative-plan-review`](../han-planning/docs/skills/iterative-plan-review.md),
-  [`/plan-a-feature`](../han-planning/docs/skills/plan-a-feature.md),
-  [`/plan-implementation`](../han-planning/docs/skills/plan-implementation.md), [`/research`](../han-research/docs/skills/research.md).
+- **ברירת המחדל היא קטן.** כל סקיל מודע-גודל מתחיל את הסיווג בקטן ומסלים רק כשאותות קונקרטיים מחייבים זאת.
+- **סיווג אוטומטי, עם עקיפה דרך `$size`.** הסקילים קוראים אותות (מספר קבצים, תת-מערכות שנגעו בהן, משטח אבטחה/נתונים/תשתית) ומכריזים על הגודל שנבחר עם הצדקה בשורה אחת. העבר `small`, `medium` או `large` כארגומנט המיקומי הראשון כדי לעקוף (`/code-review medium`, `/plan-a-feature large "describe the feature"`).
+- **סקילים מודעי-גודל.** [`/architectural-analysis`](../han-coding/docs/skills/architectural-analysis.md), [`/code-overview`](../han-coding/docs/skills/code-overview.md), [`/code-review`](../han-coding/docs/skills/code-review.md), [`/code-walkthrough`](../han-coding/docs/skills/code-walkthrough.md), [`/design-an-api`](../han-coding/docs/skills/design-an-api.md), [`/gap-analysis`](../han-research/docs/skills/gap-analysis.md), [`/iterative-plan-review`](../han-planning/docs/skills/iterative-plan-review.md), [`/plan-a-feature`](../han-planning/docs/skills/plan-a-feature.md), [`/plan-implementation`](../han-planning/docs/skills/plan-implementation.md), [`/research`](../han-research/docs/skills/research.md).
 
-Read the full [Sizing](./sizing.md) reference for the bands, the auto-classification process, and the per-skill rules.
+קרא את מסמך הייחוס המלא [Sizing](./sizing.md) לרצועות, לתהליך הסיווג האוטומטי ולכללים לכל סקיל.
 
-## YAGNI: the inclusion gate
+## YAGNI: שער ההכללה
 
-Every skill that produces an artifact and every agent that reviews one runs an evidence-based YAGNI rule before
-committing items. The rule has two gates: an evidence test (_is this needed now?_) and a simpler-version test (_is there
-a strictly simpler version that satisfies the same evidence?_). Items without evidence get deferred, recorded under a
-`## Deferred (YAGNI)` section in the artifact with a named _reopen-when_ trigger. Never silently dropped.
+כל סקיל שמייצר תוצר וכל סוכן שסוקר תוצר מריץ כלל YAGNI מבוסס-ראיות לפני שהוא מתחייב לפריטים. לכלל שני שערים: מבחן ראיות (_האם זה נחוץ עכשיו?_) ומבחן גרסה פשוטה יותר (_האם קיימת גרסה פשוטה יותר באופן מובהק שמספקת את אותן ראיות?_). פריטים בלי ראיות נדחים, ומתועדים תחת סעיף `## Deferred (YAGNI)` בתוצר, עם טריגר _reopen-when_ נקוב. לעולם לא נזרקים בשקט.
 
-YAGNI applies to the planning skills (`/plan-a-feature`, `/plan-implementation`, `/plan-a-phased-build`,
-`/iterative-plan-review`). It applies to review and standards (`/code-review` advisory-only, `/coding-standard`,
-`/automated-test-planning`, `/architectural-decision-record`). It also applies to several agents
-(`discussion-facilitator`, `plan-synthesizer`,
-`junior-developer`, `software-architect`, `system-architect`, `test-engineer`, `edge-case-explorer`, `data-engineer`,
-`devops-engineer`, `on-call-engineer`).
+YAGNI חל על סקילי התכנון (`/plan-a-feature`, `/plan-implementation`, `/plan-a-phased-build`, `/iterative-plan-review`). הוא חל על סקירה ותקנים (`/code-review` בייעוץ בלבד, `/coding-standard`, `/automated-test-planning`, `/architectural-decision-record`). הוא חל גם על כמה סוכנים (`discussion-facilitator`, `plan-synthesizer`, `junior-developer`, `software-architect`, `system-architect`, `test-engineer`, `edge-case-explorer`, `data-engineer`, `devops-engineer`, `on-call-engineer`).
 
-Read the full [YAGNI](./yagni.md) reference for the gates, the acceptable-evidence list, the named anti-patterns, and
-the per-skill / per-agent application table.
+קרא את מסמך הייחוס המלא [YAGNI](./yagni.md) לשערים, לרשימת הראיות הקבילות, לאנטי-דפוסים הנקובים בשם ולטבלת ההחלה לכל סקיל ולכל סוכן.
 
-## Evidence: the confidence layer
+## ראיות: שכבת הביטחון
 
-Once YAGNI has gated inclusion, the evidence rule characterizes the quality of the evidence each surviving item rests
-on. Three principles ground the rule. Evidence closer to the originating event or data carries more weight than evidence
-at greater remove (proximity, applied as a heuristic, not a ranked ladder). Two independent sources beat one source
-(corroboration, scoped to web sources). The absence of evidence is its own state with a name and a response (no-evidence
-labeling). The vocabulary of trust classes (codebase, web, provided) and the corroboration gate originated in
-[`/research`](../han-research/docs/skills/research.md) and are now extracted into a canonical rule that every evidence-aware skill
-and agent reads at runtime.
+אחרי ש-YAGNI סינן את ההכללה, כלל הראיות מאפיין את איכות הראיות שכל פריט ששרד נשען עליהן. שלושה עקרונות מבססים את הכלל. ראיות קרובות יותר לאירוע או לנתון המקורי נושאות משקל רב יותר מראיות רחוקות יותר (קרבה, שמוחלת כהיוריסטיקה ולא כסולם מדורג). שני מקורות בלתי תלויים עדיפים על מקור אחד (אימות-הצלבה, מוגבל למקורות מהרשת). היעדר ראיות הוא מצב בפני עצמו עם שם ועם תגובה (תיוג היעדר-ראיות). אוצר המילים של מחלקות האמון (בסיס הקוד, רשת, סופק) ושער אימות-ההצלבה נולדו ב-[`/research`](../han-research/docs/skills/research.md), וכיום חולצו לכלל קנוני שכל סקיל וכל סוכן מודעי-ראיות קוראים בזמן ריצה.
 
-Evidence applies to the research and investigation skills (`/research`, `/investigate`, `/gap-analysis`) and the
-planning and review skills (`/plan-a-feature`, `/plan-implementation`, `/iterative-plan-review`). It also applies to the
-conventions skills (`/coding-standard`, `/architectural-decision-record`), the operational skills (`/runbook`), and the
-agents that review artifacts (`discussion-facilitator`, `junior-developer`, `evidence-based-investigator`,
-`gap-analyzer`).
+ראיות חלות על סקילי המחקר והחקירה (`/research`, `/investigate`, `/gap-analysis`) ועל סקילי התכנון והסקירה (`/plan-a-feature`, `/plan-implementation`, `/iterative-plan-review`). הן חלות גם על סקילי המוסכמות (`/coding-standard`, `/architectural-decision-record`), על הסקילים התפעוליים (`/runbook`), ועל הסוכנים שסוקרים תוצרים (`discussion-facilitator`, `junior-developer`, `evidence-based-investigator`, `gap-analyzer`).
 
-Read the full [Evidence](./evidence.md) reference for the three principles, the trust-class vocabulary, the
-corroboration gate, the no-evidence response, and the per-skill / per-agent application table.
+קרא את מסמך הייחוס המלא [Evidence](./evidence.md) לשלושת העקרונות, לאוצר המילים של מחלקות האמון, לשער אימות-ההצלבה, לתגובת היעדר-הראיות ולטבלת ההחלה לכל סקיל ולכל סוכן.
 
-## Readability: the output standard
+## קריאוּת: תקן הפלט
 
-Sizing, YAGNI, and evidence decide how a skill works. Readability decides how its output reads. Every reader-facing
-skill (one whose primary deliverable is prose a non-author reads end to end) applies one shared readability rule as it
-writes. That rule makes the deliverable lead with its main point, give each paragraph one idea, use descriptive
-headings, keep sentences short and active, prefer common words, and reveal detail in layers.
+גודל, YAGNI וראיות מחליטים איך סקיל עובד. קריאוּת מחליטה איך הפלט שלו נקרא. כל סקיל שפונה לקורא (כזה שהתוצר העיקרי שלו הוא טקסט שקורא שאינו הכותב קורא מתחילתו ועד סופו) מחיל כלל קריאוּת משותף אחד תוך כדי הכתיבה. הכלל הזה גורם לתוצר לפתוח בעיקר, לתת לכל פסקה רעיון אחד, להשתמש בכותרות מתארות, לשמור על משפטים קצרים ופעילים, להעדיף מילים נפוצות, ולחשוף פרטים בשכבות.
 
-The rule is applied in stages, never as one instruction block. Its structural rules shape each skill's output template,
-and its behaviorally-anchored criteria run as a discrete self-check after the draft exists. Skills with a synthesis or
-editor step also dispatch the [`readability-editor`](../han-communication/docs/agents/readability-editor.md) agent to
-rewrite the draft, preserving every fact. Fidelity outranks readability: no required fact is dropped to read more
-simply, unless the reader asked for less and losing it would not change what they do next.
+הכלל מוחל בשלבים, לעולם לא כבלוק הוראות אחד. הכללים המבניים שלו מעצבים את תבנית הפלט של כל סקיל, והקריטריונים המעוגנים בהתנהגות רצים כבדיקה עצמית נפרדת אחרי שהטיוטה קיימת. סקילים שיש להם שלב סינתזה או עריכה משגרים גם את סוכן ה-[`readability-editor`](../han-communication/docs/agents/readability-editor.md) כדי לשכתב את הטיוטה, תוך שמירה על כל עובדה. נאמנות גוברת על קריאוּת: שום עובדה נדרשת לא נזרקת כדי שהטקסט ייקרא פשוט יותר, אלא אם הקורא ביקש פחות ואיבודה לא היה משנה את מה שהוא עושה אחר כך.
 
-Readability applies to the reader-facing skills (`/research`, `/gap-analysis`, `/project-documentation`,
-`/issue-triage`, `/runbook`, `/architectural-decision-record`, `/code-overview`, `/investigate`, `/code-review`,
-`/architectural-analysis`, `/stakeholder-summary`, `/html-summary`, `/update-pr-description`, `/plan-a-feature`,
-`/plan-implementation`, `/plan-a-phased-build`, `/plan-work-items`, `/iterative-plan-review`, `/coding-standard`, and
-`/automated-test-planning`). A structured specification, plan, phased build, work-item list, coding standard, or test plan counts
-when a human reads it end to end. Skills whose output is code, or a structured artifact consumed only by downstream
-skills as machine input, are out of scope.
+קריאוּת חלה על הסקילים שפונים לקורא (`/research`, `/gap-analysis`, `/project-documentation`, `/issue-triage`, `/runbook`, `/architectural-decision-record`, `/code-overview`, `/investigate`, `/code-review`, `/architectural-analysis`, `/stakeholder-summary`, `/html-summary`, `/update-pr-description`, `/plan-a-feature`, `/plan-implementation`, `/plan-a-phased-build`, `/plan-work-items`, `/iterative-plan-review`, `/coding-standard` ו-`/automated-test-planning`). מפרט מובנה, תוכנית, בנייה בשלבים, רשימת פריטי עבודה, תקן קוד או תוכנית בדיקות נחשבים ככאלה כשאדם קורא אותם מתחילתם ועד סופם. סקילים שהפלט שלהם הוא קוד, או תוצר מובנה שרק סקילים במורד הזרם צורכים כקלט מכונה, נמצאים מחוץ להיקף.
 
-Read the full [Readability](./readability.md) reference for the required properties, the staged application, the scope
-table, and the fidelity guard.
+קרא את מסמך הייחוס המלא [Readability](./readability.md) לתכונות הנדרשות, להחלה בשלבים, לטבלת ההיקף ולשמירת הנאמנות.
 
-## Configuration
+## קונפיגורציה
 
-Han reads two optional `.han/config.md` files on every skill run: a personal one in your Claude Code configuration
-directory, and a project one at the project root. Either sets a base directory for the skills' markdown deliverables, a
-default swarm size for the sizing-aware skills, a writing-voice profile for the readability skills, and extra agents for
-the dispatching skills to consider. The personal file supplies defaults that follow you into every project, and the
-project file overrides them one setting at a time. Someone with neither file sees no change, and a broken file degrades
-quietly to defaults with a one-line note naming which file it came from. Read the full
-[Configuration](./configuration.md) reference for the schema, the precedence chain, and the degradation contract.
+Han קוראת שני קובצי `.han/config.md` אופציונליים בכל ריצת סקיל: אחד אישי בתיקיית הקונפיגורציה של Claude Code שלך, ואחד של הפרויקט בשורש הפרויקט. כל אחד מהם קובע תיקיית בסיס לתוצרי ה-markdown של הסקילים, גודל swarm ברירת מחדל לסקילים מודעי-הגודל, פרופיל קול כתיבה לסקילי הקריאוּת, וסוכנים נוספים שהסקילים המשגרים ישקלו. הקובץ האישי מספק ברירות מחדל שנוסעות איתך לכל פרויקט, וקובץ הפרויקט עוקף אותן הגדרה-אחר-הגדרה. מי שאין לו אף אחד מהקבצים לא רואה שום שינוי, וקובץ שבור מתדרדר בשקט לברירות המחדל עם הערה בשורה אחת שנוקבת באיזה קובץ מדובר. קרא את מסמך הייחוס המלא [Configuration](./configuration.md) לסכמה, לשרשרת הקדימות ולחוזה ההתדרדרות.
 
-## When would you invoke an agent directly?
+## מתי היית משגר סוכן ישירות?
 
-Most of the time you will not. A skill calling an agent is the typical flow.
+רוב הזמן לא תעשה זאת. סקיל שקורא לסוכן הוא הזרימה הרגילה.
 
-You might invoke an agent directly when:
+ייתכן שתשגר סוכן ישירות כאשר:
 
-- The judgment you want is narrower than any existing skill. _"Give me a security audit of `src/auth/` with
-  `adversarial-security-analyst`"_. No full `/code-review` needed.
-- You want a second opinion after a skill has run. Dispatch `adversarial-validator` against the plan a planning skill
-  produced.
-- You are composing a custom workflow that does not match any slash command cleanly.
+- שיקול הדעת שאתה רוצה צר יותר מכל סקיל קיים. _"תן לי ביקורת אבטחה על `src/auth/` עם `adversarial-security-analyst`"_. אין צורך ב-`/code-review` מלא.
+- אתה רוצה חוות דעת שנייה אחרי שסקיל רץ. שגר את `adversarial-validator` מול התוכנית שסקיל תכנון ייצר.
+- אתה מרכיב workflow מותאם שלא מתאים לאף slash command בצורה נקייה.
 
-Direct invocation uses the `Agent` tool with `subagent_type: {plugin}:{agent-name}` (for example,
-`han-core:adversarial-security-analyst`, or `han-research:research-analyst`).
+שיגור ישיר משתמש בכלי ה-`Agent` עם `subagent_type: {plugin}:{agent-name}` (לדוגמה, `han-core:adversarial-security-analyst`, או `han-research:research-analyst`).
 
-## How Han is packaged
+## איך Han ארוזה
 
-Han ships as a family of plugins in one marketplace. `han-core` carries the shared specialist agent roster the other
-plugins dispatch, the project-discovery skill, the `/pairing` collaborative working mode, and the canonical rule files.
+Han מגיעה כמשפחת פלאגינים ב-marketplace אחד. `han-core` נושא את מערך הסוכנים המומחים המשותף שהפלאגינים האחרים משגרים, את הסקיל project-discovery, את מצב העבודה המשותף `/pairing` ואת קובצי הכללים הקנוניים.
 
-`han-documentation` adds the documentation skills (`/project-documentation`, `/architectural-decision-record`, and
-`/runbook`). `han-research` adds the pre-planning knowledge-work skills (`/research`, `/gap-analysis`, and
-`/issue-triage`) plus the research-analyst agent. `han-planning` adds the planning skills you reach for before
-implementation (`/plan-a-feature`, `/plan-implementation`, `/plan-a-phased-build`, `/plan-work-items`, and
-`/iterative-plan-review`). `han-coding` adds the coding skills you reach for while working in code (`/tdd`, `/refactor`,
-`/design-an-api`, `/code-review`, `/code-overview`, `/code-walkthrough`, `/architectural-analysis`,
-`/automated-test-planning`, `/manual-test-planning`, `/investigate`, and `/coding-standard`). `han-github` adds the GitHub skills, and `han-reporting` adds the reporting
-skills. All of these except `han-reporting` depend on `han-core`, so installing any of them brings the shared agents
-along; `han-reporting` depends only on `han-communication`.
+`han-documentation` מוסיף את סקילי התיעוד (`/project-documentation`, `/architectural-decision-record` ו-`/runbook`). `han-research` מוסיף את סקילי עבודת הידע שלפני התכנון (`/research`, `/gap-analysis` ו-`/issue-triage`) ובנוסף את הסוכן research-analyst. `han-planning` מוסיף את סקילי התכנון שאתה פונה אליהם לפני המימוש (`/plan-a-feature`, `/plan-implementation`, `/plan-a-phased-build`, `/plan-work-items` ו-`/iterative-plan-review`). `han-coding` מוסיף את סקילי הקוד שאתה פונה אליהם תוך כדי עבודה בקוד (`/tdd`, `/refactor`, `/design-an-api`, `/code-review`, `/code-overview`, `/code-walkthrough`, `/architectural-analysis`, `/automated-test-planning`, `/manual-test-planning`, `/investigate` ו-`/coding-standard`). `han-github` מוסיף את סקילי ה-GitHub, ו-`han-reporting` מוסיף את סקילי הדיווח. כל אלה חוץ מ-`han-reporting` תלויים ב-`han-core`, ולכן התקנה של כל אחד מהם מביאה איתה את הסוכנים המשותפים; `han-reporting` תלוי רק ב-`han-communication`.
 
-`han` is a meta-plugin with no components of its own. It depends on `han-communication`, `han-core`,
-`han-documentation`, `han-research`, `han-planning`, `han-coding`, `han-github`, and `han-reporting`, so installing it
-pulls in the bundled suite.
+`han` הוא מטא-פלאגין בלי רכיבים משלו. הוא תלוי ב-`han-communication`, ב-`han-core`, ב-`han-documentation`, ב-`han-research`, ב-`han-planning`, ב-`han-coding`, ב-`han-github` וב-`han-reporting`, ולכן התקנה שלו מושכת את החבילה המצורפת.
 
-The remaining plugins are opt-in. `han-feedback` adds the post-session feedback skill and depends on no other Han
-plugin. `han-atlassian` adds the Confluence and Jira skills; it needs a configured Atlassian MCP server, and because its
-wrapper skills run skills from `han-documentation`, `han-planning`, and `han-coding`, it depends on those three plus
-`han-core`. `han-linear` adds the work-items-to-Linear skill, needs a configured Linear MCP server, and depends on no
-other Han plugin. The `han` meta-plugin does not pull these in, so you install each on its own.
+יתר הפלאגינים אופציונליים. `han-feedback` מוסיף את סקיל המשוב שאחרי הסשן ולא תלוי בשום פלאגין אחר של Han. `han-atlassian` מוסיף את סקילי Confluence ו-Jira; הוא דורש שרת MCP של Atlassian מוגדר, ומכיוון שסקילי העטיפה שלו מריצים סקילים מ-`han-documentation`, מ-`han-planning` ומ-`han-coding`, הוא תלוי בשלושת אלה ובנוסף ב-`han-core`. `han-linear` מוסיף את סקיל work-items-to-Linear, דורש שרת MCP של Linear מוגדר, ולא תלוי בשום פלאגין אחר של Han. המטא-פלאגין `han` לא מושך את אלה, ולכן כל אחד מהם מותקן בנפרד.
 
-`han-plugin-builder` carries the guidance for building skills, agents, and plugins, plus the interview-driven
-`/skill-builder` and `/agent-builder` skills. It depends on nothing and is also opt-in.
+`han-plugin-builder` נושא את ההנחיות לבניית סקילים, סוכנים ופלאגינים, ובנוסף את הסקילים מונחי-הראיון `/skill-builder` ו-`/agent-builder`. הוא לא תלוי בכלום וגם הוא אופציונלי.
 
-The practical choice is core only, the bundled suite, or the suite plus whichever opt-in plugins you want. There is no
-planning-only, coding-only, GitHub-only, or reporting-only install.
+הבחירה המעשית היא ליבה בלבד, החבילה המצורפת, או החבילה בתוספת הפלאגינים האופציונליים שאתה רוצה. אין התקנה של תכנון-בלבד, קוד-בלבד, GitHub-בלבד או דיווח-בלבד.
 
-For which one to install and the dependency that surprises people, read
-[Choosing a Han plugin](./choosing-a-han-plugin.md).
+לאיזה מהם להתקין ולתלות שמפתיעה אנשים, קרא את [Choosing a Han plugin](./choosing-a-han-plugin.md).
 
-## What does the plugin include?
+## מה הפלאגין כולל?
 
-- **The skills.** The [skills index](./skills/README.md) groups them by purpose (planning, building, investigation and
-  research, review, discovery, conventions, reporting, operations).
-- **The agents.** The [agents index](./agents/README.md) groups them by role (planning and facilitation, adversarial
-  reviewers, investigation, architecture, testing, gap and content).
+- **הסקילים.** [אינדקס הסקילים](./skills/README.md) מקבץ אותם לפי מטרה (תכנון, בנייה, חקירה ומחקר, סקירה, גילוי, מוסכמות, דיווח, תפעול).
+- **הסוכנים.** [אינדקס הסוכנים](./agents/README.md) מקבץ אותם לפי תפקיד (תכנון והנחיה, סוקרים אדוורסריים, חקירה, ארכיטקטורה, בדיקות, פערים ותוכן).
 
-Skim the indexes after you read this page. Pick the one skill you need right now. Come back later to learn the rest.
+עבור על האינדקסים ברפרוף אחרי שתקרא את הדף הזה. בחר את הסקיל האחד שאתה צריך עכשיו. חזור מאוחר יותר ללמוד את השאר.
 
-## Where to go next
+## לאן ממשיכים מכאן
 
-- **Want to get something done?** → [Quickstart](./quickstart.md). Picks a starting skill based on what you are trying
-  to do.
-- **Want a specific skill?** → [Skills Index](./skills/README.md).
-- **Want a specific agent?** → [Agents Index](./agents/README.md).
-- **Want to know how dispatch scales?** → [Sizing](./sizing.md).
-- **Want to know what survives a review?** → [YAGNI](./yagni.md).
-- **Want to know how confident to be in what survives?** → [Evidence](./evidence.md).
-- **Want to know how skill output is kept readable?** → [Readability](./readability.md).
-- **Want to adjust where skills write and which agents they consider?** → [Configuration](./configuration.md).
-- **Writing your own skill or agent?** → [Contributing](../CONTRIBUTING.md).
+- **רוצה להספיק משהו?** ← [Quickstart](./quickstart.md). בוחר סקיל התחלתי לפי מה שאתה מנסה לעשות.
+- **רוצה סקיל מסוים?** ← [אינדקס הסקילים](./skills/README.md).
+- **רוצה סוכן מסוים?** ← [אינדקס הסוכנים](./agents/README.md).
+- **רוצה לדעת איך השיגור גדל?** ← [Sizing](./sizing.md).
+- **רוצה לדעת מה שורד סקירה?** ← [YAGNI](./yagni.md).
+- **רוצה לדעת כמה לבטוח במה ששרד?** ← [Evidence](./evidence.md).
+- **רוצה לדעת איך שומרים על קריאוּת הפלט של סקיל?** ← [Readability](./readability.md).
+- **רוצה לכוונן לאן סקילים כותבים ואילו סוכנים הם שוקלים?** ← [Configuration](./configuration.md).
+- **כותב סקיל או סוכן משלך?** ← [Contributing](../CONTRIBUTING.md).
 
-## Related reading
+## קריאה נוספת
 
-- [`han-plugin-builder/skills/guidance/references/plugin-entity-taxonomy.md`](../han-plugin-builder/skills/guidance/references/plugin-entity-taxonomy.md).
-  The taxonomy this plugin follows. Applies across all plugins in this repo.
-- [Claude Code Skills reference](https://code.claude.com/docs/en/skills). How skills are defined and invoked in Claude
-  Code itself.
-- [Claude Code Subagents reference](https://code.claude.com/docs/en/sub-agents). How agents are dispatched from inside
-  skills.
+- [`han-plugin-builder/skills/guidance/references/plugin-entity-taxonomy.md`](../han-plugin-builder/skills/guidance/references/plugin-entity-taxonomy.md). הטקסונומיה שהפלאגין הזה הולך לפיה. חלה על כל הפלאגינים בריפו הזה.
+- [Claude Code Skills reference](https://code.claude.com/docs/en/skills). איך סקילים מוגדרים ומופעלים ב-Claude Code עצמו.
+- [Claude Code Subagents reference](https://code.claude.com/docs/en/sub-agents). איך סוכנים משוגרים מתוך סקילים.
