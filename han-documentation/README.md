@@ -1,30 +1,22 @@
 # han-documentation
 
-The documentation layer of the Han suite: the skills you reach for to write down what the team built and decided. It
-documents features and systems, records architectural decisions, and captures operational procedures, each through an
-evidence-based process that refuses to write speculative docs. Reach for it when something real exists that the team
-needs written down.
+שכבת התיעוד של חבילת Han: הסקילים שאתה פונה אליהם כדי לכתוב מה הצוות בנה ומה הוא החליט. היא מתעדת פיצ'רים ומערכות, מתעדת החלטות ארכיטקטוניות ולוכדת נהלים תפעוליים, כל אחד מהם דרך תהליך מבוסס-ראיות שמסרב לכתוב תיעוד ספקולטיבי. פנה אליה כשקיים משהו אמיתי שהצוות צריך שיהיה כתוב.
 
-**Bundled.** Installed with the `han` meta-plugin. Depends on `han-communication` and `han-core`.
+**מצורף.** מותקן יחד עם המטא-פלאגין `han`. תלוי ב-`han-communication` וב-`han-core`.
 
-**Getting started:** document a feature or system with [`/project-documentation`](docs/skills/project-documentation.md),
-record a decision with [`/architectural-decision-record`](docs/skills/architectural-decision-record.md), and capture an
-operational procedure with [`/runbook`](docs/skills/runbook.md).
+**איך מתחילים:** תעד פיצ'ר או מערכת עם [`/project-documentation`](docs/skills/project-documentation.md), תעד החלטה עם [`/architectural-decision-record`](docs/skills/architectural-decision-record.md), ולכוד נוהל תפעולי עם [`/runbook`](docs/skills/runbook.md).
 
-## Skills
+## סקילים
 
-- [`/project-documentation`](docs/skills/project-documentation.md) — Create and maintain documentation for features,
-  systems, and components.
-- [`/architectural-decision-record`](docs/skills/architectural-decision-record.md) — Create, extract, or convert
-  architectural decision records.
-- [`/runbook`](docs/skills/runbook.md) — Create or update a runbook for a single operational scenario, with a
-  symptom-first template and a YAGNI preflight that requires real evidence before writing.
+- [`/project-documentation`](docs/skills/project-documentation.md) — יוצר ומתחזק תיעוד לפיצ'רים, מערכות ורכיבים.
+- [`/architectural-decision-record`](docs/skills/architectural-decision-record.md) — יוצר, מחלץ או ממיר רשומות החלטה ארכיטקטונית.
+- [`/runbook`](docs/skills/runbook.md) — יוצר או מעדכן runbook לתרחיש תפעולי אחד, עם תבנית שמתחילה מהסימפטום ובדיקת YAGNI מקדימה שדורשת ראיות אמיתיות לפני הכתיבה.
 
-Its skills dispatch shared agents that live in `han-core` (and, for the readability-editor, in `han-communication`).
+הסקילים שלו משגרים סוכנים משותפים שיושבים ב-`han-core` (ובמקרה של readability-editor, ב-`han-communication`).
 
-## Installation
+## התקנה
 
-Add the marketplace to Claude Code, then install the plugin (or install `han` to get it as part of the bundled suite):
+הוסף את ה-marketplace ל-Claude Code, ואז התקן את הפלאגין (או התקן את `han` כדי לקבל אותו כחלק מהחבילה המצורפת):
 
 ```
 /plugin marketplace add testdouble/han
@@ -33,4 +25,4 @@ Add the marketplace to Claude Code, then install the plugin (or install `han` to
 
 ---
 
-[Plugin index](../docs/choosing-a-han-plugin.md) · [Repo root](../README.md) · [Workflows](../docs/workflows.md)
+[אינדקס הפלאגינים](../docs/choosing-a-han-plugin.md) · [שורש הריפו](../README.md) · [Workflows](../docs/workflows.md)

@@ -1,30 +1,20 @@
 # han-plugin-builder
 
-The opt-in plugin-building plugin for the Han suite. It carries the authoritative guidance for building Claude Code
-skills, agents, and plugins, plus two interview-driven builders that author a new component from scratch and review it
-against that guidance. Reach for it when you are building your own skills, agents, or plugins rather than shipping
-product features.
+פלאגין בניית הפלאגינים האופציונלי של חבילת Han. הוא נושא את ההנחיות המוסמכות לבניית סקילים, סוכנים ופלאגינים ל-Claude Code, ובנוסף שני בונים מונחי-ראיון שמחברים רכיב חדש מאפס וסוקרים אותו מול ההנחיות האלה. פנה אליו כשאתה בונה סקילים, סוכנים או פלאגינים משלך ולא משחרר פיצ'רים של מוצר.
 
-**Opt-in.** Installed on its own, not bundled by the `han` meta-plugin. Install it with
-`/plugin install han-plugin-builder@han`. Depends on nothing, so it does not pull `han-core` along.
+**אופציונלי.** מותקן בנפרד, ולא מצורף למטא-פלאגין `han`. התקן אותו עם `/plugin install han-plugin-builder@han`. לא תלוי בכלום, ולכן הוא לא מושך איתו את `han-core`.
 
-## Skills
+## סקילים
 
-- [`/guidance`](docs/skills/guidance.md) — Serve the authoritative guidance for building skills, agents, and plugins, or
-  vendor the three plugin-building skills into the current repository under a `plugin-` prefix plus a path-scoped rule
-  index (`/guidance init`, refreshed with `/guidance update`).
-- [`/skill-builder`](docs/skills/skill-builder.md) — Build a new skill from scratch through an evidence-based interview
-  that walks the design tree decision-by-decision, then review the finished files against the guidance and apply every
-  fix.
-- [`/agent-builder`](docs/skills/agent-builder.md) — Build a new agent from scratch through an evidence-based interview
-  that walks the design tree decision-by-decision, then review the finished agent file against the guidance and apply
-  every fix.
+- [`/guidance`](docs/skills/guidance.md) — מגיש את ההנחיות המוסמכות לבניית סקילים, סוכנים ופלאגינים, או מעתיק את שלושת סקילי בניית הפלאגינים לתוך הריפו הנוכחי תחת הקידומת `plugin-` יחד עם אינדקס כללים מוגבל-נתיב (`/guidance init`, מרוענן עם `/guidance update`).
+- [`/skill-builder`](docs/skills/skill-builder.md) — בונה סקיל חדש מאפס דרך ראיון מבוסס-ראיות שעובר על עץ העיצוב החלטה-אחר-החלטה, ואז סוקר את הקבצים הגמורים מול ההנחיות ומחיל כל תיקון.
+- [`/agent-builder`](docs/skills/agent-builder.md) — בונה סוכן חדש מאפס דרך ראיון מבוסס-ראיות שעובר על עץ העיצוב החלטה-אחר-החלטה, ואז סוקר את קובץ הסוכן הגמור מול ההנחיות ומחיל כל תיקון.
 
-Its skills author skills and agents; it dispatches no shared agents of its own.
+הסקילים שלו מחברים סקילים וסוכנים; הוא לא משגר סוכנים משותפים משלו.
 
-## Installation
+## התקנה
 
-Add the marketplace to Claude Code, then install the plugin:
+הוסף את ה-marketplace ל-Claude Code, ואז התקן את הפלאגין:
 
 ```
 /plugin marketplace add testdouble/han
@@ -33,4 +23,4 @@ Add the marketplace to Claude Code, then install the plugin:
 
 ---
 
-[Plugin index](../docs/choosing-a-han-plugin.md) · [Repo root](../README.md) · [Workflows](../docs/workflows.md)
+[אינדקס הפלאגינים](../docs/choosing-a-han-plugin.md) · [שורש הריפו](../README.md) · [Workflows](../docs/workflows.md)

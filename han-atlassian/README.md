@@ -1,36 +1,23 @@
 # han-atlassian
 
-The opt-in Atlassian plugin for the Han suite. It publishes Han artifacts to Confluence and creates work items in Jira
-through the Atlassian MCP server, wrapping the core documentation, planning, and coding skills so their output lands in
-Atlassian after you review it. Reach for it when your team's docs and tickets live in Confluence and Jira.
+פלאגין Atlassian האופציונלי של חבילת Han. הוא מפרסם תוצרים של Han ל-Confluence ויוצר פריטי עבודה ב-Jira דרך שרת ה-MCP של Atlassian, ועוטף את סקילי התיעוד, התכנון והקוד של הליבה כך שהפלט שלהם ינחת ב-Atlassian אחרי שסקרת אותו. פנה אליו כשהמסמכים והכרטיסים של הצוות שלך חיים ב-Confluence וב-Jira.
 
-**Opt-in.** Installed on its own, not bundled by the `han` meta-plugin. Install it with
-`/plugin install han-atlassian@han`. Depends on `han-communication`, `han-core`, `han-documentation`, `han-planning`,
-and `han-coding` (its wrapper skills run skills from each), and requires a configured Atlassian MCP server.
+**אופציונלי.** מותקן בנפרד, ולא מצורף למטא-פלאגין `han`. התקן אותו עם `/plugin install han-atlassian@han`. תלוי ב-`han-communication`, ב-`han-core`, ב-`han-documentation`, ב-`han-planning` וב-`han-coding` (סקילי העטיפה שלו מריצים סקילים מכל אחד מהם), ודורש שרת MCP של Atlassian מוגדר.
 
-## Skills
+## סקילים
 
-- [`/markdown-to-confluence`](docs/skills/markdown-to-confluence.md) — Publish one local Markdown file to a
-  user-specified Confluence location, creating a new page or updating an existing one; defaults to an unpublished draft.
-- [`/project-documentation-to-confluence`](docs/skills/project-documentation-to-confluence.md) — Run
-  `/project-documentation` to write feature documentation, show it for review, then publish it to a user-specified
-  Confluence location after confirmation.
-- [`/investigate-to-confluence`](docs/skills/investigate-to-confluence.md) — Run `/investigate` to root-cause a bug
-  (changing no code), show the report for review, then publish it as one Confluence page after confirmation.
-- [`/code-overview-to-confluence`](docs/skills/code-overview-to-confluence.md) — Run `/code-overview` to produce a
-  progressive-disclosure overview (changing no code), show it for review, then publish it as one Confluence page after
-  confirmation.
-- [`/plan-a-feature-to-confluence`](docs/skills/plan-a-feature-to-confluence.md) — Run `/plan-a-feature` to build a
-  feature specification, show it for review, then publish the spec and its companion artifacts as a Confluence page tree
-  after confirmation.
-- [`/work-items-to-jira`](docs/skills/work-items-to-jira.md) — Create one Jira ticket per slice from a `/plan-work-items`
-  work-items file in a single target project; the Jira sibling of `/work-items-to-issues`.
+- [`/markdown-to-confluence`](docs/skills/markdown-to-confluence.md) — מפרסם קובץ Markdown מקומי אחד למיקום ב-Confluence שהמשתמש מציין, ויוצר דף חדש או מעדכן דף קיים; ברירת המחדל היא טיוטה לא מפורסמת.
+- [`/project-documentation-to-confluence`](docs/skills/project-documentation-to-confluence.md) — מריץ `/project-documentation` כדי לכתוב תיעוד פיצ'ר, מציג אותו לסקירה, ואז מפרסם אותו למיקום ב-Confluence שהמשתמש מציין, אחרי אישור.
+- [`/investigate-to-confluence`](docs/skills/investigate-to-confluence.md) — מריץ `/investigate` כדי לאתר את שורש הבאג (בלי לשנות קוד), מציג את הדוח לסקירה, ואז מפרסם אותו כדף Confluence אחד אחרי אישור.
+- [`/code-overview-to-confluence`](docs/skills/code-overview-to-confluence.md) — מריץ `/code-overview` כדי לייצר סקירת-על בחשיפה הדרגתית (בלי לשנות קוד), מציג אותה לסקירה, ואז מפרסם אותה כדף Confluence אחד אחרי אישור.
+- [`/plan-a-feature-to-confluence`](docs/skills/plan-a-feature-to-confluence.md) — מריץ `/plan-a-feature` כדי לבנות מפרט פיצ'ר, מציג אותו לסקירה, ואז מפרסם את המפרט ואת התוצרים הנלווים אליו כעץ דפים ב-Confluence אחרי אישור.
+- [`/work-items-to-jira`](docs/skills/work-items-to-jira.md) — יוצר כרטיס Jira אחד לכל פרוסה מתוך קובץ פריטי עבודה של `/plan-work-items`, בפרויקט יעד אחד; האח של `/work-items-to-issues` בצד של Jira.
 
-Its skills dispatch shared agents that live in `han-core` (and, for the readability-editor, in `han-communication`).
+הסקילים שלו משגרים סוכנים משותפים שיושבים ב-`han-core` (ובמקרה של readability-editor, ב-`han-communication`).
 
-## Installation
+## התקנה
 
-Add the marketplace to Claude Code, then install the plugin:
+הוסף את ה-marketplace ל-Claude Code, ואז התקן את הפלאגין:
 
 ```
 /plugin marketplace add testdouble/han
@@ -39,4 +26,4 @@ Add the marketplace to Claude Code, then install the plugin:
 
 ---
 
-[Plugin index](../docs/choosing-a-han-plugin.md) · [Repo root](../README.md) · [Workflows](../docs/workflows.md)
+[אינדקס הפלאגינים](../docs/choosing-a-han-plugin.md) · [שורש הריפו](../README.md) · [Workflows](../docs/workflows.md)

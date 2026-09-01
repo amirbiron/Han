@@ -1,26 +1,20 @@
 # han-github
 
-The GitHub layer of the Han suite: the skills that talk to GitHub through the `gh` CLI. It posts a code review to a pull
-request, writes a PR description from the branch's changes, and publishes a work-items file as GitHub issues. Reach for
-it when you want Han's output to land on GitHub rather than stay local.
+שכבת ה-GitHub של חבילת Han: הסקילים שמדברים עם GitHub דרך ה-CLI‏ `gh`. היא מפרסמת סקירת קוד על pull request, כותבת תיאור PR מתוך השינויים בענף, ומפרסמת קובץ פריטי עבודה כ-issues ב-GitHub. פנה אליה כשאתה רוצה שהפלט של Han ינחת ב-GitHub במקום להישאר מקומי.
 
-**Bundled.** Installed with the `han` meta-plugin. Depends on `han-communication`, `han-core`, and `han-coding` (the
-post-code-review-to-pr skill wraps han-coding's code-review). Requires the `gh` CLI.
+**מצורף.** מותקן יחד עם המטא-פלאגין `han`. תלוי ב-`han-communication`, ב-`han-core` וב-`han-coding` (הסקיל post-code-review-to-pr עוטף את code-review של han-coding). דורש את ה-CLI‏ `gh`.
 
-## Skills
+## סקילים
 
-- [`/post-code-review-to-pr`](docs/skills/post-code-review-to-pr.md) — Run `/code-review` against a GitHub PR and post
-  the review as comments, after a clarity check on the drafted review body.
-- [`/update-pr-description`](docs/skills/update-pr-description.md) — Generate a PR description from the current branch's
-  changes, conforming to the repository's PR template when one exists.
-- [`/work-items-to-issues`](docs/skills/work-items-to-issues.md) — Publish each item in a `/plan-work-items` work-items
-  file as a GitHub issue in its target repo, with within-repo blockers linked.
+- [`/post-code-review-to-pr`](docs/skills/post-code-review-to-pr.md) — מריץ `/code-review` מול PR ב-GitHub ומפרסם את הסקירה כתגובות, אחרי בדיקת בהירות על גוף הסקירה שנוסח.
+- [`/update-pr-description`](docs/skills/update-pr-description.md) — מייצר תיאור PR מתוך השינויים בענף הנוכחי, בהתאם לתבנית ה-PR של הריפו כשקיימת כזו.
+- [`/work-items-to-issues`](docs/skills/work-items-to-issues.md) — מפרסם כל פריט בקובץ פריטי עבודה של `/plan-work-items` כ-issue ב-GitHub בריפו היעד שלו, עם קישור לחוסמים שבתוך אותו ריפו.
 
-Its skills dispatch shared agents that live in `han-core` (and, for the readability-editor, in `han-communication`).
+הסקילים שלו משגרים סוכנים משותפים שיושבים ב-`han-core` (ובמקרה של readability-editor, ב-`han-communication`).
 
-## Installation
+## התקנה
 
-Add the marketplace to Claude Code, then install the plugin (or install `han` to get it as part of the bundled suite):
+הוסף את ה-marketplace ל-Claude Code, ואז התקן את הפלאגין (או התקן את `han` כדי לקבל אותו כחלק מהחבילה המצורפת):
 
 ```
 /plugin marketplace add testdouble/han
@@ -29,4 +23,4 @@ Add the marketplace to Claude Code, then install the plugin (or install `han` to
 
 ---
 
-[Plugin index](../docs/choosing-a-han-plugin.md) · [Repo root](../README.md) · [Workflows](../docs/workflows.md)
+[אינדקס הפלאגינים](../docs/choosing-a-han-plugin.md) · [שורש הריפו](../README.md) · [Workflows](../docs/workflows.md)

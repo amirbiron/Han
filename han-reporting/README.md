@@ -1,27 +1,21 @@
 # han-reporting
 
-The reporting layer of the Han suite: the skills that turn the work back into something you can share with non-technical
-stakeholders. It converts a feature specification into a plain-language stakeholder summary with diagrams, then into a
-single self-contained HTML executive report. Reach for it when you need buy-in or feedback from people who will not read
-the spec.
+שכבת הדיווח של חבילת Han: הסקילים שהופכים את העבודה בחזרה למשהו שאפשר לשתף עם בעלי עניין לא-טכניים. היא ממירה מפרט פיצ'ר לסיכום בשפה פשוטה לבעלי עניין, עם דיאגרמות, ואחר כך לדוח מנהלים אחד ב-HTML שעומד בפני עצמו. פנה אליה כשאתה צריך הסכמה או משוב מאנשים שלא יקראו את המפרט.
 
-**Bundled.** Installed with the `han` meta-plugin. Depends on `han-communication`.
+**מצורף.** מותקן יחד עם המטא-פלאגין `han`. תלוי ב-`han-communication`.
 
-**Getting started:** the skills chain. Run [`/stakeholder-summary`](docs/skills/stakeholder-summary.md) to produce the
-summary, then [`/html-summary`](docs/skills/html-summary.md) to turn that summary into a shareable HTML report.
+**איך מתחילים:** הסקילים משתרשרים. הרץ [`/stakeholder-summary`](docs/skills/stakeholder-summary.md) כדי לייצר את הסיכום, ואז [`/html-summary`](docs/skills/html-summary.md) כדי להפוך את הסיכום לדוח HTML שאפשר לשתף.
 
-## Skills
+## סקילים
 
-- [`/stakeholder-summary`](docs/skills/stakeholder-summary.md) — Turn a feature specification into a plain-language
-  stakeholder summary with Mermaid diagrams for user experience and data flow, for feedback before implementation.
-- [`/html-summary`](docs/skills/html-summary.md) — Convert a `stakeholder-summary.md` into a single self-contained HTML
-  executive report with the bottom line and asks up front; produces the file only, does not publish it.
+- [`/stakeholder-summary`](docs/skills/stakeholder-summary.md) — הופך מפרט פיצ'ר לסיכום בשפה פשוטה לבעלי עניין, עם דיאגרמות Mermaid לחוויית המשתמש ולזרימת הנתונים, לצורך משוב לפני המימוש.
+- [`/html-summary`](docs/skills/html-summary.md) — ממיר `stakeholder-summary.md` לדוח מנהלים אחד ב-HTML שעומד בפני עצמו, עם השורה התחתונה והבקשות בראש; מייצר את הקובץ בלבד, לא מפרסם אותו.
 
-Its skills source the shared readability standard from `han-communication` and dispatch its readability-editor agent.
+הסקילים שלו שואבים את תקן הקריאוּת המשותף מ-`han-communication` ומשגרים את סוכן ה-readability-editor שלו.
 
-## Installation
+## התקנה
 
-Add the marketplace to Claude Code, then install the plugin (or install `han` to get it as part of the bundled suite):
+הוסף את ה-marketplace ל-Claude Code, ואז התקן את הפלאגין (או התקן את `han` כדי לקבל אותו כחלק מהחבילה המצורפת):
 
 ```
 /plugin marketplace add testdouble/han
@@ -30,4 +24,4 @@ Add the marketplace to Claude Code, then install the plugin (or install `han` to
 
 ---
 
-[Plugin index](../docs/choosing-a-han-plugin.md) · [Repo root](../README.md) · [Workflows](../docs/workflows.md)
+[אינדקס הפלאגינים](../docs/choosing-a-han-plugin.md) · [שורש הריפו](../README.md) · [Workflows](../docs/workflows.md)

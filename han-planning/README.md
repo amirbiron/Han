@@ -1,42 +1,28 @@
 # han-planning
 
-The planning layer of the Han suite: the skills you reach for before implementation. It specifies what a feature does,
-plans how to build it, sequences the build, breaks it into work, and stress-tests plans before you commit, each through
-an evidence-based process that dispatches specialist agents to do the judgment-heavy work. Reach for it when you have a
-problem to solve and want a durable, reviewed plan before any code is written.
+שכבת התכנון של חבילת Han: הסקילים שאתה פונה אליהם לפני המימוש. היא מגדירה מה פיצ'ר עושה, מתכננת איך לבנות אותו, מסדרת את הבנייה ברצף, מפרקת אותה לעבודה, ובוחנת תוכניות בלחץ לפני שאתה מתחייב, כל אחד מהם דרך תהליך מבוסס-ראיות שמשגר סוכנים מומחים לעבודה שדורשת שיקול דעת. פנה אליה כשיש לך בעיה לפתור ואתה רוצה תוכנית עמידה וסקורה לפני ששורת קוד אחת נכתבת.
 
-**Bundled.** Installed with the `han` meta-plugin. Depends on `han-communication` and `han-core`.
+**מצורף.** מותקן יחד עם המטא-פלאגין `han`. תלוי ב-`han-communication` וב-`han-core`.
 
-**Getting started:** the skills chain. Specify with [`/plan-a-feature`](docs/skills/plan-a-feature.md), plan the build
-with [`/plan-implementation`](docs/skills/plan-implementation.md), sequence it with
-[`/plan-a-phased-build`](docs/skills/plan-a-phased-build.md), and break it into work with
-[`/plan-work-items`](docs/skills/plan-work-items.md); stress-test any plan along the way with
-[`/iterative-plan-review`](docs/skills/iterative-plan-review.md).
+**איך מתחילים:** הסקילים משתרשרים. הגדר עם [`/plan-a-feature`](docs/skills/plan-a-feature.md), תכנן את הבנייה עם [`/plan-implementation`](docs/skills/plan-implementation.md), סדר אותה ברצף עם [`/plan-a-phased-build`](docs/skills/plan-a-phased-build.md), ופרק אותה לעבודה עם [`/plan-work-items`](docs/skills/plan-work-items.md); בחן כל תוכנית בלחץ בכל שלב בדרך עם [`/iterative-plan-review`](docs/skills/iterative-plan-review.md).
 
-## Skills
+## סקילים
 
-- [`/plan-a-feature`](docs/skills/plan-a-feature.md) — Build a feature specification from scratch through an
-  evidence-based interview that walks the design tree and dispatches specialist reviewers.
-- [`/plan-implementation`](docs/skills/plan-implementation.md) — Turn a feature specification into an implementation
-  plan through a facilitated team conversation.
-- [`/plan-a-phased-build`](docs/skills/plan-a-phased-build.md) — Split a body of context into a numbered sequence of
-  vertical-slice build phases, each independently demoable to a real person and each building on the prior.
-- [`/plan-work-items`](docs/skills/plan-work-items.md) — Divide a trusted implementation plan into
-  independently-grabbable, atomic work items in a single work-items file.
-- [`/iterative-plan-review`](docs/skills/iterative-plan-review.md) — Stress-test an already-written plan through
-  multiple codebase-grounded review passes.
+- [`/plan-a-feature`](docs/skills/plan-a-feature.md) — בונה מפרט פיצ'ר מאפס דרך ראיון מבוסס-ראיות שעובר על עץ העיצוב ומשגר סוקרים מומחים.
+- [`/plan-implementation`](docs/skills/plan-implementation.md) — הופך מפרט פיצ'ר לתוכנית מימוש דרך שיחת צוות מונחית.
+- [`/plan-a-phased-build`](docs/skills/plan-a-phased-build.md) — מפצל גוף הקשר לרצף ממוספר של שלבי בנייה בפרוסות אנכיות, כשכל אחד מהם ניתן להדגמה עצמאית מול אדם אמיתי וכל אחד נבנה על קודמו.
+- [`/plan-work-items`](docs/skills/plan-work-items.md) — מחלק תוכנית מימוש מהימנה לפריטי עבודה אטומיים שאפשר לתפוס באופן עצמאי, בקובץ פריטי עבודה אחד.
+- [`/iterative-plan-review`](docs/skills/iterative-plan-review.md) — בוחן בלחץ תוכנית שכבר נכתבה, דרך מספר מעברי סקירה מעוגנים בבסיס הקוד.
 
-## Agents
+## סוכנים
 
-- [`discussion-facilitator`](docs/agents/discussion-facilitator.md) — Audit a planning discussion in progress: run the
-  round-robin, grade every claim against evidence, and log what the team has not answered yet.
+- [`discussion-facilitator`](docs/agents/discussion-facilitator.md) — מבקר דיון תכנון תוך כדי התרחשותו: מריץ את סבב הדוברים, מדרג כל טענה מול ראיות, ומתעד על מה הצוות עדיין לא ענה.
 
-Its skills also dispatch shared agents that live in `han-core` (and, for the readability-editor, in
-`han-communication`).
+הסקילים שלו משגרים גם סוכנים משותפים שיושבים ב-`han-core` (ובמקרה של readability-editor, ב-`han-communication`).
 
-## Installation
+## התקנה
 
-Add the marketplace to Claude Code, then install the plugin (or install `han` to get it as part of the bundled suite):
+הוסף את ה-marketplace ל-Claude Code, ואז התקן את הפלאגין (או התקן את `han` כדי לקבל אותו כחלק מהחבילה המצורפת):
 
 ```
 /plugin marketplace add testdouble/han
@@ -45,4 +31,4 @@ Add the marketplace to Claude Code, then install the plugin (or install `han` to
 
 ---
 
-[Plugin index](../docs/choosing-a-han-plugin.md) · [Repo root](../README.md) · [Workflows](../docs/workflows.md)
+[אינדקס הפלאגינים](../docs/choosing-a-han-plugin.md) · [שורש הריפו](../README.md) · [Workflows](../docs/workflows.md)
