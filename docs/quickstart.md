@@ -1,217 +1,152 @@
 # Quickstart
 
-Pick the path below that matches what you are trying to do right now. Each path is a short sequence, a few skills, that
-combine into a useful result. You can follow one path end to end, or jump off at any step.
+בחר את המסלול שמתאים למה שאתה מנסה לעשות עכשיו. כל מסלול הוא רצף קצר של כמה סקילים שמצטרפים לתוצאה שימושית. אתה יכול ללכת לפי מסלול מתחילתו ועד סופו, או לקפוץ ממנו בכל שלב.
 
-> See also: [Plugin landing page](../README.md) · [Concepts](./concepts.md) · [How-to guides](./how-to/README.md) ·
-> [Skills](./skills/README.md) · [Agents](./agents/README.md) · [Sizing](./sizing.md) · [YAGNI](./yagni.md)
+> ראה גם: [דף הנחיתה של הפלאגין](../README.md) · [מושגי יסוד](./concepts.md) · [מדריכי How-to](./how-to/README.md) · [סקילים](./skills/README.md) · [סוכנים](./agents/README.md) · [Sizing](./sizing.md) · [YAGNI](./yagni.md)
 
-> **Have not installed Han yet?** Read [Choosing a Han plugin](./choosing-a-han-plugin.md) first to pick between the
-> full suite and core only, then come back here.
+> **עדיין לא התקנת את Han?** קרא קודם את [Choosing a Han plugin](./choosing-a-han-plugin.md) כדי לבחור בין החבילה המלאה לבין הליבה בלבד, ואז חזור לכאן.
 
-The [how-to guides](./how-to/README.md) cover planning, bug triage, and research workflows in depth, with specific
-prompts, what to do between steps, and what to expect at each one. Read one when you want the full end-to-end recipe for
-a path. The quickstart points you at the right path; the how-to walks you through it.
+[מדריכי ה-how-to](./how-to/README.md) מכסים לעומק את זרימות העבודה של תכנון, מיון באגים ומחקר, עם פרומפטים ספציפיים, מה לעשות בין שלב לשלב, ולמה לצפות בכל אחד מהם. קרא אחד מהם כשאתה רוצה את המתכון המלא מקצה לקצה למסלול. ה-quickstart מפנה אותך למסלול הנכון; ה-how-to מוליך אותך דרכו.
 
-## Which path are you on?
+## באיזה מסלול אתה?
 
-- **[Plan a new feature](#path-a--plan-a-new-feature).** You have an idea for a feature and need to figure out what it
-  should do, how to build it, and then build it test-first.
-- **[Investigate a bug or failure](#path-b--investigate-a-bug-or-failure).** Something is broken or behaving oddly and
-  you need a root cause.
-- **[Research your options](#path-e--research-your-options-before-you-commit).** Nothing is broken; you have a question
-  and want the options, prior art, and a recommendation before you commit.
-- **[Review code or architecture](#path-c--review-code-or-architecture).** You want a second set of eyes on a branch, a
-  PR, or an existing module.
-- **[Set up a project for everything else](#path-d--set-up-a-project-for-everything-else).** You want to document your
-  project, formalize standards, and give every other skill richer context.
+- **[תכנון פיצ'ר חדש](#מסלול-א-תכנון-פיצר-חדש).** יש לך רעיון לפיצ'ר ואתה צריך להבין מה הוא צריך לעשות, איך לבנות אותו, ואז לבנות אותו test-first.
+- **[חקירת באג או כשל](#מסלול-ב-חקירת-באג-או-כשל).** משהו שבור או מתנהג מוזר ואתה צריך שורש לבעיה.
+- **[מחקר האפשרויות שלך](#מסלול-ה-מחקר-האפשרויות-שלך-לפני-שאתה-מתחייב).** שום דבר לא שבור; יש לך שאלה ואתה רוצה את האפשרויות, את מה שכבר נעשה, והמלצה, לפני שאתה מתחייב.
+- **[סקירת קוד או ארכיטקטורה](#מסלול-ג-סקירת-קוד-או-ארכיטקטורה).** אתה רוצה זוג עיניים נוסף על ענף, על PR או על מודול קיים.
+- **[הכנת פרויקט לכל השאר](#מסלול-ד-הכנת-פרויקט-לכל-השאר).** אתה רוצה לתעד את הפרויקט שלך, לעגן תקנים, ולתת לכל סקיל אחר הקשר עשיר יותר.
 
-Not sure which? Start with the [Concepts](./concepts.md) page, then come back.
+לא בטוח באיזה? התחל בדף [מושגי היסוד](./concepts.md), ואז חזור.
 
 ---
 
-## Path A: Plan a new feature
+## מסלול א: תכנון פיצ'ר חדש
 
-You have a feature idea and want a specification grounded in evidence, then a plan for how to build it.
+יש לך רעיון לפיצ'ר ואתה רוצה מפרט מעוגן בראיות, ואחריו תוכנית איך לבנות אותו.
 
-The full walkthrough, with prompts, decision points, and what to expect at each step, lives in
-**[How to plan a feature, end to end](./how-to/plan-a-feature.md)**. The skills in the loop, in order:
+ההליכה המלאה, עם פרומפטים, נקודות החלטה, ולמה לצפות בכל שלב, נמצאת ב-**[How to plan a feature, end to end](./how-to/plan-a-feature.md)**. הסקילים בלולאה, לפי הסדר:
 
 [`/plan-a-feature`](../han-planning/docs/skills/plan-a-feature.md) →
-[`/stakeholder-summary`](../han-reporting/docs/skills/stakeholder-summary.md) _(optional)_ →
-[`/plan-a-phased-build`](../han-planning/docs/skills/plan-a-phased-build.md) _(optional)_ →
+[`/stakeholder-summary`](../han-reporting/docs/skills/stakeholder-summary.md) _(אופציונלי)_ →
+[`/plan-a-phased-build`](../han-planning/docs/skills/plan-a-phased-build.md) _(אופציונלי)_ →
 [`/plan-implementation`](../han-planning/docs/skills/plan-implementation.md) →
-[`/iterative-plan-review`](../han-planning/docs/skills/iterative-plan-review.md) _(optional)_ →
-[`/plan-work-items`](../han-planning/docs/skills/plan-work-items.md) _(optional)_ → [`/tdd`](../han-coding/docs/skills/tdd.md)
-_(when you build it)_.
+[`/iterative-plan-review`](../han-planning/docs/skills/iterative-plan-review.md) _(אופציונלי)_ →
+[`/plan-work-items`](../han-planning/docs/skills/plan-work-items.md) _(אופציונלי)_ → [`/tdd`](../han-coding/docs/skills/tdd.md)
+_(כשאתה בונה אותו)_.
 
-**You are done when:** you have a `feature-specification.md` and a `feature-implementation-plan.md` in the same folder,
-each with a cross-referenced decision log and review findings. If the feature was large enough to phase, you also have a
-`build-phase-outline.md` that orders the work into demoable vertical slices. When you build it, the code lands behavior
-by behavior through `/tdd`, with tests leading.
+**סיימת כאשר:** יש לך `feature-specification.md` ו-`feature-implementation-plan.md` באותה תיקייה, כל אחד עם יומן החלטות מקושר וממצאי סקירה. אם הפיצ'ר היה גדול מספיק כדי לפצל אותו לשלבים, יש לך גם `build-phase-outline.md` שמסדר את העבודה לפרוסות אנכיות שאפשר להדגים. כשאתה בונה אותו, הקוד נוחת התנהגות אחרי התנהגות דרך `/tdd`, כשהבדיקות מובילות.
 
 ---
 
-## Path B: Investigate a bug or failure
+## מסלול ב: חקירת באג או כשל
 
-Something is broken. You want a root cause, not a guess.
+משהו שבור. אתה רוצה שורש לבעיה, לא ניחוש.
 
-The full walkthrough, including how to bring in production logs and when to triage instead of investigating right away,
-lives in **[How to triage and investigate a bug](./how-to/triage-and-investigate-a-bug.md)**. The skills in the loop:
+ההליכה המלאה, כולל איך להביא לוגים מפרודקשן ומתי למיין במקום לחקור מיד, נמצאת ב-**[How to triage and investigate a bug](./how-to/triage-and-investigate-a-bug.md)**. הסקילים בלולאה:
 
-[`/issue-triage`](../han-research/docs/skills/issue-triage.md) _(as needed)_ →
+[`/issue-triage`](../han-research/docs/skills/issue-triage.md) _(לפי הצורך)_ →
 [`/investigate`](../han-coding/docs/skills/investigate.md) →
-[`/iterative-plan-review`](../han-planning/docs/skills/iterative-plan-review.md) _(optional)_.
+[`/iterative-plan-review`](../han-planning/docs/skills/iterative-plan-review.md) _(אופציונלי)_.
 
-**You are done when:** you have a report that names the root cause with file-level evidence, and a fix plan that has
-survived adversarial review.
-
----
-
-## Path C: Review code or architecture
-
-You want feedback on something that is already written.
-
-Start with the scope that matches:
-
-- **A branch or a few files** → **[`/code-review`](../han-coding/docs/skills/code-review.md).** Always dispatches
-  `junior-developer` and `adversarial-security-analyst`. Conditionally adds `test-engineer`, `edge-case-explorer`,
-  `structural-analyst`, `behavioral-analyst`, `concurrency-analyst`, `data-engineer`, or `devops-engineer` when the
-  changed files trigger their domain. The roster scales with the [size](./sizing.md), defaulting to small. Runs quality
-  checks and produces a review with findings classified by severity.
-- **An open GitHub PR** → **[`/post-code-review-to-pr`](../han-github/docs/skills/post-code-review-to-pr.md).** Everything
-  `/code-review` does, plus a `junior-developer` clarity check against the drafted review body, plus posts the review as
-  comments on the PR.
-- **A whole module or subsystem** → **[`/architectural-analysis`](../han-coding/docs/skills/architectural-analysis.md).**
-  Always dispatches a spine of `structural-analyst`, `behavioral-analyst`, `risk-analyst`, and `software-architect` to
-  examine coupling, data flow, risk, and SOLID alignment. Conditionally adds `concurrency-analyst`,
-  `adversarial-security-analyst`, `data-engineer`, `devops-engineer`, `codebase-explorer`, or `system-architect` when
-  the focus area's signals call for them. The roster scales with the [size](./sizing.md), defaulting to small. For
-  cross-service topology when `system-architect` is not auto-included, dispatch it separately.
-- **Tests you want to _plan_, not review** → **[`/automated-test-planning`](../han-coding/docs/skills/automated-test-planning.md).** Dispatches
-  `test-engineer` and `edge-case-explorer`, plus `concurrency-analyst` or `adversarial-security-analyst` when the files
-  call for it. Produces a prioritized test plan.
-- **A test plan a person runs by hand** →
-  **[`/manual-test-planning`](../han-coding/docs/skills/manual-test-planning.md).** Produces a plain-language plan of
-  named tests with by-hand steps and expected outcomes, adversarially validated against the supplied context by
-  `adversarial-validator` before the file is written.
-- **An implementation against a spec, PRD, or design doc** → **[`/gap-analysis`](../han-research/docs/skills/gap-analysis.md).**
-  Compares two artifacts (current state vs. desired state) and produces a plain-language, stakeholder-readable report
-  indexed by stable `G-NNN` gap IDs. Dispatches `gap-analyzer` for the primary analysis, then runs a
-  validator-and-augmenter swarm by default, including `junior-developer`'s actor-perspective sweep across human users,
-  API callers, AI agents, and other actor types. Opt out with `no swarm` for the lightweight pass.
-- **A gap report or PRD that needs to be ordered into a phased build** →
-  **[`/plan-a-phased-build`](../han-planning/docs/skills/plan-a-phased-build.md).** Splits the source artifact into a numbered
-  sequence of vertical-slice build phases. Each phase is a thin end-to-end deliverable demoable to a real person, and
-  each one builds on the prior. Dispatches `information-architect` against the rendered outline.
-
-**You are done when:** you have a review artifact you trust, with findings tied to specific files, lines, and severity
-levels.
+**סיימת כאשר:** יש לך דוח שנוקב בשורש הבעיה עם ראיות ברמת הקובץ, ותוכנית תיקון ששרדה סקירה אדוורסרית.
 
 ---
 
-## Path D: Set up a project for everything else
+## מסלול ג: סקירת קוד או ארכיטקטורה
 
-Every other path works better when the plugin has rich context about your project. If you have ten minutes before you
-need the real skill, spend it here.
+אתה רוצה משוב על משהו שכבר נכתב.
 
-1. **[`/project-discovery`](../han-core/docs/skills/project-discovery.md).** Scans the repository and writes a concise
-   `## Project Discovery` section into your AGENTS.md or CLAUDE.md (languages, frameworks, build commands, where things
-   live). Other skills consume this automatically.
-2. **[`/project-documentation`](../han-documentation/docs/skills/project-documentation.md)** _(as needed)._ Document features, systems,
-   and components. `/code-review` and `/architectural-decision-record` read these docs as context.
-3. **[`/coding-standard`](../han-coding/docs/skills/coding-standard.md)** _(as needed)._ Formalize coding conventions, either
-   from existing patterns or from research. `/code-review` checks these automatically.
-4. **[`/architectural-decision-record`](../han-documentation/docs/skills/architectural-decision-record.md)** _(as needed)._ Record
-   architectural decisions.
-5. **[`.han/config.md`](./configuration.md)** _(as needed)._ Carry an optional config file to set a base directory for
-   Han's markdown outputs, a default swarm size for the sizing-aware skills, a writing-voice profile, and extra agents
-   for dispatching skills to consider. Put it in your Claude Code configuration directory for settings that follow you
-   everywhere, or at the project root for that project alone.
+התחל מההיקף שמתאים:
 
-**You are done when:** you have a `## Project Discovery` section in your AGENTS.md or CLAUDE.md and the docs and
-standards you need to give other skills useful context.
+- **ענף או כמה קבצים** ← **[`/code-review`](../han-coding/docs/skills/code-review.md).** תמיד משגר את `junior-developer` ואת `adversarial-security-analyst`. מוסיף באופן מותנה את `test-engineer`, `edge-case-explorer`, `structural-analyst`, `behavioral-analyst`, `concurrency-analyst`, `data-engineer` או `devops-engineer` כשהקבצים שהשתנו מפעילים את התחום שלהם. המערך גדל עם [הגודל](./sizing.md), עם ברירת מחדל קטן. מריץ בדיקות איכות ומייצר סקירה עם ממצאים מסווגים לפי חומרה.
+- **PR פתוח ב-GitHub** ← **[`/post-code-review-to-pr`](../han-github/docs/skills/post-code-review-to-pr.md).** כל מה ש-`/code-review` עושה, בתוספת בדיקת בהירות של `junior-developer` מול גוף הסקירה שנוסח, ובתוספת פרסום הסקירה כתגובות על ה-PR.
+- **מודול או תת-מערכת שלמה** ← **[`/architectural-analysis`](../han-coding/docs/skills/architectural-analysis.md).** תמיד משגר שדרה של `structural-analyst`, `behavioral-analyst`, `risk-analyst` ו-`software-architect` כדי לבחון צימוד, זרימת נתונים, סיכון והתאמה ל-SOLID. מוסיף באופן מותנה את `concurrency-analyst`, `adversarial-security-analyst`, `data-engineer`, `devops-engineer`, `codebase-explorer` או `system-architect` כשהאותות של אזור המיקוד מחייבים אותם. המערך גדל עם [הגודל](./sizing.md), עם ברירת מחדל קטן. לטופולוגיה בין שירותים כש-`system-architect` לא נכלל אוטומטית, שגר אותו בנפרד.
+- **בדיקות שאתה רוצה _לתכנן_, לא לסקור** ← **[`/automated-test-planning`](../han-coding/docs/skills/automated-test-planning.md).** משגר את `test-engineer` ואת `edge-case-explorer`, ובנוסף `concurrency-analyst` או `adversarial-security-analyst` כשהקבצים מחייבים זאת. מייצר תוכנית בדיקות מתועדפת.
+- **תוכנית בדיקות שאדם מריץ ידנית** ← **[`/manual-test-planning`](../han-coding/docs/skills/manual-test-planning.md).** מייצר תוכנית בשפה פשוטה של בדיקות בעלות שם עם שלבים ידניים ותוצאות צפויות, שעברה אימות אדוורסרי מול ההקשר שסופק על ידי `adversarial-validator` לפני שהקובץ נכתב.
+- **מימוש מול מפרט, PRD או מסמך עיצוב** ← **[`/gap-analysis`](../han-research/docs/skills/gap-analysis.md).** משווה שני תוצרים (מצב קיים מול מצב רצוי) ומייצר דוח בשפה פשוטה שבעלי עניין יכולים לקרוא, מאונדקס לפי מזהי פער יציבים בפורמט `G-NNN`. משגר את `gap-analyzer` לניתוח הראשי, ואז מריץ swarm של מאמתים ומרחיבים כברירת מחדל, כולל הסריקה של `junior-developer` מנקודת מבטם של משתמשים אנושיים, קוראי API, סוכני AI וסוגי שחקנים אחרים. ותר על כך עם `no swarm` למעבר הקל.
+- **דוח פערים או PRD שצריך לסדר לבנייה בשלבים** ← **[`/plan-a-phased-build`](../han-planning/docs/skills/plan-a-phased-build.md).** מפצל את תוצר המקור לרצף ממוספר של שלבי בנייה בפרוסות אנכיות. כל שלב הוא תוצר דק מקצה לקצה שאפשר להדגים לאדם אמיתי, וכל אחד נבנה על קודמו. משגר את `information-architect` מול המתאר כפי שנוצר.
+
+**סיימת כאשר:** יש לך תוצר סקירה שאתה סומך עליו, עם ממצאים קשורים לקבצים, לשורות ולרמות חומרה ספציפיות.
 
 ---
 
-## Path E: Research your options before you commit
+## מסלול ד: הכנת פרויקט לכל השאר
 
-You have a question, not a bug and not yet a feature. You want the options, the prior art, and a recommendation you can
-trust before you pick a direction.
+כל מסלול אחר עובד טוב יותר כשלפלאגין יש הקשר עשיר על הפרויקט שלך. אם יש לך עשר דקות לפני שאתה צריך את הסקיל האמיתי, השקע אותן כאן.
 
-The full walkthrough, including how to capture the recommendation as an ADR so the team has a single canonical record,
-lives in **[How to research a decision and capture it](./how-to/research-a-decision.md)**. The skills in the loop:
+1. **[`/project-discovery`](../han-core/docs/skills/project-discovery.md).** סורק את הריפו וכותב סעיף `## Project Discovery` תמציתי לתוך ה-AGENTS.md או ה-CLAUDE.md שלך (שפות, פריימוורקים, פקודות בנייה, איפה הדברים נמצאים). סקילים אחרים צורכים את זה אוטומטית.
+2. **[`/project-documentation`](../han-documentation/docs/skills/project-documentation.md)** _(לפי הצורך)._ תעד פיצ'רים, מערכות ורכיבים. `/code-review` ו-`/architectural-decision-record` קוראים את המסמכים האלה כהקשר.
+3. **[`/coding-standard`](../han-coding/docs/skills/coding-standard.md)** _(לפי הצורך)._ עגן מוסכמות קוד, בין אם מדפוסים קיימים ובין אם ממחקר. `/code-review` בודק אותן אוטומטית.
+4. **[`/architectural-decision-record`](../han-documentation/docs/skills/architectural-decision-record.md)** _(לפי הצורך)._ תעד החלטות ארכיטקטוניות.
+5. **[`.han/config.md`](./configuration.md)** _(לפי הצורך)._ החזק קובץ קונפיגורציה אופציונלי שקובע תיקיית בסיס לפלטי ה-markdown של Han, גודל swarm ברירת מחדל לסקילים מודעי-הגודל, פרופיל קול כתיבה, וסוכנים נוספים שהסקילים המשגרים ישקלו. שים אותו בתיקיית הקונפיגורציה של Claude Code שלך להגדרות שנוסעות איתך לכל מקום, או בשורש הפרויקט עבור אותו פרויקט בלבד.
+
+**סיימת כאשר:** יש לך סעיף `## Project Discovery` ב-AGENTS.md או ב-CLAUDE.md שלך, ואת המסמכים והתקנים שאתה צריך כדי לתת לסקילים אחרים הקשר שימושי.
+
+---
+
+## מסלול ה: מחקר האפשרויות שלך לפני שאתה מתחייב
+
+יש לך שאלה, לא באג ועדיין לא פיצ'ר. אתה רוצה את האפשרויות, את מה שכבר נעשה, והמלצה שאתה יכול לסמוך עליה, לפני שאתה בוחר כיוון.
+
+ההליכה המלאה, כולל איך ללכוד את ההמלצה כ-ADR כך שלצוות יהיה רישום קנוני אחד, נמצאת ב-**[How to research a decision and capture it](./how-to/research-a-decision.md)**. הסקילים בלולאה:
 
 [`/research`](../han-research/docs/skills/research.md) →
 [`/architectural-decision-record`](../han-documentation/docs/skills/architectural-decision-record.md) →
-[`/plan-a-feature`](../han-planning/docs/skills/plan-a-feature.md) _(optional next step)_.
+[`/plan-a-feature`](../han-planning/docs/skills/plan-a-feature.md) _(צעד הבא אופציונלי)_.
 
-**You are done when:** you have a research report whose recommendation survived an adversarial pass, with every claim
-tied to a source you can check yourself, and the decision captured as an ADR. If the request was really a bug, a spec, a
-standard, an artifact comparison, or an architecture assessment, `/research` routes you to the skill that owns it
-instead.
+**סיימת כאשר:** יש לך דוח מחקר שההמלצה שבו שרדה מעבר אדוורסרי, עם כל טענה קשורה למקור שאתה יכול לבדוק בעצמך, וההחלטה מתועדת כ-ADR. אם הבקשה הייתה בעצם באג, מפרט, תקן, השוואת תוצרים או הערכה ארכיטקטונית, `/research` מנתב אותך לסקיל שאחראי על זה במקום.
 
 ---
 
-## Combining paths
+## שילוב מסלולים
 
-You can reference multiple skills in one prompt and Claude runs them in sequence, feeding each one's output into the
-next. A few that work:
+אתה יכול להזכיר כמה סקילים בפרומפט אחד ו-Claude מריץ אותם ברצף, ומזין את הפלט של כל אחד לתוך הבא. כמה שעובדים:
 
-- _"Investigate why webhook deliveries are failing intermittently, then create a plan to fix it and iterate on it."_ →
+- _"תחקור למה משלוחי webhook נכשלים לסירוגין, ואז תיצור תוכנית לתקן את זה ותעבור עליה באיטרציות."_ ←
   [`/investigate`](../han-coding/docs/skills/investigate.md) →
   [`/iterative-plan-review`](../han-planning/docs/skills/iterative-plan-review.md).
-- _"Scan this repo, document the auth system, and create a coding standard for how we handle tokens."_ →
+- _"תסרוק את הריפו הזה, תתעד את מערכת האימות, ותיצור תקן קוד לאיך שאנחנו מטפלים בטוקנים."_ ←
   [`/project-discovery`](../han-core/docs/skills/project-discovery.md) →
   [`/project-documentation`](../han-documentation/docs/skills/project-documentation.md) →
   [`/coding-standard`](../han-coding/docs/skills/coding-standard.md).
-- _"Review my branch, then create an ADR for any architectural decisions in the diff."_ →
+- _"תסקור את הענף שלי, ואז תיצור ADR לכל החלטה ארכיטקטונית ב-diff."_ ←
   [`/code-review`](../han-coding/docs/skills/code-review.md) →
   [`/architectural-decision-record`](../han-documentation/docs/skills/architectural-decision-record.md).
-- _"Plan the retry feature, then plan the implementation, then create a test plan for it."_ →
+- _"תתכנן את פיצ'ר ה-retry, ואז תתכנן את המימוש, ואז תיצור לו תוכנית בדיקות."_ ←
   [`/plan-a-feature`](../han-planning/docs/skills/plan-a-feature.md) →
   [`/plan-implementation`](../han-planning/docs/skills/plan-implementation.md) →
   [`/automated-test-planning`](../han-coding/docs/skills/automated-test-planning.md).
-- _"Spec the new onboarding flow, then write a stakeholder summary I can share with leadership before we build it."_ →
+- _"תגדיר את זרימת ה-onboarding החדשה, ואז תכתוב סיכום לבעלי עניין שאוכל לשתף עם ההנהלה לפני שנבנה."_ ←
   [`/plan-a-feature`](../han-planning/docs/skills/plan-a-feature.md) →
   [`/stakeholder-summary`](../han-reporting/docs/skills/stakeholder-summary.md) →
-  [`/html-summary`](../han-reporting/docs/skills/html-summary.md) _(optional, for a self-contained HTML version to hand off)_.
-- _"Spec the discount engine, then build it test-first."_ → [`/plan-a-feature`](../han-planning/docs/skills/plan-a-feature.md)
+  [`/html-summary`](../han-reporting/docs/skills/html-summary.md) _(אופציונלי, לגרסת HTML עצמאית להעברה)_.
+- _"תגדיר את מנוע ההנחות, ואז תבנה אותו test-first."_ ← [`/plan-a-feature`](../han-planning/docs/skills/plan-a-feature.md)
   → [`/tdd`](../han-coding/docs/skills/tdd.md) → [`/code-review`](../han-coding/docs/skills/code-review.md).
-- _"Research our options for background jobs, then spec the one you recommend."_ →
+- _"תחקור את האפשרויות שלנו למשימות רקע, ואז תגדיר את זו שאתה ממליץ עליה."_ ←
   [`/research`](../han-research/docs/skills/research.md) → [`/plan-a-feature`](../han-planning/docs/skills/plan-a-feature.md).
-- _"Compare the auth implementation to the auth spec, then plan how to close the gaps, finishing with splitting that
-  work up into task-sized units."_ → [`/gap-analysis`](../han-research/docs/skills/gap-analysis.md) →
+- _"תשווה את מימוש האימות למפרט האימות, ואז תתכנן איך לסגור את הפערים, ולסיום תפרק את העבודה הזו ליחידות בגודל משימה."_ ←
+  [`/gap-analysis`](../han-research/docs/skills/gap-analysis.md) →
   [`/plan-implementation`](../han-planning/docs/skills/plan-implementation.md) →
   [`/plan-work-items`](../han-planning/docs/skills/plan-work-items.md).
-- _"Compare the share v1 implementation to the share v2 spec, split the gaps into a phased rollout, then plan
-  implementation for the first phase, finally laying out individual tasks based on that plan."_ →
+- _"תשווה את מימוש share v1 למפרט share v2, תפצל את הפערים להשקה בשלבים, ואז תתכנן מימוש לשלב הראשון, ולבסוף תפרוס משימות בודדות על בסיס התוכנית הזו."_ ←
   [`/gap-analysis`](../han-research/docs/skills/gap-analysis.md) →
   [`/plan-a-phased-build`](../han-planning/docs/skills/plan-a-phased-build.md) →
   [`/plan-implementation`](../han-planning/docs/skills/plan-implementation.md) →
   [`/plan-work-items`](../han-planning/docs/skills/plan-work-items.md).
 
-## A note on sizing
+## הערה על גודל
 
-The sizing-aware skills (`/architectural-analysis`, `/code-overview`, `/code-review`, `/code-walkthrough`,
-`/gap-analysis`, `/iterative-plan-review`, `/plan-a-feature`, `/plan-implementation`, `/research`) classify the work as **small**,
-**medium**, or **large** before dispatching agents. They default to small, and scale the team and iteration depth to the
-chosen band. Pass the size as the first positional argument to override (`/code-review medium`,
-`/plan-a-feature large "describe the feature"`). See [Sizing](./sizing.md) for the full model.
+הסקילים מודעי-הגודל (`/architectural-analysis`, `/code-overview`, `/code-review`, `/code-walkthrough`, `/design-an-api`, `/gap-analysis`, `/iterative-plan-review`, `/plan-a-feature`, `/plan-implementation`, `/research`) מסווגים את העבודה כ**קטנה**, **בינונית** או **גדולה** לפני שיגור הסוכנים. ברירת המחדל שלהם היא קטן, והם מגדילים את הצוות ואת עומק האיטרציות לפי הרצועה שנבחרה. העבר את הגודל כארגומנט המיקומי הראשון כדי לעקוף (`/code-review medium`, `/plan-a-feature large "describe the feature"`). ראה [Sizing](./sizing.md) למודל המלא.
 
-## A note on YAGNI
+## הערה על YAGNI
 
-Every planning, review, and standards skill applies an evidence-based YAGNI rule before committing items to its
-artifact. Items without acceptable evidence move to a `## Deferred (YAGNI)` section with a named _reopen-when_ trigger.
-Never silently dropped. If a skill says "deferred (YAGNI)," see [YAGNI](./yagni.md) for the two gates, the
-acceptable-evidence list, and the override process.
+כל סקיל תכנון, סקירה ותקנים מחיל כלל YAGNI מבוסס-ראיות לפני שהוא מתחייב לפריטים בתוצר שלו. פריטים בלי ראיות קבילות עוברים לסעיף `## Deferred (YAGNI)` עם טריגר _reopen-when_ נקוב. לעולם לא נזרקים בשקט. אם סקיל אומר "deferred (YAGNI)", ראה [YAGNI](./yagni.md) לשני השערים, לרשימת הראיות הקבילות ולתהליך העקיפה.
 
-## Where to go next
+## לאן ממשיכים מכאן
 
-- Pick a skill from the [Skills Index](./skills/README.md).
-- Follow a how-to guide from the [How-to index](./how-to/README.md) when you want the full end-to-end recipe for one of
-  the paths above.
-- Skim the [Agents Index](./agents/README.md) to understand the specialists the skills dispatch.
-- Read [Concepts](./concepts.md) if the skill/agent split is still fuzzy.
-- Read [Sizing](./sizing.md) to understand how the swarming skills decide how many agents to dispatch.
-- Read [YAGNI](./yagni.md) to understand what survives a review and what gets deferred.
+- בחר סקיל מ-[אינדקס הסקילים](./skills/README.md).
+- לך לפי מדריך how-to מ-[אינדקס ה-How-to](./how-to/README.md) כשאתה רוצה את המתכון המלא מקצה לקצה לאחד המסלולים למעלה.
+- עבור ברפרוף על [אינדקס הסוכנים](./agents/README.md) כדי להבין את המומחים שהסקילים משגרים.
+- קרא את [מושגי היסוד](./concepts.md) אם ההפרדה בין סקיל לסוכן עדיין מטושטשת.
+- קרא את [Sizing](./sizing.md) כדי להבין איך הסקילים המשגרים מחליטים כמה סוכנים לשגר.
+- קרא את [YAGNI](./yagni.md) כדי להבין מה שורד סקירה ומה נדחה.

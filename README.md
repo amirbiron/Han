@@ -1,81 +1,67 @@
-# Han: For the Solo Product Engineer
+# Han: לְמהנדס המוצר היחיד
 
-<img src="images/han-banner.png">
+הגרסה האנגלית של המסמך הזה נמצאת ב-[ריפו המקור](https://github.com/testdouble/han).
 
-Han is a suite of AI skills and agents for solo (or small-team) product engineers. It combines evidence-based planning,
-test-driven implementation, full documentation maintenance, deep code review, and architectural analysis into a team of
-specialists you can dispatch from Claude Code.
+<img src="images/han-banner.png" alt="הבאנר של Han: חבילת סקילים וסוכנים למהנדס המוצר היחיד">
 
-## What this plugin does
+Han היא חבילה של סקילים וסוכני AI למהנדסי מוצר שעובדים לבד (או בצוות קטן). היא מחברת תכנון מבוסס-ראיות, מימוש מונחה-בדיקות, תחזוקה מלאה של תיעוד, סקירת קוד לעומק וניתוח ארכיטקטוני לצוות של מומחים שאפשר לשגר מתוך Claude Code.
 
-Han turns planning, implementation, review, and documentation work that would normally take a team into a set of
-deterministic skills you run from Claude Code.
+## מה הפלאגין הזה עושה
 
-Each skill dispatches specialist agents, such as project managers, adversarial reviewers, investigators, architectural
-analysts, and testing and security specialists, to do the judgment-heavy work. It then folds their findings into an
-artifact you can trust.
+Han הופכת עבודת תכנון, מימוש, סקירה ותיעוד שבדרך כלל דורשת צוות שלם לאוסף של סקילים דטרמיניסטיים שאתה מריץ מתוך Claude Code.
 
-The skills are designed to compose. You can plan a feature, then plan its implementation, then iterate on the plan, then
-build it test-first, then review the resulting code, then write the PR description. All through named skills that hand
-off to each other cleanly.
+כל סקיל משגר סוכנים מומחים, כמו מנהלי פרויקטים, סוקרים אדוורסריים, חוקרים, אנליסטים ארכיטקטוניים ומומחי בדיקות ואבטחה, שיעשו את העבודה שדורשת שיקול דעת. לאחר מכן הוא מקפל את הממצאים שלהם לתוצר שאפשר לסמוך עליו.
 
-Read [Concepts](./docs/concepts.md) for the skill-and-agent model that runs through the whole plugin.
+הסקילים תוכננו להתחבר זה לזה. אפשר לתכנן פיצ'ר, אחר כך לתכנן את המימוש שלו, אחר כך לעבור על התוכנית באיטרציות, אחר כך לבנות אותו בגישת test-first, אחר כך לסקור את הקוד שנוצר ואז לכתוב את תיאור ה-PR. הכול דרך סקילים בעלי שם שמעבירים שליטה זה לזה בצורה נקייה.
 
-## For Solo Product Engineers and Small Teams
+קרא את [Concepts](./docs/concepts.md) כדי להכיר את מודל הסקילים והסוכנים שעובר כחוט השני בכל הפלאגין.
 
-Han is purpose-built for solo product engineers and small teams, instead of large teams or enterprise. This does not
-mean it can't work in larger teams, though. Read about why
-[Han's focus is solo product engineers and small teams](./docs/why-solo-and-small-teams.md) to understand Han's
-positioning and what it does not bring to the table.
+## למהנדסי מוצר יחידים ולצוותים קטנים
 
-## Installation
+Han נבנתה במכוון עבור מהנדסי מוצר יחידים וצוותים קטנים, ולא עבור צוותים גדולים או ארגונים גדולים. זה לא אומר שהיא לא יכולה לעבוד בצוותים גדולים יותר. קרא למה [המיקוד של Han הוא מהנדסי מוצר יחידים וצוותים קטנים](./docs/why-solo-and-small-teams.md) כדי להבין את המיצוב של Han ומה היא לא מביאה איתה.
+
+## התקנה
 
 ### Claude Code
 
-Add the Test Double skills marketplace to Claude Code, then install the plugin:
+הוסף את ה-marketplace של Test Double ל-Claude Code, ואז התקן את הפלאגין:
 
 ```
 /plugin marketplace add testdouble/han
 /plugin install han@han
 ```
 
-Han ships as multiple plugins:
+Han מגיעה כמספר פלאגינים:
 
-| Plugin               | Type    | What it brings                                                                                                                                                         |
-| -------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`han`**            | parent  | the parent plugin that brings in `han-communication`, `han-core`, `han-documentation`, `han-research`, `han-planning`, `han-coding`, `han-github`, and `han-reporting` |
-| `han-communication`  | bundled | the foundational plugin beneath every other: the shared readability standard and writing-voice profile, plus the skills and agent that apply them                      |
-| `han-core`           | bundled | the shared specialist agent roster, the project-discovery skill, the `/pairing` collaborative working mode, and the canonical rule files                               |
-| `han-documentation`  | bundled | documentation skills: project docs, architectural decision records, and runbooks                                                                                       |
-| `han-research`       | bundled | pre-planning knowledge-work skills: research, gap analysis, and issue triage, plus the research-analyst agent                                                          |
-| `han-planning`       | bundled | planning skills you reach for before implementation                                                                                                                    |
-| `han-coding`         | bundled | coding skills you reach for while working in code                                                                                                                      |
-| `han-github`         | bundled | GitHub-facing skills like posting a code review on a PR                                                                                                                |
-| `han-reporting`      | bundled | reporting skills like the stakeholder summary                                                                                                                          |
-| `han-feedback`       | opt-in  | skill for capturing post-session feedback on Han skill runs                                                                                                            |
-| `han-atlassian`      | opt-in  | skills for publishing docs and work items to Atlassian products                                                                                                        |
-| `han-linear`         | opt-in  | skill for publishing work items to Linear (requires a Linear MCP server)                                                                                               |
-| `han-plugin-builder` | opt-in  | carries the guidance and skills for building your own skills, agents, and plugins                                                                                      |
+| פלאגין               | סוג       | מה הוא מביא                                                                                                                                              |
+| -------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`han`**            | הורה      | פלאגין ההורה שמביא את `han-communication`, `han-core`, `han-documentation`, `han-research`, `han-planning`, `han-coding`, `han-github` ו-`han-reporting` |
+| `han-communication`  | מצורף     | הפלאגין היסודי שמתחת לכל האחרים: תקן הקריאוּת המשותף ופרופיל קול הכתיבה, יחד עם הסקילים והסוכן שמיישמים אותם                                             |
+| `han-core`           | מצורף     | מערך הסוכנים המומחים המשותף, הסקיל project-discovery, מצב העבודה המשותף `/pairing` וקובצי הכללים הקנוניים                                                |
+| `han-documentation`  | מצורף     | סקילים לתיעוד: תיעוד פרויקט, רשומות החלטה ארכיטקטונית ו-runbooks                                                                                         |
+| `han-research`       | מצורף     | סקילים לעבודת ידע שלפני התכנון: מחקר, ניתוח פערים ומיון issues, יחד עם הסוכן research-analyst                                                            |
+| `han-planning`       | מצורף     | סקילים לתכנון שאתה מגיע אליהם לפני המימוש                                                                                                                |
+| `han-coding`         | מצורף     | סקילים לכתיבת קוד שאתה מגיע אליהם תוך כדי עבודה בקוד                                                                                                     |
+| `han-github`         | מצורף     | סקילים מול GitHub, למשל פרסום סקירת קוד על PR                                                                                                            |
+| `han-reporting`      | מצורף     | סקילים לדיווח, למשל סיכום לבעלי עניין                                                                                                                    |
+| `han-feedback`       | אופציונלי | סקיל לאיסוף משוב אחרי סשן על ריצות של סקילים ב-Han                                                                                                       |
+| `han-atlassian`      | אופציונלי | סקילים לפרסום מסמכים ופריטי עבודה למוצרי Atlassian                                                                                                       |
+| `han-linear`         | אופציונלי | סקיל לפרסום פריטי עבודה ל-Linear (דורש שרת MCP של Linear)                                                                                                |
+| `han-plugin-builder` | אופציונלי | נושא את ההנחיות והסקילים לבניית סקילים, סוכנים ופלאגינים משלך                                                                                            |
 
-Installing `han@han` pulls in the bundled suite (the meta-plugin plus `han-communication`, `han-core`,
-`han-documentation`, `han-research`, `han-planning`, `han-coding`, `han-github`, and `han-reporting`), and is the right
-choice for most people. If you want only one slice of Han, install a single layer such as `han-documentation@han` or
-`han-coding@han` instead (each brings the shared `han-core` agents along), and add other specific plugins as desired.
+התקנה של `han@han` מושכת את החבילה המצורפת (המטא-פלאגין יחד עם `han-communication`, `han-core`, `han-documentation`, `han-research`, `han-planning`, `han-coding`, `han-github` ו-`han-reporting`), וזו הבחירה הנכונה לרוב האנשים. אם אתה רוצה רק פרוסה אחת מ-Han, התקן שכבה בודדת כמו `han-documentation@han` או `han-coding@han` (כל אחת מביאה איתה את הסוכנים המשותפים של `han-core`), והוסף פלאגינים ספציפיים נוספים לפי הצורך.
 
-For the full picture and a quick "which one do you need?" guide, see
-[Choosing a Han plugin](./docs/choosing-a-han-plugin.md).
+לתמונה המלאה ולמדריך מהיר של "איזה מהם אני צריך?", ראה [Choosing a Han plugin](./docs/choosing-a-han-plugin.md).
 
 ### Codex
 
-Add this repo as a Codex marketplace:
+הוסף את הריפו הזה כ-marketplace של Codex:
 
 ```
 codex plugin marketplace add testdouble/han
 ```
 
-Codex does not yet support meta-plugins like `han@han` (see openai/codex#23531,) and it resolves no dependencies, so
-install the Han packages directly — starting with the foundational `han-communication`, which the prose-producing
-packages depend on:
+Codex עדיין לא תומך במטא-פלאגינים כמו `han@han` (ראה openai/codex#23531), והוא לא מפענח תלויות, ולכן התקן את חבילות Han ישירות — החל מ-`han-communication` היסודי, שהחבילות שמייצרות טקסט תלויות בו:
 
 ```
 codex plugin add han-communication@han
@@ -88,63 +74,53 @@ codex plugin add han-github@han
 codex plugin add han-reporting@han
 ```
 
-Install `han-feedback`, `han-atlassian`, `han-linear`, or `han-plugin-builder` separately when you want those opt-in
-packages. Because Codex resolves no dependencies, install `han-communication` alongside `han-atlassian` (its wrapped
-prose-producing skills source the shared readability standard from it).
+התקן את `han-feedback`, `han-atlassian`, `han-linear` או `han-plugin-builder` בנפרד כשאתה רוצה את החבילות האופציונליות האלה. מכיוון ש-Codex לא מפענח תלויות, התקן את `han-communication` לצד `han-atlassian` (הסקילים שמייצרים טקסט ועטופים בתוכו שואבים ממנו את תקן הקריאוּת המשותף).
 
-## Documentation
+## תיעוד
 
-- [Concepts](./docs/concepts.md). Skill vs. agent, and how they compose. Read once before using the plugin.
-- [Plugin index](./docs/choosing-a-han-plugin.md). Every plugin with a one-line scent and a link to its README, the
-  full suite vs. a single layer, the layer dependencies on `han-core`, and a quick guide to which one to install.
-- [Quickstart](./docs/quickstart.md). Five paths for five common situations. Each path is a short sequence of skills.
-- [Skills index](./docs/skills/README.md). Every skill, alphabetized, with a scent line and a link to its long-form doc.
-- [Agents index](./docs/agents/README.md). Every agent, alphabetized, with a scent line and a link to its long-form doc.
-- [Workflows](./docs/workflows.md). The map of which skills chain together, with flow diagrams for the branching chains.
-- [Configuration](./docs/configuration.md). The optional `.han/config.md` files, one personal and one per project, that
-  set an output base directory, a default swarm size, a writing-voice profile, and extra agents for Han skills.
-- [Sizing](./docs/sizing.md). The small / medium / large model that decides how many agents the swarming skills
-  dispatch.
-- [YAGNI](./docs/yagni.md). The evidence-based "You Aren't Gonna Need It" rule every planning, review, and architecture
-  skill applies.
-- [Evidence](./docs/evidence.md). What counts as evidence in Han, how to characterize how strong it is, and what to do
-  when no evidence exists at all.
-- [Readability](./docs/readability.md). The shared output standard every reader-facing skill applies as it writes, so
-  its human-facing deliverable leads with the main point and reads consistently across skills.
-- [Changelog](./CHANGELOG.md). What's new in each version of the plugin.
+- [Concepts](./docs/concepts.md). סקיל מול סוכן, ואיך הם מתחברים. קריאה חד-פעמית לפני השימוש בפלאגין.
+- [Plugin index](./docs/choosing-a-han-plugin.md). כל פלאגין עם שורת ריח וקישור ל-README שלו, החבילה המלאה מול שכבה בודדת, התלות של השכבות ב-`han-core` ומדריך מהיר לאיזה מהם להתקין.
+- [Quickstart](./docs/quickstart.md). חמישה מסלולים לחמישה מצבים נפוצים. כל מסלול הוא רצף קצר של סקילים.
+- [Skills index](./docs/skills/README.md). כל סקיל, לפי סדר אלפביתי, עם שורת ריח וקישור לתיעוד המורחב שלו.
+- [Agents index](./docs/agents/README.md). כל סוכן, לפי סדר אלפביתי, עם שורת ריח וקישור לתיעוד המורחב שלו.
+- [Workflows](./docs/workflows.md). המפה של אילו סקילים משתרשרים זה לזה, עם דיאגרמות זרימה לשרשראות המסתעפות.
+- [Configuration](./docs/configuration.md). קובצי `.han/config.md` האופציונליים, אחד אישי ואחד לכל פרויקט, שקובעים תיקיית פלט בסיסית, גודל swarm ברירת מחדל, פרופיל קול כתיבה וסוכנים נוספים לסקילים של Han.
+- [Sizing](./docs/sizing.md). מודל ה-small / medium / large שקובע כמה סוכנים הסקילים המשגרים swarm מפעילים.
+- [YAGNI](./docs/yagni.md). כלל ה-"You Aren't Gonna Need It" מבוסס-הראיות שכל סקיל תכנון, סקירה וארכיטקטורה מיישם.
+- [Evidence](./docs/evidence.md). מה נחשב ראיה ב-Han, איך לאפיין עד כמה היא חזקה, ומה לעשות כשאין ראיה בכלל.
+- [Readability](./docs/readability.md). תקן הפלט המשותף שכל סקיל שפונה לקורא מיישם תוך כדי כתיבה, כך שהתוצר שמיועד לבני אדם פותח בעיקר ונקרא באופן עקבי בין הסקילים.
+- [Changelog](./CHANGELOG.md). מה חדש בכל גרסה של הפלאגין.
 
-### How-To Guides
+### מדריכי How-To
 
-- [How-to guides](./docs/how-to/README.md). End-to-end recipes for planning a feature, revising a plan after the build
-  starts, accelerating your understanding of unfamiliar code, triaging and investigating a bug, running an effective
-  code review, and researching a decision. Pick one when you want the full walkthrough, not only the path.
-- [How to provide feedback on Han](./docs/how-to/provide-feedback.md). Send the maintainers structured feedback on a
-  skill or agent run.
-- [Extend Han via dependencies](./docs/how-to/extend-han-with-plugin-dependencies.md). Add your own custom skills on top
-  of Han.
-- [Build a plugin that depends on Han](./docs/how-to/build-a-plugin-that-depends-on-han.md). Ship a plugin that builds
-  on Han's skills and agents.
+- [How-to guides](./docs/how-to/README.md). מתכונים מקצה לקצה לתכנון פיצ'ר, לעדכון תוכנית אחרי שהבנייה כבר התחילה, להאצת ההבנה שלך בקוד לא מוכר, למיון וחקירה של באג, להרצת סקירת קוד אפקטיבית ולמחקר לקראת החלטה. בחר אחד כשאתה רוצה את ההליכה המלאה, ולא רק את המסלול.
+- [How to provide feedback on Han](./docs/how-to/provide-feedback.md). שליחת משוב מובנה למתחזקים על ריצה של סקיל או סוכן.
+- [Extend Han via dependencies](./docs/how-to/extend-han-with-plugin-dependencies.md). הוספת סקילים משלך מעל Han.
+- [Build a plugin that depends on Han](./docs/how-to/build-a-plugin-that-depends-on-han.md). שחרור פלאגין שנשען על הסקילים והסוכנים של Han.
 
-### Contributing to Han
+### תרומה ל-Han
 
-- [Contributing](./CONTRIBUTING.md). Adding or editing skills, agents, and documentation.
-- [Create a new skill](./docs/how-to/create-a-new-skill.md). Build a new slash command from scratch with
-  `/skill-builder`.
-- [Create a new agent](./docs/how-to/create-a-new-agent.md). Build a new subagent from scratch with `/agent-builder`.
+- [Contributing](./CONTRIBUTING.md). הוספה או עריכה של סקילים, סוכנים ותיעוד.
+- [Create a new skill](./docs/how-to/create-a-new-skill.md). בניית slash command חדש מאפס עם `/skill-builder`.
+- [Create a new agent](./docs/how-to/create-a-new-agent.md). בניית סאב-סוכן חדש מאפס עם `/agent-builder`.
 
-## Maintenance and Support
+## תחזוקה ותמיכה
 
-- **Maintenance horizon:** Indefinitely maintained, best-effort. No SLA.
-- **Project type:** Personal project, with some Test Double support
-- **How to report issues:** GitHub Issues, with expected best effort for response within 2 weeks.
+- **אופק תחזוקה:** מתוחזק ללא הגבלת זמן, במאמץ סביר. ללא SLA.
+- **סוג הפרויקט:** פרויקט אישי, עם תמיכה מסוימת של Test Double
+- **איך לדווח על תקלות:** דרך GitHub Issues, עם ציפייה למענה במאמץ סביר בתוך שבועיים.
 
-Han is an open source product of [Test Double](https://testdouble.com), and maintained by the following people:
+Han היא מוצר קוד פתוח של [Test Double](https://testdouble.com), ומתוחזקת על ידי האנשים הבאים:
 
-- [River Lynn Bailey](https://github.com/mxriverlynn): Creator, and primary maintainer
-- [Tamika Nomara](https://github.com/taminomara): Core contributor
-- [Aaron Frerichs](https://github.com/afrerich): Core contributor
-- [All contributors](https://github.com/testdouble/han/graphs/contributors): Misc and greatly appreciated!
+- [River Lynn Bailey](https://github.com/mxriverlynn): יוצר ומתחזק ראשי
+- [Tamika Nomara](https://github.com/taminomara): תורם ליבה
+- [Aaron Frerichs](https://github.com/afrerich): תורם ליבה
+- [כל התורמים](https://github.com/testdouble/han/graphs/contributors): שונות, ומוערכים מאוד!
 
-## LEGAL NOTICES
+## הודעות משפטיות
 
-Copyright 2026 [Test Double, Inc](https://testdouble.com). Distributed under the [MIT license](./LICENSE).
+Han היא מוצר קוד פתוח של [Test Double, Inc](https://testdouble.com), שפורסם במקור ב-[testdouble/han](https://github.com/testdouble/han). הריפו הזה נושא עותק של הפרויקט הזה, והקרדיט על העבודה המקורית שייך ל-Test Double ולתורמים שמופיעים למעלה.
+
+Copyright 2026 [Test Double, Inc](https://testdouble.com). מופץ תחת [רישיון MIT](./LICENSE).
+
+רישיון MIT מעניק לך את הזכות להשתמש ב-Han, להעתיק אותה, לשנות אותה ולהפיץ אותה מחדש, בתנאי אחד: הודעת זכויות היוצרים והודעת ההרשאה חייבות להישאר בכל עותק או חלק מהותי של התוכנה. כדי לעמוד בתנאי זה, יש לשמור את הודעות אלה, למשל באמצעות [LICENSE](./LICENSE). הפרויקט ממליץ להשאיר את הקובץ הזה ללא שינוי ואת ההודעה הזו; אם אתה מפיץ גרסה ששינית, הוסף שורת זכויות יוצרים משלך לצד זו של Test Double ולא במקומה.

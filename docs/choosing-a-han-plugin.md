@@ -1,148 +1,95 @@
-# Plugin index: choosing a Han plugin
+# אינדקס הפלאגינים: בחירת פלאגין של Han
 
-_This is the plugin index for the Han suite: every plugin with a one-line scent and a link to its README, plus the
-install decision in one place. For the per-skill catalog see the [skills index](./skills/README.md); for how the skills
-chain together see [Workflows](./workflows.md)._
+_זהו אינדקס הפלאגינים של חבילת Han: כל פלאגין עם שורת ריח וקישור ל-README שלו, ובנוסף החלטת ההתקנה במקום אחד. לקטלוג לפי סקיל ראה את [אינדקס הסקילים](./skills/README.md); לאיך הסקילים משתרשרים ראה [Workflows](./workflows.md)._
 
-_Audience: anyone about to install Han. Time to read: about two minutes. Outcome: install the right plugin on the first
-try, and know exactly what you got._
+_קהל: כל מי שעומד להתקין את Han. זמן קריאה: כשתי דקות. תוצאה: להתקין את הפלאגין הנכון בניסיון הראשון, ולדעת בדיוק מה קיבלת._
 
-> See also: [Repo root](../README.md) · [Skills index](./skills/README.md) · [Agents index](./agents/README.md) ·
-> [Workflows](./workflows.md) · [Concepts](./concepts.md) · [Quickstart](./quickstart.md)
+> ראה גם: [שורש הריפו](../README.md) · [אינדקס הסקילים](./skills/README.md) · [אינדקס הסוכנים](./agents/README.md) · [Workflows](./workflows.md) · [מושגי יסוד](./concepts.md) · [Quickstart](./quickstart.md)
 
-> **Short answer.** Install the bundled suite with `/plugin install han@han`. That gives you everything the meta-plugin
-> bundles: the communication skills, every agent, the documentation skills, the pre-planning research skills, the
-> planning skills, the coding skills, the GitHub skills, and the reporting skills.
+> **התשובה הקצרה.** התקן את החבילה המצורפת עם `/plugin install han@han`. זה נותן לך את כל מה שהמטא-פלאגין מצרף: סקילי התקשורת, כל הסוכנים, סקילי התיעוד, סקילי המחקר שלפני התכנון, סקילי התכנון, סקילי הקוד, סקילי ה-GitHub וסקילי הדיווח.
 >
-> Pick a single layer plugin (such as `han-documentation` or `han-coding`) only when you know you want just that slice;
-> it brings the `han-core` agent roster along. There is no skills-free way to install a layer without the shared agents,
-> because the layer plugins depend on the core plugin and bring it along.
+> בחר פלאגין של שכבה בודדת (כמו `han-documentation` או `han-coding`) רק כשאתה יודע שאתה רוצה בדיוק את הפרוסה הזו; הוא מביא איתו את מערך הסוכנים של `han-core`. אין דרך להתקין שכבה בלי הסוכנים המשותפים, מפני שפלאגיני השכבות תלויים בפלאגין הליבה ומביאים אותו איתם.
 >
-> Some plugins sit outside the bundle. Install `han-feedback` separately to send feedback, `han-atlassian` to publish to
-> Confluence or Jira, `han-linear` to publish work items to Linear, or `han-plugin-builder` for the guidance on building
-> your own skills, agents, and plugins.
+> חלק מהפלאגינים יושבים מחוץ לחבילה. התקן את `han-feedback` בנפרד כדי לשלוח משוב, את `han-atlassian` כדי לפרסם ל-Confluence או ל-Jira, את `han-linear` כדי לפרסם פריטי עבודה ל-Linear, או את `han-plugin-builder` להנחיות על בניית סקילים, סוכנים ופלאגינים משלך.
 
-The rest of this page lists the plugins, explains the one dependency that surprises people, and helps you pick.
+יתר הדף מפרט את הפלאגינים, מסביר את התלות האחת שמפתיעה אנשים, ועוזר לך לבחור.
 
-## The plugins
+## הפלאגינים
 
-Han ships as a family of plugins in one marketplace. Each entry links to that plugin's README, which owns the full
-description of what it does. The `han` meta-plugin is a convenience wrapper that bundles the first eight.
+Han מגיעה כמשפחת פלאגינים ב-marketplace אחד. כל רשומה מקשרת ל-README של אותו פלאגין, שהוא הבעלים של התיאור המלא של מה שהוא עושה. המטא-פלאגין `han` הוא עטיפת נוחות שמצרפת את שמונת הראשונים.
 
-- **[`han-communication`](../han-communication/README.md).** The foundational plugin beneath every other. Owns the
-  canonical readability standard and the explanation standard for talking to someone who will not implement the work,
-  plus the skills and agent that apply them and the `Han Readability` and `Han Concise` output styles that apply the
-  readability standard to a whole session. Bundled; depends on nothing.
-- **[`han-core`](../han-core/README.md).** The shared foundation: the specialist agent roster the other plugins
-  dispatch, the project-discovery skill, the canonical rule files, and the `/pairing` working mode that builds any kind
-  of work in reviewable pieces. Bundled; depends on no other Han plugin.
-- **[`han-documentation`](../han-documentation/README.md).** The documentation layer: feature and system docs,
-  architectural decision records, and runbooks. Bundled; depends on `han-communication` and `han-core`.
-- **[`han-research`](../han-research/README.md).** The pre-planning knowledge-work layer: open-ended research, gap
-  analysis, and issue triage, plus the research-analyst agent. Bundled; depends on `han-communication` and `han-core`.
-- **[`han-planning`](../han-planning/README.md).** The planning layer: specifying, planning, sequencing, breaking down,
-  and stress-testing work before implementation, plus the discussion-facilitator agent. Bundled; depends on
-  `han-communication` and `han-core`.
-- **[`han-coding`](../han-coding/README.md).** The coding layer: writing, reviewing, analyzing, testing, investigating,
-  and standardizing code. Bundled; depends on `han-communication` and `han-core`.
-- **[`han-github`](../han-github/README.md).** The GitHub layer: posting reviews, writing PR descriptions, and
-  publishing work items as issues through the `gh` CLI. Bundled; depends on `han-communication`, `han-core`, and
-  `han-coding`.
-- **[`han-reporting`](../han-reporting/README.md).** The reporting layer: turning a spec into a plain-language
-  stakeholder summary and a shareable HTML report. Bundled; depends on `han-communication`.
-- **[`han-feedback`](../han-feedback/README.md).** The opt-in feedback layer: structured post-session feedback on the
-  Han skills you ran. Opt-in; depends on no other Han plugin.
-- **[`han-atlassian`](../han-atlassian/README.md).** The opt-in Atlassian layer: publishing Han artifacts to Confluence
-  and creating work items in Jira. Opt-in; depends on `han-communication`, `han-core`, `han-documentation`,
-  `han-planning`, and `han-coding`; requires an Atlassian MCP server.
-- **[`han-linear`](../han-linear/README.md).** The opt-in Linear layer: creating one Linear issue per work-item slice.
-  Opt-in; depends on no other Han plugin; requires a Linear MCP server.
-- **[`han-plugin-builder`](../han-plugin-builder/README.md).** The opt-in plugin-building layer: the authoring guidance
-  and two interview-driven builders for new skills and agents. Opt-in; depends on nothing.
-- **[`han`](../han/README.md).** The meta-plugin with no components of its own. It bundles `han-communication`,
-  `han-core`, `han-documentation`, `han-research`, `han-planning`, `han-coding`, `han-github`, and `han-reporting`.
-  Installing it is how you ask for the bundled suite in one command. It does not bundle `han-feedback`, `han-atlassian`,
-  `han-linear`, or `han-plugin-builder`.
+- **[`han-communication`](../han-communication/README.md).** הפלאגין היסודי שמתחת לכל האחרים. בעלים של תקן הקריאוּת הקנוני ושל תקן ההסבר לדיבור עם מי שלא הולך לממש את העבודה, יחד עם הסקילים והסוכן שמיישמים אותם ועם סגנונות הפלט `Han Readability` ו-`Han Concise` שמחילים את תקן הקריאוּת על סשן שלם. מצורף; לא תלוי בכלום.
+- **[`han-core`](../han-core/README.md).** הבסיס המשותף: מערך הסוכנים המומחים שהפלאגינים האחרים משגרים, הסקיל project-discovery, קובצי הכללים הקנוניים, ומצב העבודה `/pairing` שבונה כל סוג של עבודה בחתיכות שאפשר לסקור. מצורף; לא תלוי בשום פלאגין אחר של Han.
+- **[`han-documentation`](../han-documentation/README.md).** שכבת התיעוד: מסמכי פיצ'רים ומערכות, רשומות החלטה ארכיטקטונית, ו-runbooks. מצורף; תלוי ב-`han-communication` וב-`han-core`.
+- **[`han-research`](../han-research/README.md).** שכבת עבודת הידע שלפני התכנון: מחקר פתוח, ניתוח פערים ומיון issues, ובנוסף הסוכן research-analyst. מצורף; תלוי ב-`han-communication` וב-`han-core`.
+- **[`han-planning`](../han-planning/README.md).** שכבת התכנון: הגדרה, תכנון, סידור ברצף, פירוק ובחינה בלחץ של עבודה לפני המימוש, ובנוסף הסוכן discussion-facilitator. מצורף; תלוי ב-`han-communication` וב-`han-core`.
+- **[`han-coding`](../han-coding/README.md).** שכבת הקוד: כתיבה, סקירה, ניתוח, בדיקה, חקירה ותקנון של קוד. מצורף; תלוי ב-`han-communication` וב-`han-core`.
+- **[`han-github`](../han-github/README.md).** שכבת ה-GitHub: פרסום סקירות, כתיבת תיאורי PR, ופרסום פריטי עבודה כ-issues דרך ה-CLI‏ `gh`. מצורף; תלוי ב-`han-communication`, ב-`han-core` וב-`han-coding`.
+- **[`han-reporting`](../han-reporting/README.md).** שכבת הדיווח: הפיכת מפרט לסיכום בשפה פשוטה לבעלי עניין ולדוח HTML שאפשר לשתף. מצורף; תלוי ב-`han-communication`.
+- **[`han-feedback`](../han-feedback/README.md).** שכבת המשוב האופציונלית: משוב מובנה אחרי סשן על סקילי Han שהרצת. אופציונלי; לא תלוי בשום פלאגין אחר של Han.
+- **[`han-atlassian`](../han-atlassian/README.md).** שכבת Atlassian האופציונלית: פרסום תוצרים של Han ל-Confluence ויצירת פריטי עבודה ב-Jira. אופציונלי; תלוי ב-`han-communication`, ב-`han-core`, ב-`han-documentation`, ב-`han-planning` וב-`han-coding`; דורש שרת MCP של Atlassian.
+- **[`han-linear`](../han-linear/README.md).** שכבת Linear האופציונלית: יצירת issue אחד ב-Linear לכל פרוסת פריט עבודה. אופציונלי; לא תלוי בשום פלאגין אחר של Han; דורש שרת MCP של Linear.
+- **[`han-plugin-builder`](../han-plugin-builder/README.md).** שכבת בניית הפלאגינים האופציונלית: הנחיות החיבור ושני בונים מונחי-ראיון לסקילים ולסוכנים חדשים. אופציונלי; לא תלוי בכלום.
+- **[`han`](../han/README.md).** המטא-פלאגין בלי רכיבים משלו. הוא מצרף את `han-communication`, `han-core`, `han-documentation`, `han-research`, `han-planning`, `han-coding`, `han-github` ו-`han-reporting`. התקנה שלו היא הדרך לבקש את החבילה המצורפת בפקודה אחת. הוא לא מצרף את `han-feedback`, `han-atlassian`, `han-linear` או `han-plugin-builder`.
 
-## The one thing that surprises people
+## הדבר האחד שמפתיע אנשים
 
-`han-documentation` carries only the documentation skills, `han-research` only the pre-planning research skills,
-`han-planning` only the planning skills, `han-coding` only the coding skills, and `han-github` only the GitHub skills.
-So you might expect installing one to give you that slice of Han with nothing else. None of them work that way.
+`han-documentation` נושא רק את סקילי התיעוד, `han-research` רק את סקילי המחקר שלפני התכנון, `han-planning` רק את סקילי התכנון, `han-coding` רק את סקילי הקוד, ו-`han-github` רק את סקילי ה-GitHub. אז אולי תצפה שהתקנה של אחד מהם תיתן לך את הפרוסה הזו של Han ותו לא. אף אחד מהם לא עובד ככה.
 
-`han-documentation`, `han-research`, `han-planning`, `han-coding`, and `han-github` all depend on `han-core`, because
-their skills dispatch the shared specialist agents that live there, and on `han-communication`, because their skills
-produce prose and source the readability standard from it. When you install a plugin that declares a dependency, Claude
-Code resolves and installs the dependency for you automatically and tells you what it added. So installing any of them
-installs both alongside it, and you get the shared agent roster, project discovery, the pairing working mode, and the
-readability standard either way. (`han-reporting` is the exception: it depends on `han-communication` alone.)
+`han-documentation`, `han-research`, `han-planning`, `han-coding` ו-`han-github` תלויים כולם ב-`han-core`, מפני שהסקילים שלהם משגרים את הסוכנים המומחים המשותפים שיושבים שם, וב-`han-communication`, מפני שהסקילים שלהם מייצרים טקסט ושואבים ממנו את תקן הקריאוּת. כשאתה מתקין פלאגין שמצהיר על תלות, Claude Code מפענח ומתקין את התלות עבורך אוטומטית ואומר לך מה הוא הוסיף. לכן התקנה של כל אחד מהם מתקינה את שניהם לצידו, ואתה מקבל את מערך הסוכנים המשותף, את גילוי הפרויקט, את מצב העבודה pairing ואת תקן הקריאוּת כך או כך. (`han-reporting` הוא היוצא מן הכלל: הוא תלוי ב-`han-communication` בלבד.)
 
-That means **every layer install comes with the shared agents.** The real choice comes down to:
+זה אומר ש**כל התקנה של שכבה, חוץ מ-`han-reporting`, מגיעה עם הסוכנים המשותפים.** הבחירה האמיתית מסתכמת ב:
 
-- **A layer plus the foundations** (for example `han-documentation` or `han-coding`): that layer's skills, plus the
-  shared agent roster, project discovery, and the pairing working mode from `han-core`, and the readability standard
-  from `han-communication`.
-- **The bundled suite** (`han`): every layer at once.
+- **שכבה בתוספת היסודות** (למשל `han-documentation` או `han-coding`): הסקילים של אותה שכבה, בתוספת מערך הסוכנים המשותף, גילוי הפרויקט ומצב העבודה pairing מ-`han-core`, ותקן הקריאוּת מ-`han-communication`.
+- **החבילה המצורפת** (`han`): כל השכבות בבת אחת.
 
-The opt-in plugins (`han-feedback`, `han-atlassian`, `han-linear`, `han-plugin-builder`) sit outside that choice. The
-meta-plugin deliberately does not bundle them, so neither `han` nor any layer brings them in; install each on its own.
-`han-atlassian` needs a configured Atlassian MCP server and `han-linear` a configured Linear MCP server.
+הפלאגינים האופציונליים (`han-feedback`, `han-atlassian`, `han-linear`, `han-plugin-builder`) יושבים מחוץ לבחירה הזו. המטא-פלאגין במכוון לא מצרף אותם, ולכן לא `han` ולא אף שכבה מביאים אותם; התקן כל אחד בנפרד. `han-atlassian` דורש שרת MCP של Atlassian מוגדר ו-`han-linear` שרת MCP של Linear מוגדר.
 
-## Which one do you need?
+## איזה מהם אתה צריך?
 
-Find the row that matches you and run the command in it. Start with the recommended option unless you have a reason not
-to.
+מצא את השורה שמתאימה לך והרץ את הפקודה שבה. התחל באפשרות המומלצת אלא אם יש לך סיבה שלא.
 
-| Your situation                                                                                          | Install                                                                              | Command                                  |
-| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------- |
-| You want everything, or you are not sure yet                                                            | **`han` (start here)**                                                               | `/plugin install han@han`                |
-| You want to write code test-first with `/tdd`                                                           | `han` (the bundled suite includes the coding skills)                                 | `/plugin install han@han`                |
-| You work with GitHub from Claude Code (review PRs, write PR descriptions, publish work items as issues) | `han` (the bundled suite includes the GitHub skills)                                 | `/plugin install han@han`                |
-| You want only the documentation skills (project docs, ADRs, runbooks)                                   | `han-documentation` (brings the `han-core` agents along)                             | `/plugin install han-documentation@han`  |
-| You want only the pre-planning research skills (research, gap analysis, issue triage)                   | `han-research` (brings the `han-core` agents along)                                  | `/plugin install han-research@han`       |
-| You want the shared agents, project discovery, and the pairing working mode                             | `han-core`                                                                           | `/plugin install han-core@han`           |
-| You installed a single layer and now want the planning skills                                           | `han-planning` (alongside what you already have)                                     | `/plugin install han-planning@han`       |
-| You installed a single layer and now want the coding skills                                             | `han-coding` (alongside what you already have)                                       | `/plugin install han-coding@han`         |
-| You want to send post-session feedback on Han skills to the maintainers                                 | `han-feedback` (alongside whatever you already have)                                 | `/plugin install han-feedback@han`       |
-| You want to publish Han documentation or feature plans to Confluence, or work items to Jira             | `han-atlassian` (alongside whatever you already have; needs an Atlassian MCP server) | `/plugin install han-atlassian@han`      |
-| You want to publish Han work items to Linear                                                            | `han-linear` (alongside whatever you already have; needs a Linear MCP server)        | `/plugin install han-linear@han`         |
-| You are building your own skills, agents, or plugins and want the authoring guidance                    | `han-plugin-builder` (on its own, or alongside whatever you already have)            | `/plugin install han-plugin-builder@han` |
+| המצב שלך                                                                             | להתקין                                                            | פקודה                                    |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------- | ---------------------------------------- |
+| אתה רוצה הכול, או שאתה עדיין לא בטוח                                                 | **`han` (התחל כאן)**                                              | `/plugin install han@han`                |
+| אתה רוצה לכתוב קוד test-first עם `/tdd`                                              | `han` (החבילה המצורפת כוללת את סקילי הקוד)                        | `/plugin install han@han`                |
+| אתה עובד מול GitHub מתוך Claude Code (סקירת PRs, כתיבת תיאורי PR, פרסום פריטי עבודה) | `han` (החבילה המצורפת כוללת את סקילי ה-GitHub)                    | `/plugin install han@han`                |
+| אתה רוצה רק את סקילי התיעוד (מסמכי פרויקט, ADRs, runbooks)                           | `han-documentation` (מביא איתו את הסוכנים של `han-core`)          | `/plugin install han-documentation@han`  |
+| אתה רוצה רק את סקילי המחקר שלפני התכנון (מחקר, ניתוח פערים, מיון issues)             | `han-research` (מביא איתו את הסוכנים של `han-core`)               | `/plugin install han-research@han`       |
+| אתה רוצה את הסוכנים המשותפים, את גילוי הפרויקט ואת מצב העבודה pairing                | `han-core`                                                        | `/plugin install han-core@han`           |
+| התקנת שכבה בודדת ועכשיו אתה רוצה את סקילי התכנון                                     | `han-planning` (לצד מה שכבר יש לך)                                | `/plugin install han-planning@han`       |
+| התקנת שכבה בודדת ועכשיו אתה רוצה את סקילי הקוד                                       | `han-coding` (לצד מה שכבר יש לך)                                  | `/plugin install han-coding@han`         |
+| אתה רוצה לשלוח למתחזקים משוב אחרי סשן על סקילי Han                                   | `han-feedback` (לצד כל מה שכבר יש לך)                             | `/plugin install han-feedback@han`       |
+| אתה רוצה לפרסם תיעוד או תוכניות פיצ'ר של Han ל-Confluence, או פריטי עבודה ל-Jira     | `han-atlassian` (לצד כל מה שכבר יש לך; דורש שרת MCP של Atlassian) | `/plugin install han-atlassian@han`      |
+| אתה רוצה לפרסם פריטי עבודה של Han ל-Linear                                           | `han-linear` (לצד כל מה שכבר יש לך; דורש שרת MCP של Linear)       | `/plugin install han-linear@han`         |
+| אתה בונה סקילים, סוכנים או פלאגינים משלך ורוצה את הנחיות החיבור                      | `han-plugin-builder` (בנפרד, או לצד כל מה שכבר יש לך)             | `/plugin install han-plugin-builder@han` |
 
-The bundled `han` suite is the right default for almost everyone. A single layer is the deliberate choice for a reader
-who knows they want just that slice of Han plus the shared agents.
+החבילה המצורפת `han` היא ברירת המחדל הנכונה כמעט לכולם. שכבה בודדת היא הבחירה המכוונת של מי שיודע שהוא רוצה בדיוק את הפרוסה הזו של Han בתוספת הסוכנים המשותפים.
 
-## Installing
+## התקנה
 
-First add the marketplace, then install the plugin you picked:
+קודם הוסף את ה-marketplace, ואז התקן את הפלאגין שבחרת:
 
 ```
 /plugin marketplace add testdouble/han
 /plugin install han@han
 ```
 
-Swap the second command for `han-core@han` if you chose core only, or name a layer plugin directly with
-`han-documentation@han`, `han-research@han`, `han-planning@han`, `han-coding@han`, `han-github@han`,
-`han-reporting@han`, `han-feedback@han`, `han-atlassian@han`, `han-linear@han`, or `han-plugin-builder@han`. They all
-resolve from the same marketplace.
+החלף את הפקודה השנייה ב-`han-core@han` אם בחרת ליבה בלבד, או נקוב ישירות בפלאגין שכבה עם `han-documentation@han`, `han-research@han`, `han-planning@han`, `han-coding@han`, `han-github@han`, `han-reporting@han`, `han-feedback@han`, `han-atlassian@han`, `han-linear@han` או `han-plugin-builder@han`. כולם מתפענחים מאותו marketplace.
 
-Adding the marketplace makes the Test Double registry visible to Claude Code so it can resolve the plugin by name; that
-is why it comes first. When the install finishes, Claude Code lists what it added, including any dependencies it pulled
-in, so you can confirm you got what you expected.
+הוספת ה-marketplace חושפת את הרישום של Test Double ל-Claude Code כך שהוא יוכל לפענח את הפלאגין לפי שם; לכן היא באה קודם. כשההתקנה מסתיימת, Claude Code מפרט מה הוא הוסיף, כולל כל תלות שהוא משך, כדי שתוכל לוודא שקיבלת את מה שציפית.
 
-## Starting with core, adding a layer later
+## להתחיל מהליבה ולהוסיף שכבה מאוחר יותר
 
-Choosing `han-core` or a single layer is not a one-way door. If you start with core only and later decide you want the
-GitHub skills, install `han-github` (or `han`) on top of what you already have. Claude Code adds the layer to the core
-you already installed, and you have the full suite. You do not need to uninstall or reinstall anything.
+הבחירה ב-`han-core` או בשכבה בודדת אינה דלת חד-כיוונית. אם התחלת עם הליבה בלבד ומאוחר יותר החלטת שאתה רוצה את סקילי ה-GitHub, התקן את `han-github` (או את `han`) מעל מה שכבר יש לך. Claude Code מוסיף את השכבה לליבה שכבר התקנת, ויש לך את החבילה המלאה. אתה לא צריך להסיר או להתקין מחדש שום דבר.
 
-## Related documentation
+## תיעוד קשור
 
-- [Repo root](../README.md). Where everyone starts, and where the install commands live.
-- [Skills index](./skills/README.md). Every skill, with a scent line and a link to its long-form doc.
-- [Agents index](./agents/README.md). Every agent the skills dispatch.
-- [Workflows](./workflows.md). How the skills chain together across plugins.
-- [Concepts](./concepts.md). The skill-and-agent model that runs through the whole suite.
-- [Quickstart](./quickstart.md). Five paths for five common situations, once you have installed.
-- [How to provide feedback on Han](./how-to/provide-feedback.md). What to do once `han-feedback` is installed.
-- [Why solo and small teams?](./why-solo-and-small-teams.md). The honest fit answer if you are still deciding whether
-  Han is for you.
+- [שורש הריפו](../README.md). המקום שכולם מתחילים בו, ושבו נמצאות פקודות ההתקנה.
+- [אינדקס הסקילים](./skills/README.md). כל סקיל, עם שורת ריח וקישור לתיעוד המורחב שלו.
+- [אינדקס הסוכנים](./agents/README.md). כל סוכן שהסקילים משגרים.
+- [Workflows](./workflows.md). איך הסקילים משתרשרים בין הפלאגינים.
+- [מושגי יסוד](./concepts.md). מודל הסקילים והסוכנים שעובר כחוט השני בכל החבילה.
+- [Quickstart](./quickstart.md). חמישה מסלולים לחמישה מצבים נפוצים, אחרי שהתקנת.
+- [How to provide feedback on Han](./how-to/provide-feedback.md). מה לעשות אחרי ש-`han-feedback` מותקן.
+- [Why solo and small teams?](./why-solo-and-small-teams.md). תשובת ההתאמה הכנה אם אתה עדיין מתלבט אם Han בשבילך.

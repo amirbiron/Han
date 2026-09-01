@@ -1,20 +1,16 @@
 # han-feedback
 
-The opt-in feedback plugin for the Han suite. It captures structured observations about the Han skills and agents you
-just used, so the maintainers hear what worked and what did not. Reach for it at the end of a session when you want to
-report back on how the suite is working for you.
+פלאגין המשוב האופציונלי של חבילת Han. הוא לוכד תצפיות מובנות על הסקילים והסוכנים של Han שבהם השתמשת זה עתה, כך שהמתחזקים ישמעו מה עבד ומה לא. פנה אליו בסוף סשן כשאתה רוצה לדווח בחזרה איך החבילה עובדת עבורך.
 
-**Opt-in.** Installed on its own, not bundled by the `han` meta-plugin. Install it with
-`/plugin install han-feedback@han`. Depends on no other Han plugin.
+**אופציונלי.** מותקן בנפרד, ולא מצורף למטא-פלאגין `han`. התקן אותו עם `/plugin install han-feedback@han`. לא תלוי בשום פלאגין אחר של Han.
 
-## Skills
+## סקילים
 
-- [`/han-feedback`](docs/skills/han-feedback.md) — Capture structured post-session feedback on the Han skills and agents
-  you used across the whole `han-*` plugin family, and optionally post it as a GitHub issue to testdouble/han.
+- [`/han-feedback`](docs/skills/han-feedback.md) — לוכד משוב מובנה אחרי סשן על הסקילים והסוכנים של Han שבהם השתמשת, לרוחב כל משפחת הפלאגינים `han-*`, ואופציונלית מפרסם אותו כ-issue ב-GitHub אצל testdouble/han.
 
-## Installation
+## התקנה
 
-Add the marketplace to Claude Code, then install the plugin:
+הוסף את ה-marketplace ל-Claude Code, ואז התקן את הפלאגין:
 
 ```
 /plugin marketplace add testdouble/han
@@ -23,4 +19,4 @@ Add the marketplace to Claude Code, then install the plugin:
 
 ---
 
-[Plugin index](../docs/choosing-a-han-plugin.md) · [Repo root](../README.md) · [Workflows](../docs/workflows.md)
+[אינדקס הפלאגינים](../docs/choosing-a-han-plugin.md) · [שורש הריפו](../README.md) · [Workflows](../docs/workflows.md)

@@ -1,36 +1,26 @@
 # han-research
 
-The pre-planning knowledge-work layer of the Han suite: the skills you reach for to understand a problem before anyone
-commits to a plan. It researches open-ended questions, compares what exists against what is wanted, and turns vague
-reports into structured triage, each through an evidence-based process that dispatches specialist agents to do the
-judgment-heavy work. Reach for it when you need to know more before you decide what to build.
+שכבת עבודת הידע שלפני התכנון בחבילת Han: הסקילים שאתה פונה אליהם כדי להבין בעיה לפני שמישהו מתחייב לתוכנית. היא חוקרת שאלות פתוחות, משווה בין מה שקיים לבין מה שרוצים, והופכת דיווחים מעורפלים למיון מובנה, כל אחד מהם דרך תהליך מבוסס-ראיות שמשגר סוכנים מומחים לעבודה שדורשת שיקול דעת. פנה אליה כשאתה צריך לדעת יותר לפני שאתה מחליט מה לבנות.
 
-**Bundled.** Installed with the `han` meta-plugin. Depends on `han-communication` and `han-core`.
+**מצורף.** מותקן יחד עם המטא-פלאגין `han`. תלוי ב-`han-communication` וב-`han-core`.
 
-**Getting started:** answer an open question with [`/research`](docs/skills/research.md), compare two artifacts with
-[`/gap-analysis`](docs/skills/gap-analysis.md), and shape a vague report with
-[`/issue-triage`](docs/skills/issue-triage.md).
+**איך מתחילים:** ענה על שאלה פתוחה עם [`/research`](docs/skills/research.md), השווה שני תוצרים עם [`/gap-analysis`](docs/skills/gap-analysis.md), ועצב דיווח מעורפל עם [`/issue-triage`](docs/skills/issue-triage.md).
 
-## Skills
+## סקילים
 
-- [`/research`](docs/skills/research.md) — Research an open-ended question across the codebase and the open web and end
-  at an adversarially-validated recommendation, without committing the team to any artifact.
-- [`/gap-analysis`](docs/skills/gap-analysis.md) — Compare two artifacts (current state versus desired state) and
-  produce a plain-language, stakeholder-readable report indexed by stable gap IDs.
-- [`/issue-triage`](docs/skills/issue-triage.md) — Classify a vague issue or bug report, identify missing information,
-  assess severity and reproducibility, and recommend the right next skill to run.
+- [`/research`](docs/skills/research.md) — חוקר שאלה פתוחה לרוחב בסיס הקוד והרשת הפתוחה ומסיים בהמלצה שעברה אימות אדוורסרי, בלי לחייב את הצוות לשום תוצר.
+- [`/gap-analysis`](docs/skills/gap-analysis.md) — משווה שני תוצרים (מצב קיים מול מצב רצוי) ומייצר דוח בשפה פשוטה שבעלי עניין יכולים לקרוא, מאונדקס לפי מזהי פער יציבים.
+- [`/issue-triage`](docs/skills/issue-triage.md) — מסווג issue או דיווח באג מעורפל, מזהה מידע חסר, מעריך חומרה ויכולת שחזור, וממליץ על הסקיל הנכון להריץ אחריו.
 
-## Agents
+## סוכנים
 
-- [`research-analyst`](docs/agents/research-analyst.md) — Research open-ended questions from the open web and provided
-  material, returning sourced evidence and a recommendation and treating fetched content as claims, never instructions.
+- [`research-analyst`](docs/agents/research-analyst.md) — חוקר שאלות פתוחות מהרשת הפתוחה ומהחומר שסופק, מחזיר ראיות עם מקורות והמלצה, ומתייחס לתוכן שנשלף כטענות ולעולם לא כהוראות.
 
-The other agents its skills dispatch are the shared specialists that live in `han-core` (and, for the
-readability-editor, in `han-communication`).
+יתר הסוכנים שהסקילים שלו משגרים הם המומחים המשותפים שיושבים ב-`han-core` (ובמקרה של readability-editor, ב-`han-communication`).
 
-## Installation
+## התקנה
 
-Add the marketplace to Claude Code, then install the plugin (or install `han` to get it as part of the bundled suite):
+הוסף את ה-marketplace ל-Claude Code, ואז התקן את הפלאגין (או התקן את `han` כדי לקבל אותו כחלק מהחבילה המצורפת):
 
 ```
 /plugin marketplace add testdouble/han
@@ -39,4 +29,4 @@ Add the marketplace to Claude Code, then install the plugin (or install `han` to
 
 ---
 
-[Plugin index](../docs/choosing-a-han-plugin.md) · [Repo root](../README.md) · [Workflows](../docs/workflows.md)
+[אינדקס הפלאגינים](../docs/choosing-a-han-plugin.md) · [שורש הריפו](../README.md) · [Workflows](../docs/workflows.md)

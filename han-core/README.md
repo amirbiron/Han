@@ -1,100 +1,67 @@
 # han-core
 
-The shared foundation of the Han suite, carrying two different kinds of thing.
+הבסיס המשותף של חבילת Han, ובו שני סוגי דברים שונים.
 
-Most of it is material the other plugins consume: the specialist agent roster they dispatch (every shared agent except
-the readability-editor, which lives in `han-communication`, and the research-analyst, which lives in `han-research`),
-the project-discovery skill with its project-scanner agent, and the canonical evidence, YAGNI, and collaborative-stop
-rule files.
+רובו הוא חומר שהפלאגינים האחרים צורכים: מערך הסוכנים המומחים שהם משגרים (כל סוכן משותף חוץ מ-readability-editor, שיושב ב-`han-communication`, ו-research-analyst, שיושב ב-`han-research`), הסקיל project-discovery יחד עם סוכן ה-project-scanner שלו, וקובצי הכללים הקנוניים של ראיות, YAGNI ועצירה משותפת.
 
-It also carries one working mode you invoke directly. `/pairing` builds work in reviewable pieces and hands each one
-back before starting the next, across code, design decisions, and writing alike. It sits here because it spans every
-kind of work rather than belonging to any one plugin's subject matter.
+הוא נושא גם מצב עבודה אחד שאתה מפעיל ישירות. `/pairing` בונה עבודה בחתיכות שאפשר לסקור ומחזיר כל אחת מהן לידיך לפני שהוא מתחיל את הבאה, בקוד, בהחלטות עיצוב ובכתיבה כאחד. הוא יושב כאן מפני שהוא חוצה כל סוג של עבודה במקום להשתייך לתחום של פלאגין אחד.
 
-The documentation skills live in `han-documentation`, the pre-planning research skills in `han-research`, the planning
-skills in `han-planning`, and the coding skills in `han-coding`; each depends on han-core. Install only this and you
-have the specialists, project discovery, and the pairing mode. `/pairing` gains its test-driven, refactoring, interface,
-and plan-review paths when the plugins carrying those skills are installed alongside it, and names the missing skill
-rather than substituting when they are not.
+סקילי התיעוד יושבים ב-`han-documentation`, סקילי המחקר שלפני התכנון ב-`han-research`, סקילי התכנון ב-`han-planning`, וסקילי הקוד ב-`han-coding`; כל אחד מהם תלוי ב-han-core. התקן רק את הפלאגין הזה ויהיו לך המומחים, גילוי הפרויקט ומצב ה-pairing. `/pairing` מקבל את המסלולים שלו למונחה-בדיקות, לריפקטורינג, לממשקים ולסקירת תוכניות כשהפלאגינים שנושאים את הסקילים האלה מותקנים לצידו, ונוקב בשם הסקיל החסר במקום להחליף אותו כשהם לא.
 
-**Bundled.** Installed with the `han` meta-plugin. Depends on no other Han plugin.
+**מצורף.** מותקן יחד עם המטא-פלאגין `han`. לא תלוי בשום פלאגין אחר של Han.
 
-## Skills
+## סקילים
 
-- [`/pairing`](docs/skills/pairing.md) — Build work collaboratively in reviewable pieces, handing each one back before
-  starting the next, so you steer while the work happens instead of reviewing a finished result.
-- [`/project-discovery`](docs/skills/project-discovery.md) — Scan the repository for languages, frameworks, tooling, and
-  structure, and write a concise reference section into AGENTS.md or CLAUDE.md for other skills.
+- [`/pairing`](docs/skills/pairing.md) — בונה עבודה בשיתוף פעולה, בחתיכות שאפשר לסקור, ומחזיר כל אחת מהן לידיך לפני שהוא מתחיל את הבאה, כך שאתה מנווט תוך כדי העבודה במקום לסקור תוצאה גמורה.
+- [`/project-discovery`](docs/skills/project-discovery.md) — סורק את הריפו לאיתור שפות, פריימוורקים, כלים ומבנה, וכותב סעיף ייחוס תמציתי לתוך AGENTS.md או CLAUDE.md עבור סקילים אחרים.
 
-## Agents
+## סוכנים
 
-Most agents are dispatched for you by skills; you rarely invoke them directly. Grouped by role.
+את רוב הסוכנים הסקילים משגרים עבורך; לעיתים רחוקות אתה מפעיל אותם ישירות. מקובצים לפי תפקיד.
 
-### Planning and synthesis
+### תכנון וסינתזה
 
-- [`plan-synthesizer`](docs/agents/plan-synthesizer.md) — Reconcile the input from every specialist who contributed into
-  a final plan the team can commit to, with decisions, rejected alternatives, and evidence.
-- [`junior-developer`](docs/agents/junior-developer.md) — Stress-test an artifact or discussion as a generalist, asking
-  the clarifying questions hidden assumptions and muddied scope beg for.
+- [`plan-synthesizer`](docs/agents/plan-synthesizer.md) — מיישב את הקלט מכל מומחה שתרם לתוכנית סופית אחת שהצוות יכול להתחייב אליה, עם החלטות, חלופות שנדחו וראיות.
+- [`junior-developer`](docs/agents/junior-developer.md) — בוחן תוצר או דיון בלחץ, מעמדה של גנרליסט, ושואל את שאלות ההבהרה שהנחות סמויות והיקף מטושטש מזמינים.
 
-### Adversarial reviewers
+### סוקרים אדוורסריים
 
-- [`adversarial-security-analyst`](docs/agents/adversarial-security-analyst.md) — Assume all code is insecure and
-  produce exploit-path evidence, not theoretical risks.
-- [`adversarial-validator`](docs/agents/adversarial-validator.md) — Assume investigation evidence is wrong and the
-  proposed fix will fail, and search for counter-evidence and unhandled edge cases.
-- [`devops-engineer`](docs/agents/devops-engineer.md) — Assume the code will break in production and audit it against
-  DORA, Twelve-Factor, the Four Golden Signals, SLO discipline, and named production failure modes.
-- [`on-call-engineer`](docs/agents/on-call-engineer.md) — Read application source for the code-level resilience
-  anti-patterns that wake on-call engineers at 3am; a hard boundary against `devops-engineer`, reading source only.
-- [`data-engineer`](docs/agents/data-engineer.md) — Assume the data design is over-normalized, under-normalized, and
-  indexed for the wrong workload, and audit schemas, migrations, queries, and pipelines.
-- [`information-architect`](docs/agents/information-architect.md) — Assume the documentation is harder to find, orient
-  in, and comprehend than it needs to be, and audit it against established IA frameworks.
-- [`user-experience-designer`](docs/agents/user-experience-designer.md) — Review a UI adversarially against Nielsen's
-  heuristics, WCAG 2.2, universal design, and dark-pattern detection.
+- [`adversarial-security-analyst`](docs/agents/adversarial-security-analyst.md) — מניח שכל הקוד לא מאובטח ומייצר ראיות למסלול ניצול, לא סיכונים תיאורטיים.
+- [`adversarial-validator`](docs/agents/adversarial-validator.md) — מניח שראיות החקירה שגויות ושהתיקון המוצע ייכשל, ומחפש ראיות נגד ומקרי קצה שלא טופלו.
+- [`devops-engineer`](docs/agents/devops-engineer.md) — מניח שהקוד יישבר בפרודקשן ומבקר אותו מול DORA, Twelve-Factor, ארבעת האותות הזהובים, משמעת SLO ומצבי כשל מוכרים בפרודקשן.
+- [`on-call-engineer`](docs/agents/on-call-engineer.md) — קורא את קוד המקור של האפליקציה ומחפש את אנטי-דפוסי החוסן ברמת הקוד שמעירים מהנדסי כוננות בשלוש לפנות בוקר; גבול חד מול `devops-engineer`, קורא קוד מקור בלבד.
+- [`data-engineer`](docs/agents/data-engineer.md) — מניח שעיצוב הנתונים מנורמל יתר על המידה, מנורמל בחסר, ומאונדקס לעומס העבודה הלא נכון, ומבקר סכמות, מיגרציות, שאילתות וצינורות.
+- [`information-architect`](docs/agents/information-architect.md) — מניח שקשה למצוא את התיעוד, להתמצא בו ולהבין אותו יותר מכפי שצריך, ומבקר אותו מול מסגרות IA מבוססות.
+- [`user-experience-designer`](docs/agents/user-experience-designer.md) — סוקר ממשק בצורה אדוורסרית מול ההיוריסטיקות של נילסן, WCAG 2.2, עיצוב אוניברסלי וזיהוי dark patterns.
 
-### Investigation and evidence
+### חקירה וראיות
 
-- [`evidence-based-investigator`](docs/agents/evidence-based-investigator.md) — Gather concrete evidence for a bug or
-  failure: file paths, line numbers, code snippets, error messages, git history, and test coverage.
-- [`codebase-explorer`](docs/agents/codebase-explorer.md) — Discover implementation details for a specific feature:
-  entry points, core logic, data models, configuration, and tests.
-- [`project-scanner`](docs/agents/project-scanner.md) — Scan repository attributes (languages, frameworks, tooling,
-  configuration), optimized for config and structure rather than deep code tracing.
+- [`evidence-based-investigator`](docs/agents/evidence-based-investigator.md) — אוסף ראיות קונקרטיות לבאג או לכשל: נתיבי קבצים, מספרי שורות, קטעי קוד, הודעות שגיאה, היסטוריית git וכיסוי בדיקות.
+- [`codebase-explorer`](docs/agents/codebase-explorer.md) — מגלה פרטי מימוש של פיצ'ר מסוים: נקודות כניסה, לוגיקת ליבה, מודלי נתונים, קונפיגורציה ובדיקות.
+- [`project-scanner`](docs/agents/project-scanner.md) — סורק מאפייני ריפו (שפות, פריימוורקים, כלים, קונפיגורציה), ממוטב לקונפיגורציה ולמבנה ולא למעקב עמוק אחרי קוד.
 
-### Architecture and risk
+### ארכיטקטורה וסיכון
 
-- [`structural-analyst`](docs/agents/structural-analyst.md) — Analyze module boundaries, coupling, dependency direction,
-  abstractions, and duplication.
-- [`behavioral-analyst`](docs/agents/behavioral-analyst.md) — Analyze data flow, error propagation, state management,
-  and integration boundaries.
-- [`concurrency-analyst`](docs/agents/concurrency-analyst.md) — Analyze race conditions, shared-resource contention,
-  deadlock potential, lock ordering, and async error handling.
-- [`risk-analyst`](docs/agents/risk-analyst.md) — Assess the risk of inaction for architectural findings across
-  likelihood, severity, blast radius, and reversibility.
-- [`software-architect`](docs/agents/software-architect.md) — Synthesize structural, behavioral, concurrency, and risk
-  findings into recommended intra-codebase changes aligned with SOLID, high cohesion, and loose coupling.
-- [`system-architect`](docs/agents/system-architect.md) — Synthesize boundary-crossing findings into context-map
-  relationships, integration patterns, data ownership, and failure-domain containment across services.
+- [`structural-analyst`](docs/agents/structural-analyst.md) — מנתח גבולות מודולים, צימוד, כיוון תלויות, הפשטות וכפילויות.
+- [`behavioral-analyst`](docs/agents/behavioral-analyst.md) — מנתח זרימת נתונים, התפשטות שגיאות, ניהול מצב וגבולות אינטגרציה.
+- [`concurrency-analyst`](docs/agents/concurrency-analyst.md) — מנתח מצבי מרוץ, תחרות על משאבים משותפים, פוטנציאל לקיפאון, סדר נעילות וטיפול בשגיאות אסינכרוניות.
+- [`risk-analyst`](docs/agents/risk-analyst.md) — מעריך את הסיכון שבאי-פעולה עבור ממצאים ארכיטקטוניים, לפי סבירות, חומרה, רדיוס פגיעה והפיכוּת.
+- [`software-architect`](docs/agents/software-architect.md) — מסנתז ממצאים מבניים, התנהגותיים, של מקביליות ושל סיכון לכדי שינויים מומלצים בתוך בסיס הקוד, בהתאם ל-SOLID, ללכידוּת גבוהה ולצימוד רופף.
+- [`system-architect`](docs/agents/system-architect.md) — מסנתז ממצאים שחוצים גבולות לכדי יחסים במפת הקשר, דפוסי אינטגרציה, בעלות על נתונים והכלה של תחומי כשל בין שירותים.
 
-### Testing
+### בדיקות
 
-- [`test-engineer`](docs/agents/test-engineer.md) — Plan tests focused on observable behavior and recommend test
-  doubles for isolation, producing a prioritized test plan.
-- [`edge-case-explorer`](docs/agents/edge-case-explorer.md) — Systematically discover and catalog edge cases: boundary
-  values, type-coercion traps, and state-dependent failures.
+- [`test-engineer`](docs/agents/test-engineer.md) — מתכנן בדיקות שמתמקדות בהתנהגות נצפית וממליץ על test doubles לצורך בידוד, ומייצר תוכנית בדיקות מתועדפת.
+- [`edge-case-explorer`](docs/agents/edge-case-explorer.md) — מגלה ומקטלג מקרי קצה בשיטתיות: ערכי גבול, מלכודות המרת טיפוסים וכשלים תלויי-מצב.
 
-### Gap and content
+### פערים ותוכן
 
-- [`gap-analyzer`](docs/agents/gap-analyzer.md) — Find what is missing, incomplete, conflicting, or assumed when
-  comparing a current state against a desired state.
-- [`content-auditor`](docs/agents/content-auditor.md) — Validate that a documentation update preserved the important
-  facts from the original source, flagging removals the codebase does not justify.
+- [`gap-analyzer`](docs/agents/gap-analyzer.md) — מוצא מה חסר, מה חלקי, מה סותר ומה מונח כמובן מאליו בהשוואה בין מצב קיים למצב רצוי.
+- [`content-auditor`](docs/agents/content-auditor.md) — מוודא שעדכון תיעוד שימר את העובדות החשובות מהמקור המקורי, ומסמן מחיקות שבסיס הקוד לא מצדיק.
 
-## Installation
+## התקנה
 
-Add the marketplace to Claude Code, then install the plugin (or install `han` to get it as part of the bundled suite):
+הוסף את ה-marketplace ל-Claude Code, ואז התקן את הפלאגין (או התקן את `han` כדי לקבל אותו כחלק מהחבילה המצורפת):
 
 ```
 /plugin marketplace add testdouble/han
@@ -103,4 +70,4 @@ Add the marketplace to Claude Code, then install the plugin (or install `han` to
 
 ---
 
-[Plugin index](../docs/choosing-a-han-plugin.md) · [Repo root](../README.md) · [Workflows](../docs/workflows.md)
+[אינדקס הפלאגינים](../docs/choosing-a-han-plugin.md) · [שורש הריפו](../README.md) · [Workflows](../docs/workflows.md)
