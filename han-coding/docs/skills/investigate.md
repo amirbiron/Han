@@ -1,223 +1,138 @@
 # /investigate
 
-Operator documentation for the `/investigate` skill in the han plugin. This document helps you decide _when_ and _how_
-to use the skill. For what the skill does internally, read the skill definition at
-[`han-coding/skills/investigate/SKILL.md`](../../skills/investigate/SKILL.md).
+תיעוד מפעיל לסקיל `/investigate` בפלאגין. המסמך הזה עוזר לך להחליט _מתי_ ו*איך* להשתמש בסקיל. למה שהסקיל עושה בפנים, קרא את הגדרת הסקיל ב-[`han-coding/skills/investigate/SKILL.md`](../../skills/investigate/SKILL.md).
 
-> See also: [Plugin README](../../README.md) · [Repo root](../../../README.md) · [All skills](../../../docs/skills/README.md) ·
-> [All agents](../../../docs/agents/README.md) · [Evidence](../../../docs/evidence.md)
+> ראה גם: [README של הפלאגין](../../README.md) · [שורש הריפו](../../../README.md) · [כל הסקילים](../../../docs/skills/README.md) · [כל הסוכנים](../../../docs/agents/README.md) · [Evidence](../../../docs/evidence.md)
 
 ## TL;DR
 
-- **What it does.** Evidence-based investigation of a bug, failure, or unexpected behavior, followed by adversarial
-  validation of the proposed fix.
-- **When to use it.** Something is broken and you want a root cause backed by file-level evidence, not a guess.
-- **What you get back.** An investigation report with symptoms, numbered evidence (E1, E2, …), root cause analysis, fix
-  plan, and validation findings (V1, V2, …).
+- **מה הוא עושה.** חקירה מבוססת-ראיות של באג, כשל או התנהגות בלתי צפויה, ואחריה אימות אדוורסרי של התיקון המוצע.
+- **מתי להשתמש בו.** משהו שבור ואתה רוצה שורש בעיה מגובה בראיות ברמת הקובץ, לא ניחוש.
+- **מה אתה מקבל בחזרה.** דוח חקירה עם סימפטומים, ראיות ממוספרות (E1, E2, …), ניתוח שורש הבעיה, תוכנית תיקון וממצאי אימות (V1, V2, …).
 
-## Key concepts
+## מושגי מפתח
 
-- **Trace backward from symptoms.** Don't guess. Follow the code. The skill works from the observed failure outward to
-  the data flow, the error path, and the recent changes that might have broken it.
-- **Parallel evidence gathering with specialists.** At least two `evidence-based-investigator` agents run in parallel,
-  each from a different angle: one on the error path, one on the data flow. When the symptom matches, specialist
-  analysts dispatch in parallel alongside the investigators. `concurrency-analyst` for intermittent / race / timeout
-  bugs. `behavioral-analyst` for data-flow and error-propagation bugs. `data-engineer` for schema, query, migration, and
-  isolation bugs. Specialists find root causes generalists miss.
-- **Evidence is numbered.** Every finding gets an ID (E1, E2, E3…) so the root-cause analysis and fix plan can reference
-  specific evidence explicitly (_"the handler passes an unvalidated ID (E1) to the service layer, which assumes non-nil
-  (E3)"_).
-- **Adversarial validation before ship.** After the fix is planned, `adversarial-validator` agents try to falsify the
-  evidence, break the fix, and challenge the assumptions. Counter-evidence becomes validation findings (V1, V2, …) that
-  reshape the plan.
-- **Coding-standards aware.** The fix plan is written against the project's standards, ADRs, and inferred patterns. Not
-  against generic best practice.
+- **מעקב לאחור מהסימפטומים.** אל תנחש. עקוב אחרי הקוד. הסקיל עובד מהכשל הנצפה החוצה אל זרימת הנתונים, מסלול השגיאה, והשינויים האחרונים שאולי שברו אותו.
+- **איסוף ראיות מקבילי עם מומחים.** לפחות שני סוכני `evidence-based-investigator` רצים במקביל, כל אחד מזווית אחרת: אחד על מסלול השגיאה, אחד על זרימת הנתונים. כשהסימפטום מתאים, אנליסטים מומחים משוגרים במקביל לצידם. `concurrency-analyst` לבאגים לסירוגין / מרוץ / חריגת זמן. `behavioral-analyst` לבאגים של זרימת נתונים והתפשטות שגיאות. `data-engineer` לבאגים של סכמה, שאילתה, מיגרציה ובידוד. מומחים מוצאים שורשי בעיה שגנרליסטים מפספסים.
+- **הראיות ממוספרות.** כל ממצא מקבל מזהה (E1, E2, E3…) כדי שניתוח שורש הבעיה ותוכנית התיקון יוכלו להפנות לראיות ספציפיות במפורש (_"המטפל מעביר מזהה לא מאומת (E1) לשכבת השירות, שמניחה שהוא לא nil (E3)"_).
+- **אימות אדוורסרי לפני שילוח.** אחרי שהתיקון מתוכנן, סוכני `adversarial-validator` מנסים להפריך את הראיות, לשבור את התיקון, ולאתגר את ההנחות. ראיות-נגד הופכות לממצאי אימות (V1, V2, …) שמעצבים מחדש את התוכנית.
+- **מודע לתקני קוד.** תוכנית התיקון נכתבת מול התקנים, ה-ADRs והדפוסים המשוערים של הפרויקט. לא מול best practice גנרי.
 
-## When to use it
+## מתי להשתמש בו
 
-**Invoke when:**
+**הפעל כאשר:**
 
-- A bug, failure, or unexpected behavior needs a root cause backed by code-level evidence.
-- An integration or API call is misbehaving and you want a trace from symptoms to data flow to recent changes.
-- You suspect a regression and want the investigation to consider git history alongside the code.
-- You want the proposed fix adversarially validated, not only designed, before writing any code.
-- You want a durable report that names the exact file, function, and line where the problem originates, plus the
-  evidence that proves it.
+- באג, כשל או התנהגות בלתי צפויה צריכים שורש בעיה מגובה בראיות ברמת הקוד.
+- אינטגרציה או קריאת API מתנהגות לא כשורה ואתה רוצה מעקב מהסימפטומים לזרימת הנתונים ולשינויים האחרונים.
+- אתה חושד ברגרסיה ורוצה שהחקירה תשקול את היסטוריית ה-git לצד הקוד.
+- אתה רוצה שהתיקון המוצע יאומת אדוורסרית, ולא רק יעוצב, לפני כתיבת קוד כלשהו.
+- אתה רוצה דוח עמיד שנוקב בקובץ, בפונקציה ובשורה המדויקים שבהם הבעיה מתחילה, בתוספת הראיות שמוכיחות את זה.
 
-**Do not invoke for:**
+**אל תפעיל עבור:**
 
-- **Code review.** Use [`/code-review`](./code-review.md) for a correctness, testing, and compliance audit of a branch.
-- **Architectural analysis.** Use [`/architectural-analysis`](./architectural-analysis.md) for coupling,
-  data flow, concurrency, and SOLID assessment of a module.
-- **Test planning.** Use [`/automated-test-planning`](./automated-test-planning.md) when the gap is coverage, not a bug.
-- **Plan review.** Use [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md) for multi-pass review of an
-  existing plan.
-- **Open-ended research.** Use [`/research`](../../../han-research/docs/skills/research.md) when nothing is broken and you want options, prior
-  art, or how something works before committing to a direction.
-- **Feedback on Han's own skills.** Use [`/han-feedback`](../../../han-feedback/docs/skills/han-feedback.md) to capture post-session
-  feedback on the Han skills you ran.
+- **סקירת קוד.** השתמש ב-[`/code-review`](./code-review.md) לביקורת נכונות, בדיקות וציות של ענף.
+- **ניתוח ארכיטקטוני.** השתמש ב-[`/architectural-analysis`](./architectural-analysis.md) להערכת צימוד, זרימת נתונים, מקביליות ו-SOLID של מודול.
+- **תכנון בדיקות.** השתמש ב-[`/automated-test-planning`](./automated-test-planning.md) כשהפער הוא כיסוי ולא באג.
+- **סקירת תוכנית.** השתמש ב-[`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md) לסקירה רב-מעברית של תוכנית קיימת.
+- **מחקר פתוח.** השתמש ב-[`/research`](../../../han-research/docs/skills/research.md) כששום דבר לא שבור ואתה רוצה אפשרויות, מה שכבר נעשה, או איך משהו עובד, לפני שאתה מתחייב לכיוון.
+- **משוב על הסקילים של Han עצמם.** השתמש ב-[`/han-feedback`](../../../han-feedback/docs/skills/han-feedback.md) כדי ללכוד משוב אחרי סשן על הסקילים של Han שהרצת.
 
-## How to invoke it
+## איך להפעיל אותו
 
-Run `/investigate` in Claude Code with a description of the problem.
+הרץ `/investigate` ב-Claude Code עם תיאור של הבעיה.
 
-Give it:
+תן לו:
 
-1. **The symptom.** What you observed: the error message, the unexpected value, the failed deploy, the intermittent
-   timeout. A concrete observation collapses the initial search space.
-2. **The reproduction context, if known.** Environment, branch, specific user account, specific data, specific time. The
-   skill does not need a full reproduction (it can investigate from a single observation), but the more context you
-   give, the faster the angles converge.
-3. **An output path, optional.** The skill writes the investigation plan to a file. Name a path to control where it
-   lands; otherwise the skill proposes one and writes the plan there.
+1. **את הסימפטום.** מה שראית: הודעת השגיאה, הערך הבלתי צפוי, הפריסה שנכשלה, חריגת הזמן לסירוגין. תצפית קונקרטית מכווצת את מרחב החיפוש הראשוני.
+2. **את הקשר השחזור, אם ידוע.** סביבה, ענף, חשבון משתמש מסוים, נתונים מסוימים, זמן מסוים. הסקיל לא צריך שחזור מלא (הוא יכול לחקור מתצפית יחידה), אבל ככל שתיתן יותר הקשר, כך הזוויות מתכנסות מהר יותר.
+3. **נתיב פלט, אופציונלי.** הסקיל כותב את תוכנית החקירה לקובץ. נקוב בנתיב כדי לשלוט איפה הוא נוחת; אחרת הסקיל מציע אחד וכותב את התוכנית שם.
 
-Example prompts:
+פרומפטים לדוגמה:
 
-- `/investigate`. _"Why are webhook deliveries failing intermittently in production?"_
-- `/investigate`. _"Users are seeing stale data after updating their profile. The update returns 200 but the next page
-  load shows the old value."_
-- `/investigate`. _"The background job queue is backing up during peak hours. Jobs enqueued at 9am don't run until
-  9:30am."_
-- `/investigate docs/incidents/2026-04-23.md`. Investigate and write the report into the incident folder.
+- `/investigate`. _"למה משלוחי webhook נכשלים לסירוגין בפרודקשן?"_
+- `/investigate`. _"משתמשים רואים נתונים מיושנים אחרי עדכון הפרופיל שלהם. העדכון מחזיר 200 אבל טעינת הדף הבאה מציגה את הערך הישן."_
+- `/investigate`. _"תור משימות הרקע נערם בשעות השיא. משימות שנכנסו לתור ב-9:00 לא רצות עד 9:30."_
+- `/investigate docs/incidents/2026-04-23.md`. חקור וכתוב את הדוח לתוך תיקיית התקריות.
 
-## What you get back
+## מה אתה מקבל בחזרה
 
-An investigation plan file, plus an in-channel summary. The plan leads with the bottom line and keeps the supporting
-detail near the end, so it reads conclusion-first. Sections appear only when the investigation produced meaningful
-content for them; one that would be empty is omitted, and the rest keep the order below. So a given report covers some
-or all of, in order:
+קובץ תוכנית חקירה, בתוספת סיכום בערוץ. התוכנית פותחת בשורה התחתונה ושומרת את הפרטים התומכים קרוב לסוף, כך שהיא נקראת מסקנה-קודם. סעיפים מופיעים רק כשהחקירה ייצרה עבורם תוכן משמעותי; סעיף שהיה יוצא ריק מושמט, והיתר שומרים על הסדר שלמטה. אז דוח נתון מכסה חלק מאלה או את כולם, לפי הסדר:
 
-- **Summary.** One sentence each for root cause, fix, why correct, validation outcome, remaining risks. Up top so a
-  reader gets the verdict before the backing detail.
-- **Problem Statement.** Symptoms, expected behavior, conditions under which it occurs, impact.
-- **Root Cause Analysis.** One to three sentences summarizing the root cause, followed by a detailed analysis that
-  references evidence items by number.
-- **Planned Fix.** Per-file changes: full path, what will be modified, which evidence items justify the change, which
-  standards apply, and implementation specifics (new function signatures, changed logic, updated tests).
-- **Evidence Summary.** A numbered list (E1, E2, E3, …) consolidated from the parallel `evidence-based-investigator`
-  agents. Duplicates merged; conflicts resolved with explicit citations.
-- **Validation Findings.** Numbered `V1, V2, …` entries from `adversarial-validator`. Each records the challenge
-  attempted, whether counter-evidence was found, and what changed in response. Followed by **Adjustments Made** (what
-  changed after validation, cross-referenced to the `V#` that drove it) and the **Confidence Assessment and Remaining
-  Risks** that close the validator's judgment.
-- **Coding Standards Reference.** For each standard that applies, what it says, where it was found (path, ADR number, or
-  _"inferred from surrounding code"_), and which files the fix will touch. This keeps the fix consistent with how the
-  project already works.
+- **סיכום.** משפט אחד לכל אחד מאלה: שורש הבעיה, התיקון, למה הוא נכון, תוצאת האימות, סיכונים שנותרו. בראש, כדי שקורא יקבל את פסק הדין לפני הפרטים התומכים.
+- **הצהרת הבעיה.** סימפטומים, התנהגות צפויה, התנאים שבהם זה קורה, השפעה.
+- **ניתוח שורש הבעיה.** משפט עד שלושה שמסכמים את שורש הבעיה, ואחריהם ניתוח מפורט שמפנה לפריטי ראיות לפי מספר.
+- **התיקון המתוכנן.** שינויים לכל קובץ: נתיב מלא, מה ישונה, אילו פריטי ראיות מצדיקים את השינוי, אילו תקנים חלים, ופרטי מימוש (חתימות פונקציה חדשות, לוגיקה שהשתנתה, בדיקות מעודכנות).
+- **סיכום הראיות.** רשימה ממוספרת (E1, E2, E3, …) שאוחדה מסוכני ה-`evidence-based-investigator` המקבילים. כפילויות מוזגו; סתירות נפתרו עם ציטוטים מפורשים.
+- **ממצאי אימות.** רשומות ממוספרות `V1, V2, …` מ-`adversarial-validator`. כל אחת מתעדת את האתגר שנוסה, אם נמצאו ראיות-נגד, ומה השתנה בתגובה. אחריהן **Adjustments Made** (מה השתנה אחרי האימות, מוצלב ל-`V#` שהוביל לזה) ו-**Confidence Assessment and Remaining Risks** שסוגרים את שיקול הדעת של המאמת.
+- **הפניה לתקני קוד.** לכל תקן שחל, מה הוא אומר, איפה הוא נמצא (נתיב, מספר ADR, או _"הוסק מהקוד הסובב"_), ואילו קבצים התיקון ייגע בהם. זה שומר על התיקון עקבי עם איך שהפרויקט כבר עובד.
 
-The plan is presented for approval before any code is written. Approve to trigger implementation; push back with
-feedback to revise.
+התוכנית מוצגת לאישור לפני שנכתב קוד כלשהו. אשר כדי להפעיל את המימוש; דחוף חזרה עם משוב כדי לתקן.
 
-## How to get the most out of it
+## איך להפיק ממנו את המרב
 
-- **Name the symptom concretely.** _"Stale data after update"_ beats _"profile issue."_ The more specific the
-  observation, the sharper the investigator agents' angles.
-- **Drop in any evidence you already have.** Error messages, stack traces, log excerpts, recent deploy notes, the commit
-  you suspect. Paste them. The skill's agents read the codebase, but they cannot see your production logs unless you
-  bring them in.
-- **Let the validator push back.** The adversarial validation step is not ceremony. It frequently reshapes the root
-  cause analysis. Treat validation findings as first-class input.
-- **Pair with `/iterative-plan-review`** if the fix plan needs further stress-testing before implementation, especially
-  when the fix touches cross-cutting concerns.
-- **Re-run after the fix.** Once the fix has shipped, re-run against the incident context with _"did this fix hold?"_
-  framing. Validation findings from the new run confirm or falsify the hypothesis under production conditions.
-- **For the full end-to-end bug-handling workflow**, including when to triage instead of investigating now and how to
-  bring in production logs and browser integrations, see
-  [How to triage and investigate a bug](../../../docs/how-to/triage-and-investigate-a-bug.md).
+- **נקוב בסימפטום באופן קונקרטי.** _"נתונים מיושנים אחרי עדכון"_ מנצח _"בעיה בפרופיל"_. ככל שהתצפית ספציפית יותר, כך הזוויות של סוכני החקירה חדות יותר.
+- **הכנס כל ראיה שכבר יש לך.** הודעות שגיאה, stack traces, קטעי לוג, הערות פריסה אחרונות, הקומיט שאתה חושד בו. הדבק אותם. הסוכנים של הסקיל קוראים את בסיס הקוד, אבל הם לא יכולים לראות את הלוגים של הפרודקשן שלך אלא אם תביא אותם.
+- **תן למאמת לדחוף חזרה.** שלב האימות האדוורסרי אינו טקס. הוא מעצב מחדש את ניתוח שורש הבעיה לעיתים קרובות. התייחס לממצאי האימות כקלט מדרגה ראשונה.
+- **צמד עם `/iterative-plan-review`** אם תוכנית התיקון צריכה בחינה נוספת בלחץ לפני המימוש, במיוחד כשהתיקון נוגע בסוגיות חוצות.
+- **הרץ מחדש אחרי התיקון.** ברגע שהתיקון שוחרר, הרץ מחדש מול הקשר התקרית עם מסגור של _"האם התיקון החזיק?"_ ממצאי אימות מהריצה החדשה מאשרים או מפריכים את ההשערה בתנאי פרודקשן.
+- **לזרימת העבודה המלאה מקצה לקצה לטיפול בבאגים**, כולל מתי למיין במקום לחקור עכשיו ואיך להביא לוגים מפרודקשן ואינטגרציות דפדפן, ראה [How to triage and investigate a bug](../../../docs/how-to/triage-and-investigate-a-bug.md).
 
-## Cost and latency
+## עלות וזמן תגובה
 
-The skill dispatches at least two `evidence-based-investigator` agents in parallel, plus zero to three specialist
-analysts (`concurrency-analyst`, `behavioral-analyst`, `data-engineer`) depending on bug classification.
-`adversarial-validator` agents then run the validation pass, followed by one `han-communication:readability-editor`
-rewrite of the write-up. Agents run on their default models. For a medium-complexity bug, expect one investigation
-round, one validation round, and one readability pass, roughly five to eight sub-agent dispatches. The skill is built
-for per-bug cadence, not tight-loop iteration. Fix the bug and move on.
+הסקיל משגר לפחות שני סוכני `evidence-based-investigator` במקביל, בתוספת אפס עד שלושה אנליסטים מומחים (`concurrency-analyst`, `behavioral-analyst`, `data-engineer`) בהתאם לסיווג הבאג. סוכני `adversarial-validator` אז מריצים את מעבר האימות, ואחריהם שכתוב אחד של `han-communication:readability-editor`. הסוכנים רצים על מודלי ברירת המחדל שלהם. לבאג בסיבוכיות בינונית, צפה לסבב חקירה אחד, סבב אימות אחד, ומעבר קריאוּת אחד, בערך חמישה עד שמונה שיגורי סאב-סוכנים. הסקיל בנוי לקצב של פעם-בבאג, לא לאיטרציה בלולאה צמודה. תקן את הבאג והמשך הלאה.
 
-## In more detail
+## בפירוט
 
-The skill walks a five-step process:
+הסקיל עובר תהליך של חמישה צעדים:
 
-1. **Research and investigation.** At least two `evidence-based-investigator` agents run in parallel, each from a
-   different angle. Specialist analysts (`concurrency-analyst`, `behavioral-analyst`, `data-engineer`) dispatch in
-   parallel alongside them based on how you described the symptom. After all complete, the skill compiles a unified
-   numbered evidence list (E1, E2, E3, …), tagging specialist findings with their domain.
-2. **Document root cause.** The skill writes Problem Statement, Evidence Summary, and Root Cause Analysis into the plan
-   file using the template at [`references/template.md`](../../skills/investigate/references/template.md).
-3. **Plan the fix.** The skill resolves project config (CLAUDE.md → project-discovery.md → docs/ Glob fallback), reads
-   ADRs and coding standards relevant to the fix, and writes the Planned Fix section with file-level changes justified
-   by specific evidence items.
-4. **Adversarial validation.** `adversarial-validator` agents receive the full evidence summary, root cause analysis,
-   and planned fix. They challenge evidence, challenge the fix, and challenge assumptions. Counter-evidence becomes `V#`
-   findings that reshape the plan.
-5. **Summary and user review.** The skill writes the Summary section at the top of the report. It then dispatches
-   `readability-editor` to rewrite the write-up for the engineer who will implement the fix, preserving every fact and
-   `file:line` reference. Finally it runs a readability self-check over the prose and presents the plan for approval.
+1. **מחקר וחקירה.** לפחות שני סוכני `evidence-based-investigator` רצים במקביל, כל אחד מזווית אחרת. אנליסטים מומחים (`concurrency-analyst`, `behavioral-analyst`, `data-engineer`) משוגרים במקביל לצידם לפי איך שתיארת את הסימפטום. אחרי שכולם מסיימים, הסקיל מרכיב רשימת ראיות ממוספרת ומאוחדת (E1, E2, E3, …), ומתייג ממצאים של מומחים עם התחום שלהם.
+2. **תיעוד שורש הבעיה.** הסקיל כותב את הצהרת הבעיה, סיכום הראיות וניתוח שורש הבעיה לתוך קובץ התוכנית בעזרת התבנית ב-[`references/template.md`](../../skills/investigate/references/template.md).
+3. **תכנון התיקון.** הסקיל מפענח את קונפיגורציית הפרויקט (CLAUDE.md ← project-discovery.md ← נפילה לאחור ל-Glob על docs/), קורא ADRs ותקני קוד רלוונטיים לתיקון, וכותב את סעיף התיקון המתוכנן עם שינויים ברמת הקובץ שמוצדקים על ידי פריטי ראיות ספציפיים.
+4. **אימות אדוורסרי.** סוכני `adversarial-validator` מקבלים את סיכום הראיות המלא, את ניתוח שורש הבעיה ואת התיקון המתוכנן. הם מאתגרים ראיות, מאתגרים את התיקון, ומאתגרים הנחות. ראיות-נגד הופכות לממצאי `V#` שמעצבים מחדש את התוכנית.
+5. **סיכום וסקירת המשתמש.** הסקיל כותב את סעיף הסיכום בראש הדוח. אחר כך הוא משגר את `readability-editor` כדי לשכתב את הכתיבה עבור המהנדס שיממש את התיקון, תוך שמירה על כל עובדה ועל כל הפניית `file:line`. לבסוף הוא מריץ בדיקה עצמית של קריאוּת על הטקסט ומציג את התוכנית לאישור.
 
-## Sources
+## מקורות
 
-The skill's protocols are grounded in established practice for evidence-based root-cause analysis and adversarial
-review.
+הפרוטוקולים של הסקיל מעוגנים בפרקטיקה מבוססת לניתוח שורש בעיה מבוסס-ראיות ולסקירה אדוורסרית.
 
 ### Toyota Production System: The Five Whys
 
-Root-cause analysis via repeated "why" questioning, popularized at Toyota and adopted widely across software and
-operations. The skill applies it to the evidence chain: every root-cause claim must trace back to at least one `E#`
-evidence item and survive the adversarial-validator's counter-evidence search.
+ניתוח שורש בעיה דרך שאילת "למה" חוזרת, שהתפרסם ב-Toyota ואומץ באופן נרחב בתוכנה ובתפעול. הסקיל מחיל אותו על שרשרת הראיות: כל טענה על שורש בעיה חייבת להתחקות בחזרה לפחות לפריט ראיה `E#` אחד ולשרוד את חיפוש ראיות-הנגד של ה-adversarial-validator.
 
 URL: https://www.toyota-industries.com/company/history/toyoda_precepts/
 
 ### John Allspaw: Blameless Post-Mortems and the Art of Learning from Incidents
 
-Allspaw's work at Etsy on blameless post-mortems reframed incident analysis around understanding cause, not assigning
-blame. The skill's evidence summary, root-cause analysis, and validation sections follow this posture: findings cite
-code and behavior, not people or teams.
+העבודה של Allspaw ב-Etsy על post-mortems ללא האשמה מסגרה מחדש את ניתוח התקריות סביב הבנת הסיבה, ולא סביב הטלת אשמה. סעיפי סיכום הראיות, ניתוח שורש הבעיה והאימות של הסקיל הולכים לפי העמדה הזו: ממצאים מצטטים קוד והתנהגות, לא אנשים או צוותים.
 
 URL: https://www.etsy.com/codeascraft/blameless-postmortems
 
 ### Klein: Pre-Mortem (The Power of Intuition)
 
-Gary Klein's pre-mortem technique (imagining the plan has already failed and asking why, before it ships) maps directly
-to the skill's adversarial-validator step. The validator assumes the fix will fail and hunts for why. The resulting
-counter-evidence reshapes the plan before it becomes production code.
+טכניקת ה-pre-mortem של Gary Klein (לדמיין שהתוכנית כבר נכשלה ולשאול למה, לפני שהיא משוחררת) ממופה ישירות לשלב ה-adversarial-validator של הסקיל. המאמת מניח שהתיקון ייכשל וצד את הסיבה. ראיות-הנגד שנוצרות מעצבות מחדש את התוכנית לפני שהיא הופכת לקוד פרודקשן.
 
 URL: https://hbr.org/2007/09/performing-a-project-premortem
 
 ### The Pragmatic Programmer (Hunt and Thomas): Bisecting and Rubber Duck Debugging
 
-The Pragmatic Programmer formalized rubber-duck debugging and evidence-bisection as core debugging disciplines. The
-skill's parallel-angle investigation (error path vs. data flow vs. recent changes) is evidence-bisection applied at the
-agent level.
+The Pragmatic Programmer עיגן את דיבאג ברווז הגומי ואת חציית הראיות כדיסציפלינות דיבאג מרכזיות. החקירה מזוויות מקבילות של הסקיל (מסלול שגיאה מול זרימת נתונים מול שינויים אחרונים) היא חציית ראיות שמוחלת ברמת הסוכן.
 
 URL: https://pragprog.com/titles/tpp20/the-pragmatic-programmer-20th-anniversary-edition/
 
-## Related documentation
+## תיעוד קשור
 
-- [Plugin README](../../README.md). The plugin's front door: its skills, agents, and how they fit together.
-- [Repo root README](../../../README.md). The Han suite landing page. Start here if you arrived from outside the docs tree.
-- [Skills Index](../../../docs/skills/README.md). All skills, grouped by purpose.
-- [`/issue-triage`](../../../han-research/docs/skills/issue-triage.md). Run before investigation when the incoming report is too vague to
-  trace; triage produces the sharp problem statement investigation needs.
-- [`/research`](../../../han-research/docs/skills/research.md). The question-shaped sibling. Use it when nothing is broken and you want
-  options, prior art, or how something works before committing.
-- [`evidence-based-investigator`](../../../han-core/docs/agents/evidence-based-investigator.md). The agent the skill dispatches
-  in parallel for multi-angle evidence gathering.
-- [`adversarial-validator`](../../../han-core/docs/agents/adversarial-validator.md). The agent that challenges evidence and fix
-  after the plan is drafted.
-- [`readability-editor`](../../../han-communication/docs/agents/readability-editor.md). Dispatched after validation to rewrite
-  the write-up for the engineer who will implement the fix, preserving every fact and `file:line` reference. Separate
-  from the accuracy validation pass.
-- [Evidence](../../../docs/evidence.md). The canonical evidence rule the skill applies to every finding. Codebase findings stand
-  on their citation; web-source context is subject to the corroboration gate when it drives the proposed fix;
-  no-evidence states are labeled rather than guessed at.
-- [`concurrency-analyst`](../../../han-core/docs/agents/concurrency-analyst.md),
-  [`behavioral-analyst`](../../../han-core/docs/agents/behavioral-analyst.md),
-  [`data-engineer`](../../../han-core/docs/agents/data-engineer.md). Specialist analysts dispatched alongside the investigators
-  when the symptom classification calls for them.
-- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). Pair when the fix plan needs further
-  stress-testing before implementation.
-- [`/code-review`](./code-review.md). Run before merge when the fix lands, to audit the change end-to-end.
-- [`/code-walkthrough`](./code-walkthrough.md). The learning-shaped sibling. Use it when nothing is broken and you want
-  to be paced through how a change works, rather than to diagnose why it fails.
-- [`/runbook`](../../../han-documentation/docs/skills/runbook.md). Pair after the investigation lands a procedure the team will reuse. Investigate
-  captures the root cause and fix; the runbook captures the procedure for the next engineer who sees the same symptom.
-- [`SKILL.md` for /investigate](../../skills/investigate/SKILL.md). The internal process definition.
+- [README של הפלאגין](../../README.md). הדלת הקדמית של הפלאגין: הסקילים שלו, הסוכנים, ואיך הם משתלבים.
+- [README של שורש הריפו](../../../README.md). דף הנחיתה של חבילת Han. התחל כאן אם הגעת מחוץ לעץ התיעוד.
+- [אינדקס הסקילים](../../../docs/skills/README.md). כל הסקילים, מקובצים לפי מטרה.
+- [`/issue-triage`](../../../han-research/docs/skills/issue-triage.md). הרץ לפני החקירה כשהדיווח הנכנס מעורפל מכדי לעקוב אחריו; המיון מייצר את הצהרת הבעיה החדה שהחקירה צריכה.
+- [`/research`](../../../han-research/docs/skills/research.md). האח בצורת שאלה. השתמש בו כששום דבר לא שבור ואתה רוצה אפשרויות, מה שכבר נעשה, או איך משהו עובד, לפני שאתה מתחייב.
+- [`evidence-based-investigator`](../../../han-core/docs/agents/evidence-based-investigator.md). הסוכן שהסקיל משגר במקביל לאיסוף ראיות מזוויות מרובות.
+- [`adversarial-validator`](../../../han-core/docs/agents/adversarial-validator.md). הסוכן שמאתגר את הראיות ואת התיקון אחרי שהתוכנית מנוסחת.
+- [`readability-editor`](../../../han-communication/docs/agents/readability-editor.md). משוגר אחרי האימות כדי לשכתב את הכתיבה עבור המהנדס שיממש את התיקון, תוך שמירה על כל עובדה ועל כל הפניית `file:line`. נפרד ממעבר אימות הדיוק.
+- [Evidence](../../../docs/evidence.md). כלל הראיות הקנוני שהסקיל מחיל על כל ממצא. ממצאים מבסיס הקוד עומדים על הציטוט שלהם; הקשר ממקור רשת כפוף לשער אימות-ההצלבה כשהוא מניע את התיקון המוצע; מצבי היעדר-ראיות מתויגים ולא מנוחשים.
+- [`concurrency-analyst`](../../../han-core/docs/agents/concurrency-analyst.md), [`behavioral-analyst`](../../../han-core/docs/agents/behavioral-analyst.md), [`data-engineer`](../../../han-core/docs/agents/data-engineer.md). אנליסטים מומחים שמשוגרים לצד החוקרים כשסיווג הסימפטום מחייב זאת.
+- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). צמד כשתוכנית התיקון צריכה בחינה נוספת בלחץ לפני המימוש.
+- [`/code-review`](./code-review.md). הרץ לפני מיזוג כשהתיקון נוחת, כדי לבקר את השינוי מקצה לקצה.
+- [`/code-walkthrough`](./code-walkthrough.md). האח בצורת למידה. השתמש בו כששום דבר לא שבור ואתה רוצה שיקצבו לך איך שינוי עובד, ולא לאבחן למה הוא נכשל.
+- [`/runbook`](../../../han-documentation/docs/skills/runbook.md). צמד אחרי שהחקירה מנחיתה נוהל שהצוות יעשה בו שימוש חוזר. החקירה לוכדת את שורש הבעיה ואת התיקון; ה-runbook לוכד את הנוהל עבור המהנדס הבא שיראה את אותו סימפטום.
+- [`SKILL.md` של /investigate](../../skills/investigate/SKILL.md). הגדרת התהליך הפנימי.
