@@ -6,8 +6,8 @@
 
 ## TL;DR
 
-- **מה הוא עושה.** מעריך את הסיכון שבאי-פעולה עבור ממצאים ארכיטקטוניים שאנליסטים במעלה הזרם ייצרו. מנקד כל ממצא בארבעה ממדים: סבירות, חומרה, רדיוס פגיעה והפיכוּת.
-- **מתי לשגר אותו.** האנליסטים הארכיטקטוניים (`structural-analyst`, `behavioral-analyst`, `concurrency-analyst`) ייצרו ממצאים ואתה צריך לתעדף אותם. תמיד משוגר על ידי `/architectural-analysis` אחרי ששלושת האנליסטים המקבילים מסיימים. משוגר באופן מותנה על ידי `/architectural-decision-record` לניקוד סיכון של ADR, ועל ידי `/plan-a-feature`, `/plan-implementation` ו-`/iterative-plan-review` כשלתוכנית יש רדיוס פגיעה משמעותי.
+- **מה הוא עושה.** מעריך את הסיכון שבאי-פעולה עבור ממצאים ארכיטקטוניים שאנליסטים במעלה הזרם ייצרו. מדרג כל ממצא בארבעה ממדים: סבירות, חומרה, רדיוס פגיעה והפיכוּת.
+- **מתי לשגר אותו.** האנליסטים הארכיטקטוניים (`structural-analyst`, `behavioral-analyst`, `concurrency-analyst`) ייצרו ממצאים ואתה צריך לתעדף אותם. תמיד משוגר על ידי `/architectural-analysis` אחרי ששלושת האנליסטים המקבילים מסיימים. משוגר באופן מותנה על ידי `/architectural-decision-record` לדירוג סיכון של ADR, ועל ידי `/plan-a-feature`, `/plan-implementation` ו-`/iterative-plan-review` כשלתוכנית יש רדיוס פגיעה משמעותי.
 - **מה אתה מקבל בחזרה.** הערכות סיכון ממוספרות `R#`, כל אחת מצליבה לממצאים במעלה הזרם, עם דירוגי סבירות / חומרה / רדיוס פגיעה / הפיכוּת ותיאור קונקרטי של _מה קורה אם דוחים_.
 
 ## מושגי מפתח
@@ -23,7 +23,7 @@
 **שגר כאשר:**
 
 - `/architectural-analysis` סיים את שלושת האנליסטים המקבילים שלו ואתה צריך תעדוף מבוסס-סיכון לפני הסינתזה. הסקיל תמיד משגר את הסוכן הזה.
-- `/architectural-decision-record` רץ. הסקיל משגר את הסוכן הזה כדי לנקד את האפשרות שנבחרה ואת כל חלופה שנדחתה.
+- `/architectural-decision-record` רץ. הסקיל משגר את הסוכן הזה כדי לדרג את האפשרות שנבחרה ואת כל חלופה שנדחתה.
 - יש לך מקבץ ידני של ממצאים ארכיטקטוניים (ממקור שאינו סקיל) ואתה רוצה לתעדף אותם.
 - צוות צריך להחליט באיזה חוב ארכיטקטוני לטפל קודם ורוצה תעדוף מבוסס-ראיות.
 
@@ -92,7 +92,7 @@ URL: https://www.howtomeasureanything.com/
 - [`structural-analyst`](./structural-analyst.md), [`behavioral-analyst`](./behavioral-analyst.md), [`concurrency-analyst`](./concurrency-analyst.md). הסוכנים במעלה הזרם שהממצאים שלהם נצרכים על ידי הסוכן הזה.
 - [`software-architect`](./software-architect.md). צורך את דירוגי הסיכון של הסוכן הזה לצד הממצאים במעלה הזרם כדי לייצר המלצות.
 - [`/architectural-analysis`](../../../han-coding/docs/skills/architectural-analysis.md). תמיד משגר את הסוכן הזה.
-- [`/architectural-decision-record`](../../../han-documentation/docs/skills/architectural-decision-record.md). משגר את הסוכן הזה לניקוד סיכון של ADR.
+- [`/architectural-decision-record`](../../../han-documentation/docs/skills/architectural-decision-record.md). משגר את הסוכן הזה לדירוג סיכון של ADR.
 - [`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md). משגר את הסוכן הזה באופן מותנה כשלפיצ'ר יש רדיוס פגיעה משמעותי.
 - [`/plan-implementation`](../../../han-planning/docs/skills/plan-implementation.md). משגר את הסוכן הזה באופן מותנה כשלתוכנית יש רדיוס פגיעה משמעותי.
 - [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). משגר את הסוכן הזה באופן מותנה כשלתוכנית יש רדיוס פגיעה משמעותי.
