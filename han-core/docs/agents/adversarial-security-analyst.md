@@ -1,192 +1,128 @@
 # adversarial-security-analyst
 
-Operator documentation for the `adversarial-security-analyst` agent in the han plugin. This document helps you decide
-_when_ and _how_ to dispatch the agent. For what the agent does internally, read the agent definition at
-[`han-core/agents/adversarial-security-analyst.md`](../../agents/adversarial-security-analyst.md).
+תיעוד מפעיל לסוכן `adversarial-security-analyst` בפלאגין. המסמך הזה עוזר לך להחליט _מתי_ ו*איך* לשגר את הסוכן. למה שהסוכן עושה בפנים, קרא את הגדרת הסוכן ב-[`han-core/agents/adversarial-security-analyst.md`](../../agents/adversarial-security-analyst.md).
 
-> See also: [Plugin README](../../README.md) · [Repo root](../../../README.md) · [All agents](../../../docs/agents/README.md) ·
-> [All skills](../../../docs/skills/README.md)
+> ראה גם: [README של הפלאגין](../../README.md) · [שורש הריפו](../../../README.md) · [כל הסוכנים](../../../docs/agents/README.md) · [כל הסקילים](../../../docs/skills/README.md)
 
 ## TL;DR
 
-- **What it does.** Adversarial security analysis of first-party code and dependencies. Proves real vulnerabilities
-  exist with file-level evidence and demonstrated exploit paths. Never reports theoretical risks.
-- **When to dispatch it.** A change touches auth, input handling, isolation, crypto, uploads, or SQL/ORM, and you want
-  exploit-path findings rather than CWE checklists. Always dispatched by `/code-review`. Dispatched on a security signal
-  by `/architectural-analysis` (security-signal roster on medium/large), `/gap-analysis` (swarm specialist),
-  `/plan-a-feature` (spec-stage team), `/plan-implementation` (implementation team), and `/iterative-plan-review` (team
-  mode). `/design-an-api` adds it to the discovery wave on a trust-boundary signal, at medium and above. Also
-  dispatched by `/automated-test-planning` for negative security tests.
-- **What you get back.** A `security-analysis.md` file with `SEC-###` findings, each tagged with OWASP category,
-  file:line location, exact code snippet, and a step-by-step exploit description. Plus an in-channel summary with
-  severity counts.
+- **מה הוא עושה.** ניתוח אבטחה אדוורסרי של קוד מקורי ושל תלויות. מוכיח שפרצות אמיתיות קיימות, עם ראיות ברמת הקובץ ועם מסלולי ניצול מודגמים. לעולם לא מדווח על סיכונים תיאורטיים.
+- **מתי לשגר אותו.** שינוי נוגע באימות, בטיפול בקלט, בבידוד, בהצפנה, בהעלאות או ב-SQL/ORM, ואתה רוצה ממצאים של מסלול ניצול ולא צ'ק-ליסטים של CWE. תמיד משוגר על ידי `/code-review`. משוגר על אות אבטחה על ידי `/architectural-analysis` (מערך אות-האבטחה בבינוני/גדול), `/gap-analysis` (מומחה ב-swarm), `/plan-a-feature` (צוות שלב המפרט), `/plan-implementation` (צוות המימוש) ו-`/iterative-plan-review` (מצב צוות). `/design-an-api` מוסיף אותו לגל הגילוי על אות של גבול אמון, בבינוני ומעלה. משוגר גם על ידי `/automated-test-planning` לבדיקות אבטחה שליליות.
+- **מה אתה מקבל בחזרה.** קובץ `security-analysis.md` עם ממצאי `SEC-###`, כל אחד מתויג בקטגוריית OWASP, במיקום file:line, בקטע הקוד המדויק ובתיאור ניצול צעד-אחר-צעד. בתוספת סיכום בערוץ עם מספרי חומרה.
 
-## Key concepts
+## מושגי מפתח
 
-- **Default stance: every system is insecure until proven otherwise.** The agent assumes all code is vulnerable, all PII
-  leaks, and the attack surface is wider than it looks. The work is to _prove_ exploitability, not catalog the absence
-  of risk.
-- **Evidence standard is non-negotiable.** First-party findings require `file_path:line_number` plus a step-by-step
-  exploit path. Dependency findings require a CVE or known-vulnerability reference matched against the exact version in
-  the lock file. If the standard cannot be met, no finding is reported.
-- **OWASP Top 10 sweep, then four attack-angle protocols.** The agent walks all ten OWASP categories explicitly,
-  clearing each with a one-line note when no finding applies. Then it runs four cross-cutting protocols: input-to-sink
-  tracing, auth/authz decision audit, secret and PII pattern search, and dependency vulnerability check.
-- **Framework-handled false-positives are excluded.** The project's framework may provide default protection for a
-  vulnerability class, such as CSRF tokens, parameterized queries via ORM, or automatic XSS escaping. When it does, the
-  agent verifies the protection is in place rather than flagging the category.
-- **Severity bands.** Critical (proven exploit, sensitive data at risk), High (proven exploit, limited blast radius),
-  Medium (proven exploit, low blast radius). No Low severity. If it doesn't rise to Medium, it isn't a security finding.
+- **עמדת ברירת מחדל: כל מערכת לא מאובטחת עד שיוכח אחרת.** הסוכן מניח שכל הקוד פגיע, שכל ה-PII דולף, ושמשטח ההתקפה רחב ממה שהוא נראה. העבודה היא _להוכיח_ יכולת ניצול, לא לקטלג את היעדר הסיכון.
+- **תקן הראיות אינו נתון למשא ומתן.** ממצאים בקוד המקורי דורשים `file_path:line_number` בתוספת מסלול ניצול צעד-אחר-צעד. ממצאים בתלויות דורשים הפניה ל-CVE או לפרצה ידועה שהותאמה לגרסה המדויקת בקובץ הנעילה. אם לא ניתן לעמוד בתקן, לא מדווח ממצא.
+- **סריקת OWASP Top 10, ואחריה ארבעה פרוטוקולים של זוויות התקפה.** הסוכן עובר על כל עשר קטגוריות ה-OWASP במפורש, ומנקה כל אחת עם הערה בשורה אחת כשאין ממצא. אחר כך הוא מריץ ארבעה פרוטוקולים חוצים: מעקב מקלט לכיור, ביקורת החלטות אימות/הרשאה, חיפוש דפוסים של סודות ו-PII, ובדיקת פרצות בתלויות.
+- **תוצאות שווא שהפריימוורק מטפל בהן מוחרגות.** הפריימוורק של הפרויקט עשוי לספק הגנת ברירת מחדל למחלקת פרצות, כמו טוקני CSRF, שאילתות מפורמטרות דרך ORM, או escaping אוטומטי ל-XSS. כשזה המצב, הסוכן מוודא שההגנה קיימת במקום לסמן את הקטגוריה.
+- **רצועות חומרה.** קריטי (ניצול מוכח, נתונים רגישים בסיכון), גבוה (ניצול מוכח, רדיוס פגיעה מוגבל), בינוני (ניצול מוכח, רדיוס פגיעה נמוך). אין חומרה נמוכה. אם זה לא מגיע לבינוני, זה לא ממצא אבטחה.
 
-## When to use it
+## מתי להשתמש בו
 
-**Dispatch when:**
+**שגר כאשר:**
 
-- A branch or PR touches authentication, authorization, session management, input handling, file uploads,
-  deserialization, crypto, secrets, or SQL / ORM queries.
-- A change introduces new dependencies, especially those handling untrusted input.
-- A code review is running and security is in scope (`/code-review` always dispatches this agent).
-- A security signal is present and `/architectural-analysis` builds its security-signal roster on a medium or large run.
-- `/gap-analysis` is running its validator-and-augmenter swarm and the gaps touch a security-sensitive surface (auth,
-  input handling, crypto, uploads, isolation, SQL/ORM).
-- `/plan-a-feature` is interviewing a spec whose surface raises a security signal, and the spec-stage team needs
-  exploit-path coverage.
-- `/plan-implementation` is planning an implementation that touches a security-sensitive surface, and the implementation
-  team needs a security specialist.
-- `/iterative-plan-review` is running in team mode against a plan whose changes raise a security signal.
-- You want a second opinion on a security-sensitive change independent of code review.
-- A new endpoint or API surface is being added and you want exploit-path coverage of the OWASP Top 10 before merge.
-- A dependency bump is in scope and you want a CVE check against the new version.
+- ענף או PR נוגעים באימות, בהרשאה, בניהול סשנים, בטיפול בקלט, בהעלאת קבצים, בדה-סריאליזציה, בהצפנה, בסודות, או בשאילתות SQL / ORM.
+- שינוי מכניס תלויות חדשות, במיוחד כאלה שמטפלות בקלט לא מהימן.
+- סקירת קוד רצה והאבטחה בהיקף (`/code-review` תמיד משגר את הסוכן הזה).
+- אות אבטחה נוכח ו-`/architectural-analysis` בונה את מערך אות-האבטחה שלו בריצה בינונית או גדולה.
+- `/gap-analysis` מריץ את ה-swarm של המאמתים והמרחיבים והפערים נוגעים במשטח רגיש-אבטחה (אימות, טיפול בקלט, הצפנה, העלאות, בידוד, SQL/ORM).
+- `/plan-a-feature` מראיין מפרט שהמשטח שלו מעלה אות אבטחה, וצוות שלב המפרט צריך כיסוי של מסלול ניצול.
+- `/plan-implementation` מתכנן מימוש שנוגע במשטח רגיש-אבטחה, וצוות המימוש צריך מומחה אבטחה.
+- `/iterative-plan-review` רץ במצב צוות מול תוכנית שהשינויים שלה מעלים אות אבטחה.
+- אתה רוצה חוות דעת שנייה על שינוי רגיש-אבטחה, בנפרד מסקירת הקוד.
+- נקודת קצה או משטח API חדשים נוספים ואתה רוצה כיסוי של מסלול ניצול ל-OWASP Top 10 לפני מיזוג.
+- עדכון תלות בהיקף ואתה רוצה בדיקת CVE מול הגרסה החדשה.
 
-**Do not dispatch for:**
+**אל תשגר עבור:**
 
-- General code quality review. Use `/code-review` (which includes this agent) for full correctness, style, and
-  compliance coverage.
-- Production readiness or operational security (rotation, scoping, detection, blast radius at runtime). Use
-  `devops-engineer`.
-- Data-level governance, schema-level PII handling, encryption at rest. Use `data-engineer`.
-- Bug investigation that does not center on a security vulnerability. Use `evidence-based-investigator` or
-  `/investigate`.
-- Architectural analysis of authorization design. Use `/architectural-analysis` and `software-architect` for the design;
-  this agent finds exploits in the implementation.
+- סקירת איכות קוד כללית. השתמש ב-`/code-review` (שכולל את הסוכן הזה) לכיסוי מלא של נכונות, סגנון וציות.
+- מוכנות לפרודקשן או אבטחה תפעולית (רוטציה, תיחום, גילוי, רדיוס פגיעה בזמן ריצה). השתמש ב-`devops-engineer`.
+- ממשל ברמת הנתונים, טיפול ב-PII ברמת הסכמה, הצפנה במנוחה. השתמש ב-`data-engineer`.
+- חקירת באג שלא מתמקדת בפרצת אבטחה. השתמש ב-`evidence-based-investigator` או ב-`/investigate`.
+- ניתוח ארכיטקטוני של עיצוב ההרשאות. השתמש ב-`/architectural-analysis` וב-`software-architect` לעיצוב; הסוכן הזה מוצא ניצולים במימוש.
 
-## How to invoke it
+## איך להפעיל אותו
 
-Dispatch via the `Agent` tool with `subagent_type: han-core:adversarial-security-analyst`. Give it:
+שגר דרך כלי ה-`Agent` עם `subagent_type: han-core:adversarial-security-analyst`. תן לו:
 
-1. **A list of files to analyze.** The narrower the scope, the sharper the findings. The agent reads the files plus all
-   dependency manifests it can find in the project.
-2. **A branch name, optional.** Helps the agent contextualize what changed.
-3. **An output path, optional.** Default filename is `security-analysis.md`. The agent writes the full report to disk
-   and returns only a summary.
+1. **רשימת קבצים לניתוח.** ככל שההיקף צר יותר, כך הממצאים חדים יותר. הסוכן קורא את הקבצים ובנוסף את כל מניפסטי התלויות שהוא מוצא בפרויקט.
+2. **שם ענף, אופציונלי.** עוזר לסוכן להקשר את מה שהשתנה.
+3. **נתיב פלט, אופציונלי.** שם ברירת המחדל הוא `security-analysis.md`. הסוכן כותב את הדוח המלא לדיסק ומחזיר רק סיכום.
 
-Example prompts:
+פרומפטים לדוגמה:
 
-- _"Audit the new auth endpoints in `src/auth/` for OWASP Top 10 coverage. The branch adds OAuth state validation and a
-  password-reset flow."_
-- _"Review `src/api/uploads.ts` and `src/api/share.ts` for input-to-sink risks. These accept user-supplied files and
-  URLs respectively."_
-- _"Check the dependency manifest after the latest `npm install`. We bumped `axios`, `express`, and `jsonwebtoken`."_
+- _"תבקר את נקודות הקצה החדשות של האימות ב-`src/auth/` לכיסוי OWASP Top 10. הענף מוסיף אימות state של OAuth וזרימת איפוס סיסמה."_
+- _"תסקור את `src/api/uploads.ts` ואת `src/api/share.ts` לסיכוני קלט-לכיור. הם מקבלים קבצים ו-URLs שהמשתמש מספק, בהתאמה."_
+- _"תבדוק את מניפסט התלויות אחרי ה-`npm install` האחרון. עדכנו את `axios`, את `express` ואת `jsonwebtoken`."_
 
-## What you get back
+## מה אתה מקבל בחזרה
 
-- An in-channel summary: a 1–3 sentence security posture, a severity count table (Critical / High / Medium), and the
-  path to the full report.
-- A `security-analysis.md` file on disk with:
-  - **Scope.** Files and dependency manifests analyzed. Branch name if provided.
-  - **Summary.** Identical to what was returned to the caller.
-  - **Findings.** For each OWASP category and attack-angle protocol, either a `SEC-NNN` finding or a category-clear
-    line. Each finding includes OWASP category, `file_path:line_number`, exact code snippet, an `EXPLOIT:` field with a
-    step-by-step attack sequence, and a severity band.
-  - **Security Improvement Summary.** What was found, how to improve (numbered remediations tied to `SEC-###` findings),
-    and how to prevent this class of issue going forward.
+- סיכום בערוץ: עמדת אבטחה של משפט עד שלושה, טבלת ספירת חומרה (קריטי / גבוה / בינוני), והנתיב לדוח המלא.
+- קובץ `security-analysis.md` על הדיסק שכולל:
+  - **Scope.** הקבצים ומניפסטי התלויות שנותחו. שם הענף אם סופק.
+  - **Summary.** זהה למה שהוחזר לקורא.
+  - **Findings.** לכל קטגוריית OWASP ולכל פרוטוקול של זווית התקפה, או ממצא `SEC-NNN` או שורת ניקוי-קטגוריה. כל ממצא כולל קטגוריית OWASP, `file_path:line_number`, קטע קוד מדויק, שדה `EXPLOIT:` עם רצף התקפה צעד-אחר-צעד, ורצועת חומרה.
+  - **Security Improvement Summary.** מה נמצא, איך לשפר (הסדרות ממוספרות שקשורות לממצאי `SEC-###`), ואיך למנוע את מחלקת הבעיות הזו בהמשך.
 
-Every finding traces to either a file/line/exploit-path block (first-party) or a CVE reference matched to a version in
-the lock file (dependency). No exceptions.
+כל ממצא מתחקה או לבלוק של קובץ/שורה/מסלול-ניצול (קוד מקורי) או להפניית CVE שהותאמה לגרסה בקובץ הנעילה (תלות). ללא יוצאים מן הכלל.
 
-## How to get the most out of it
+## איך להפיק ממנו את המרב
 
-- **Name the surface concretely.** _"The new password-reset flow"_ beats _"the auth changes."_ Specific scope produces
-  specific exploit paths.
-- **Drop in the lock file path** if you want dependency findings prioritized. The agent reads the lock file to pin
-  versions before checking CVEs.
-- **Pair with `data-engineer`** on regulated-data changes. The security analyst hunts exploits in the access layer;
-  `data-engineer` audits data-level governance (encryption, retention, row-level security).
-- **Pair with `devops-engineer`** when the change touches secrets, rotation, or detection. The security analyst finds
-  the exploit. `devops-engineer` validates the operational posture that catches it.
-- **Read the EXPLOIT field on every finding.** It is the test: if the exploit path is convincing, the finding is real.
-  If you can't follow it, push back and ask for clarification.
-- **Re-run after fixes.** The agent is designed for fast re-dispatch. Fix the findings, run again, confirm the count
-  drops.
+- **נקוב במשטח באופן קונקרטי.** _"זרימת איפוס הסיסמה החדשה"_ מנצח _"שינויי האימות"_. היקף ספציפי מייצר מסלולי ניצול ספציפיים.
+- **הכנס את הנתיב לקובץ הנעילה** אם אתה רוצה שממצאי תלויות יתועדפו. הסוכן קורא את קובץ הנעילה כדי לקבע גרסאות לפני שהוא בודק CVEs.
+- **צמד עם `data-engineer`** בשינויים של נתונים מוסדרים. אנליסט האבטחה צד ניצולים בשכבת הגישה; `data-engineer` מבקר ממשל ברמת הנתונים (הצפנה, שימור, אבטחה ברמת השורה).
+- **צמד עם `devops-engineer`** כשהשינוי נוגע בסודות, ברוטציה או בגילוי. אנליסט האבטחה מוצא את הניצול. `devops-engineer` מאמת את העמדה התפעולית שתופסת אותו.
+- **קרא את שדה ה-EXPLOIT בכל ממצא.** זה המבחן: אם מסלול הניצול משכנע, הממצא אמיתי. אם אתה לא מצליח לעקוב אחריו, דחוף חזרה ובקש הבהרה.
+- **הרץ מחדש אחרי תיקונים.** הסוכן מתוכנן לשיגור חוזר מהיר. תקן את הממצאים, הרץ שוב, אשר שהמספר יורד.
 
-## Cost and latency
+## עלות וזמן תגובה
 
-The agent runs on `opus` because the synthesis (input-to-sink tracing across a codebase, OWASP-category sweep,
-dependency CVE matching) is multi-dimensional and judgment-heavy. A single audit of a focused scope runs in a few
-minutes. Avoid dispatching it in parallel for the same surface or in tight loops over every file in a large repo. Scope
-tightly to what changed.
+הסוכן רץ על `opus` מפני שהסינתזה (מעקב מקלט לכיור לרוחב בסיס קוד, סריקת קטגוריות OWASP, התאמת CVE לתלויות) היא רב-ממדית ועתירת שיקול דעת. ביקורת בודדת של היקף ממוקד רצה בכמה דקות. הימנע משיגור שלו במקביל על אותו משטח או בלולאות צמודות על כל קובץ בריפו גדול. תחם היטב למה שהשתנה.
 
-## Sources
+## מקורות
 
-The agent's principles and vocabulary are grounded in established application-security practice.
+העקרונות ואוצר המילים של הסוכן מעוגנים בפרקטיקה מבוססת של אבטחת יישומים.
 
 ### OWASP Top 10 (2021, 2025)
 
-The OWASP Top 10 is the industry-standard taxonomy for the most critical web application security risks. The agent walks
-all ten categories as a protocol and uses them as the citable principle on every finding (`OWASP: A0X — Category Name`).
+ה-OWASP Top 10 הוא הטקסונומיה התקנית בתעשייה לסיכוני האבטחה הקריטיים ביותר ביישומי ווב. הסוכן עובר על כל עשר הקטגוריות כפרוטוקול ומשתמש בהן כעיקרון בר-ציטוט בכל ממצא (`OWASP: A0X — Category Name`).
 
 URL: https://owasp.org/Top10/
 
 ### OWASP Application Security Verification Standard (ASVS)
 
-ASVS is the deeper checklist behind the Top 10, defining specific verification requirements per category. The agent
-draws on ASVS when calibrating what _adequate_ protection looks like for a given category, especially for crypto,
-session management, and authentication.
+ASVS הוא הצ'ק-ליסט העמוק יותר שמאחורי ה-Top 10, והוא מגדיר דרישות אימות ספציפיות לכל קטגוריה. הסוכן נשען על ASVS כשהוא מכייל איך נראית הגנה _מספקת_ לקטגוריה נתונה, במיוחד בהצפנה, בניהול סשנים ובאימות.
 
 URL: https://owasp.org/www-project-application-security-verification-standard/
 
 ### CVE / NVD
 
-The National Vulnerability Database and the broader CVE program are the citable source for dependency findings. Every
-dependency-vulnerability finding cites a specific CVE matched to a specific version pinned in the lock file.
+מסד הנתונים הלאומי לפרצות ותוכנית ה-CVE הרחבה יותר הם המקור בר-הציטוט לממצאי תלויות. כל ממצא של פרצה בתלות מצטט CVE ספציפי שהותאם לגרסה ספציפית שנקבעה בקובץ הנעילה.
 
 URL: https://www.cve.org/
 
 ### MITRE CWE
 
-The Common Weakness Enumeration is the taxonomy for vulnerability classes. The agent uses CWE IDs when an OWASP category
-is too coarse (for example, distinguishing CWE-89 SQL injection from CWE-78 OS command injection within OWASP A03).
+ה-Common Weakness Enumeration הוא הטקסונומיה למחלקות פרצות. הסוכן משתמש במזהי CWE כשקטגוריית OWASP גסה מדי (לדוגמה, כשצריך להבחין בין CWE-89 של הזרקת SQL לבין CWE-78 של הזרקת פקודות מערכת בתוך OWASP A03).
 
 URL: https://cwe.mitre.org/
 
-## Related documentation
+## תיעוד קשור
 
-- [Plugin README](../../README.md). The plugin's front door: its skills, agents, and how they fit together.
-- [Repo root README](../../../README.md). The Han suite landing page. Start here if you arrived from outside the docs tree.
-- [Agents Index](../../../docs/agents/README.md). All agents, grouped by role.
-- [`/code-review`](../../../han-coding/docs/skills/code-review.md). The skill that always dispatches this agent for security
-  coverage.
-- [`/automated-test-planning`](../../../han-coding/docs/skills/automated-test-planning.md). Dispatches this agent for negative security test
-  planning when the files touch auth, input handling, isolation, crypto, uploads, or SQL/ORM.
-- [`/architectural-analysis`](../../../han-coding/docs/skills/architectural-analysis.md). Adds this agent to its security-signal
-  roster on a medium or large run.
-- [`/gap-analysis`](../../../han-research/docs/skills/gap-analysis.md). Dispatches this agent as a swarm specialist when the gaps
-  touch a security-sensitive surface.
-- [`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md). Dispatches this agent into the spec-stage team on a
-  security signal.
-- [`/plan-implementation`](../../../han-planning/docs/skills/plan-implementation.md). Dispatches this agent into the
-  implementation team on a security signal.
-- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). Dispatches this agent in team mode on
-  a security signal.
-- [`/design-an-api`](../../../han-coding/docs/skills/design-an-api.md). Adds this agent to the discovery wave on a
-  trust-boundary signal, at the medium band and above.
-- [`devops-engineer`](./devops-engineer.md). Pair on regulated changes. Security analyst covers exploit paths.
-  `devops-engineer` covers operational posture.
-- [`data-engineer`](./data-engineer.md). Pair on regulated data. Security analyst covers exploit paths. `data-engineer`
-  covers data-level governance.
-- [`adversarial-validator`](./adversarial-validator.md). Pair when you want the security report challenged by another
-  adversarial agent.
-- [agent-domain-focus.md](../../../han-plugin-builder/skills/guidance/references/agent-building-guidelines/agent-domain-focus.md).
-  Why this agent uses precise vocabulary and named anti-patterns.
-- [agent-model-selection.md](../../../han-plugin-builder/skills/guidance/references/agent-building-guidelines/agent-model-selection.md).
-  Rationale for the `opus` model tier.
+- [README של הפלאגין](../../README.md). הדלת הקדמית של הפלאגין: הסקילים שלו, הסוכנים, ואיך הם משתלבים.
+- [README של שורש הריפו](../../../README.md). דף הנחיתה של חבילת Han. התחל כאן אם הגעת מחוץ לעץ התיעוד.
+- [אינדקס הסוכנים](../../../docs/agents/README.md). כל הסוכנים, מקובצים לפי תפקיד.
+- [`/code-review`](../../../han-coding/docs/skills/code-review.md). הסקיל שתמיד משגר את הסוכן הזה לכיסוי אבטחה.
+- [`/automated-test-planning`](../../../han-coding/docs/skills/automated-test-planning.md). משגר את הסוכן הזה לתכנון בדיקות אבטחה שליליות כשהקבצים נוגעים באימות, בטיפול בקלט, בבידוד, בהצפנה, בהעלאות או ב-SQL/ORM.
+- [`/architectural-analysis`](../../../han-coding/docs/skills/architectural-analysis.md). מוסיף את הסוכן הזה למערך אות-האבטחה שלו בריצה בינונית או גדולה.
+- [`/gap-analysis`](../../../han-research/docs/skills/gap-analysis.md). משגר את הסוכן הזה כמומחה ב-swarm כשהפערים נוגעים במשטח רגיש-אבטחה.
+- [`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md). משגר את הסוכן הזה לצוות שלב המפרט על אות אבטחה.
+- [`/plan-implementation`](../../../han-planning/docs/skills/plan-implementation.md). משגר את הסוכן הזה לצוות המימוש על אות אבטחה.
+- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). משגר את הסוכן הזה במצב צוות על אות אבטחה.
+- [`/design-an-api`](../../../han-coding/docs/skills/design-an-api.md). מוסיף את הסוכן הזה לגל הגילוי על אות של גבול אמון, ברצועה הבינונית ומעלה.
+- [`devops-engineer`](./devops-engineer.md). צמד בשינויים מוסדרים. אנליסט האבטחה מכסה מסלולי ניצול. `devops-engineer` מכסה עמדה תפעולית.
+- [`data-engineer`](./data-engineer.md). צמד בנתונים מוסדרים. אנליסט האבטחה מכסה מסלולי ניצול. `data-engineer` מכסה ממשל ברמת הנתונים.
+- [`adversarial-validator`](./adversarial-validator.md). צמד כשאתה רוצה שדוח האבטחה יאותגר על ידי סוכן אדוורסרי אחר.
+- [agent-domain-focus.md](../../../han-plugin-builder/skills/guidance/references/agent-building-guidelines/agent-domain-focus.md). למה הסוכן הזה משתמש באוצר מילים מדויק ובאנטי-דפוסים נקובים בשם.
+- [agent-model-selection.md](../../../han-plugin-builder/skills/guidance/references/agent-building-guidelines/agent-model-selection.md). הנימוק לדרג המודל `opus`.

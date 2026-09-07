@@ -1,132 +1,98 @@
 # risk-analyst
 
-Operator documentation for the `risk-analyst` agent in the han plugin. This document helps you decide _when_ and _how_
-to dispatch the agent. For what the agent does internally, read the agent definition at
-[`han-core/agents/risk-analyst.md`](../../agents/risk-analyst.md).
+תיעוד מפעיל לסוכן `risk-analyst` בפלאגין. המסמך הזה עוזר לך להחליט _מתי_ ו*איך* לשגר את הסוכן. למה שהסוכן עושה בפנים, קרא את הגדרת הסוכן ב-[`han-core/agents/risk-analyst.md`](../../agents/risk-analyst.md).
 
-> See also: [Plugin README](../../README.md) · [Repo root](../../../README.md) · [All agents](../../../docs/agents/README.md) ·
-> [All skills](../../../docs/skills/README.md)
+> ראה גם: [README של הפלאגין](../../README.md) · [שורש הריפו](../../../README.md) · [כל הסוכנים](../../../docs/agents/README.md) · [כל הסקילים](../../../docs/skills/README.md)
 
 ## TL;DR
 
-- **What it does.** Assesses the risk of inaction for architectural findings produced by upstream analysts. Evaluates
-  each finding across four dimensions: likelihood, severity, blast radius, and reversibility.
-- **When to dispatch it.** The architectural analysts (`structural-analyst`, `behavioral-analyst`,
-  `concurrency-analyst`) have produced findings and you need to prioritize them. Always dispatched by
-  `/architectural-analysis` after the three parallel analysts complete. Conditionally dispatched by
-  `/architectural-decision-record` for ADR risk scoring, and by `/plan-a-feature`, `/plan-implementation`, and
-  `/iterative-plan-review` when the plan carries significant blast radius.
-- **What you get back.** Numbered `R#` risk assessments, each cross-referencing upstream findings, with likelihood /
-  severity / blast radius / reversibility ratings and a concrete _what-happens-if-deferred_ description.
+- **מה הוא עושה.** מעריך את הסיכון שבאי-פעולה עבור ממצאים ארכיטקטוניים שאנליסטים במעלה הזרם ייצרו. מדרג כל ממצא בארבעה ממדים: סבירות, חומרה, רדיוס פגיעה והפיכוּת.
+- **מתי לשגר אותו.** האנליסטים הארכיטקטוניים (`structural-analyst`, `behavioral-analyst`, `concurrency-analyst`) ייצרו ממצאים ואתה צריך לתעדף אותם. תמיד משוגר על ידי `/architectural-analysis` אחרי ששלושת האנליסטים המקבילים מסיימים. משוגר באופן מותנה על ידי `/architectural-decision-record` לדירוג סיכון של ADR, ועל ידי `/plan-a-feature`, `/plan-implementation` ו-`/iterative-plan-review` כשלתוכנית יש רדיוס פגיעה משמעותי.
+- **מה אתה מקבל בחזרה.** הערכות סיכון ממוספרות `R#`, כל אחת מצליבה לממצאים במעלה הזרם, עם דירוגי סבירות / חומרה / רדיוס פגיעה / הפיכוּת ותיאור קונקרטי של _מה קורה אם דוחים_.
 
-## Key concepts
+## מושגי מפתח
 
-- **Receives pre-digested findings.** The agent does not discover new problems. The upstream analysts have already done
-  that work. The agent's job is to evaluate what happens if each finding is not addressed.
-- **Four-dimensional assessment.** Likelihood (how likely is it to bite?), severity (what happens when it bites?), blast
-  radius (how much is affected?), reversibility (how hard is it to undo?). All four are required for every assessment.
-- **Evidence-based, not speculative.** Likelihood ratings are grounded in git history and usage patterns. Blast radius
-  is grounded in dependency-graph traces. The agent uses `Read`, `Grep`, and `Glob` against the codebase to verify, not
-  merely label.
-- **Groups related findings.** When multiple upstream findings describe facets of the same underlying risk, the agent
-  groups them rather than assessing each in isolation.
-- **Low-risk results matter.** When an upstream finding carries low risk, the agent says so explicitly. Not everything
-  needs fixing.
+- **מקבל ממצאים מעוכלים מראש.** הסוכן לא מגלה בעיות חדשות. האנליסטים במעלה הזרם כבר עשו את העבודה הזו. העבודה של הסוכן היא להעריך מה קורה אם כל ממצא לא מטופל.
+- **הערכה בארבעה ממדים.** סבירות (כמה סביר שזה ינשוך?), חומרה (מה קורה כשזה נושך?), רדיוס פגיעה (כמה מושפע?), הפיכוּת (כמה קשה לבטל?). כל הארבעה נדרשים לכל הערכה.
+- **מבוסס-ראיות, לא ספקולטיבי.** דירוגי הסבירות מעוגנים בהיסטוריית git ובדפוסי שימוש. רדיוס הפגיעה מעוגן במעקב אחרי גרף התלויות. הסוכן משתמש ב-`Read`, ב-`Grep` וב-`Glob` מול בסיס הקוד כדי לאמת, לא רק כדי לתייג.
+- **מקבץ ממצאים קשורים.** כשכמה ממצאים במעלה הזרם מתארים פנים שונות של אותו סיכון בסיסי, הסוכן מקבץ אותם במקום להעריך כל אחד בבידוד.
+- **תוצאות סיכון נמוך משנות.** כשממצא במעלה הזרם נושא סיכון נמוך, הסוכן אומר זאת במפורש. לא כל דבר צריך תיקון.
 
-## When to use it
+## מתי להשתמש בו
 
-**Dispatch when:**
+**שגר כאשר:**
 
-- `/architectural-analysis` has finished its three parallel analysts and you need risk-based prioritization before
-  synthesis. The skill always dispatches this agent.
-- `/architectural-decision-record` is running. The skill dispatches this agent to score the chosen option and each
-  rejected alternative.
-- You have a manual set of architectural findings (from a non-skill source) and want them prioritized.
-- A team needs to decide which architectural debt to address first and wants an evidence-based prioritization.
+- `/architectural-analysis` סיים את שלושת האנליסטים המקבילים שלו ואתה צריך תעדוף מבוסס-סיכון לפני הסינתזה. הסקיל תמיד משגר את הסוכן הזה.
+- `/architectural-decision-record` רץ. הסקיל משגר את הסוכן הזה כדי לדרג את האפשרות שנבחרה ואת כל חלופה שנדחתה.
+- יש לך מקבץ ידני של ממצאים ארכיטקטוניים (ממקור שאינו סקיל) ואתה רוצה לתעדף אותם.
+- צוות צריך להחליט באיזה חוב ארכיטקטוני לטפל קודם ורוצה תעדוף מבוסס-ראיות.
 
-**Do not dispatch for:**
+**אל תשגר עבור:**
 
-- Discovering findings. Use `structural-analyst`, `behavioral-analyst`, or `concurrency-analyst`.
-- Architectural recommendations. Use `software-architect` or `system-architect`.
-- Production-readiness risk (operational, scale, observability). Use `devops-engineer`.
-- Security risk. Use `adversarial-security-analyst`.
+- גילוי ממצאים. השתמש ב-`structural-analyst`, ב-`behavioral-analyst` או ב-`concurrency-analyst`.
+- המלצות ארכיטקטוניות. השתמש ב-`software-architect` או ב-`system-architect`.
+- סיכון של מוכנות לפרודקשן (תפעולי, קנה מידה, תצפיתיות). השתמש ב-`devops-engineer`.
+- סיכון אבטחה. השתמש ב-`adversarial-security-analyst`.
 
-## How to invoke it
+## איך להפעיל אותו
 
-Dispatch via the `Agent` tool with `subagent_type: han-core:risk-analyst`. Give it:
+שגר דרך כלי ה-`Agent` עם `subagent_type: han-core:risk-analyst`. תן לו:
 
-1. **The full verbatim output of upstream analysts.** `structural-analyst` findings (`S#`), `behavioral-analyst`
-   findings (`B#`), `concurrency-analyst` findings (`C#`). Without these, the agent has nothing to assess.
-2. **Project context, optional.** Production criticality, deadlines, team capacity. The likelihood and severity scales
-   calibrate on the team's risk appetite.
+1. **את הפלט המילולי המלא של האנליסטים במעלה הזרם.** ממצאי `structural-analyst` (`S#`), ממצאי `behavioral-analyst` (`B#`), ממצאי `concurrency-analyst` (`C#`). בלעדיהם, לסוכן אין מה להעריך.
+2. **הקשר פרויקט, אופציונלי.** קריטיות בפרודקשן, דדליינים, קיבולת הצוות. סולמות הסבירות והחומרה מכוילים לתיאבון הסיכון של הצוות.
 
-Example prompts:
+פרומפטים לדוגמה:
 
-- _"Assess risk of inaction for these findings: [paste S1-S7, B1-B4, C1-C2]. This is the auth service.
-  Production-critical."_
+- _"תעריך את הסיכון שבאי-פעולה עבור הממצאים האלה: [הדבק S1-S7, B1-B4, C1-C2]. זה שירות האימות. קריטי לפרודקשן."_
 
-## What you get back
+## מה אתה מקבל בחזרה
 
-- Numbered `R#` risk assessments, ordered from highest to lowest overall risk. Each item includes:
-  - **Addresses.** Cross-references to upstream `S#`, `B#`, `C#` findings.
-  - **Likelihood.** Near certain / Likely / Possible / Unlikely, with evidence.
-  - **Severity.** Critical / High / Medium / Low, with a concrete failure scenario.
-  - **Blast radius.** System-wide / Multi-module / Single module / Localized, with a dependency count.
-  - **Reversibility.** Irreversible / Difficult / Moderate / Easy, with explanation.
-  - **Overall risk** band.
-  - **What happens if deferred.** A concrete scenario, not a vague warning.
-- A **Risk Summary** with counts of Critical, High, Medium, and Low risks, plus findings explicitly assessed as low-risk
-  (which is useful prioritization signal).
+- הערכות סיכון ממוספרות `R#`, מסודרות מהסיכון הכולל הגבוה ביותר לנמוך ביותר. כל פריט כולל:
+  - **Addresses.** הצלבות לממצאי `S#`, `B#`, `C#` במעלה הזרם.
+  - **Likelihood.** כמעט ודאי / סביר / אפשרי / לא סביר, עם ראיות.
+  - **Severity.** קריטי / גבוה / בינוני / נמוך, עם תרחיש כשל קונקרטי.
+  - **Blast radius.** כלל-מערכתי / רב-מודולרי / מודול יחיד / מקומי, עם מספר תלויות.
+  - **Reversibility.** בלתי הפיך / קשה / בינוני / קל, עם הסבר.
+  - **רצועת הסיכון הכולל.**
+  - **What happens if deferred.** תרחיש קונקרטי, לא אזהרה מעורפלת.
+- **Risk Summary** עם מספרי הסיכונים הקריטיים, הגבוהים, הבינוניים והנמוכים, בתוספת ממצאים שהוערכו במפורש כבעלי סיכון נמוך (וזה אות תעדוף שימושי).
 
-## How to get the most out of it
+## איך להפיק ממנו את המרב
 
-- **Feed it complete upstream output.** Abbreviated findings degrade the assessment. Pass the verbatim `S#`/`B#`/`C#`
-  blocks.
-- **Run with git available.** The agent uses git history to ground likelihood ratings (frequent changes in the area =
-  higher likelihood). Without git, the agent says so and falls back to code-structure inference.
-- **Read the "what happens if deferred" field.** That is where the agent's judgment lives. If the scenario reads thin,
-  the upstream finding may not warrant the assigned severity.
-- **Honor the low-risk results.** Findings the agent rates as Low-risk are explicit prioritization signal. Not every
-  architectural finding needs a fix.
+- **הזן לו פלט שלם ממעלה הזרם.** ממצאים מקוצרים מדרדרים את ההערכה. העבר את בלוקי ה-`S#`/`B#`/`C#` המילוליים.
+- **הרץ כש-git זמין.** הסוכן משתמש בהיסטוריית git כדי לעגן את דירוגי הסבירות (שינויים תכופים באזור = סבירות גבוהה יותר). בלי git, הסוכן אומר זאת ונופל לאחור להסקה ממבנה הקוד.
+- **קרא את השדה "what happens if deferred".** שם חי שיקול הדעת של הסוכן. אם התרחיש נקרא דליל, ייתכן שהממצא במעלה הזרם לא מצדיק את החומרה שהוקצתה לו.
+- **כבד את תוצאות הסיכון הנמוך.** ממצאים שהסוכן מדרג כבעלי סיכון נמוך הם אות תעדוף מפורש. לא כל ממצא ארכיטקטוני צריך תיקון.
 
-## Cost and latency
+## עלות וזמן תגובה
 
-The agent runs on `sonnet`. A risk pass over the output of three analysts runs in a couple of minutes. The agent is
-designed to run once per architectural analysis, not iteratively.
+הסוכן רץ על `sonnet`. מעבר סיכון על הפלט של שלושה אנליסטים רץ בכמה דקות. הסוכן מתוכנן לרוץ פעם אחת לכל ניתוח ארכיטקטוני, לא באיטרציות.
 
-## Sources
+## מקורות
 
-The agent's framework is grounded in established risk-assessment practice.
+המסגרת של הסוכן מעוגנת בפרקטיקה מבוססת של הערכת סיכונים.
 
 ### NIST SP 800-30: Guide for Conducting Risk Assessments
 
-NIST's risk-assessment guide formalizes the likelihood-times-impact framing the agent applies. The four-dimensional
-decomposition (likelihood, severity, blast radius, reversibility) is the engineering-applied version.
+מדריך הערכת הסיכונים של NIST מעגן את המסגור של סבירות-כפול-השפעה שהסוכן מחיל. הפירוק לארבעת הממדים (סבירות, חומרה, רדיוס פגיעה, הפיכוּת) הוא הגרסה המוחלת על הנדסה.
 
 URL: https://csrc.nist.gov/publications/detail/sp/800-30/rev-1/final
 
 ### Doug Hubbard: How to Measure Anything
 
-Hubbard's argument that uncertain things can be measured with calibrated evidence underpins the agent's insistence that
-likelihood and blast radius come from git history and grep output, not opinion.
+הטיעון של Hubbard שדברים לא ודאיים ניתנים למדידה עם ראיות מכוילות עומד בבסיס ההתעקשות של הסוכן שהסבירות ורדיוס הפגיעה יגיעו מהיסטוריית git ומפלט grep, ולא מדעה.
 
 URL: https://www.howtomeasureanything.com/
 
-## Related documentation
+## תיעוד קשור
 
-- [Plugin README](../../README.md). The plugin's front door: its skills, agents, and how they fit together.
-- [Repo root README](../../../README.md). The Han suite landing page. Start here if you arrived from outside the docs tree.
-- [Agents Index](../../../docs/agents/README.md). All agents, grouped by role.
-- [`structural-analyst`](./structural-analyst.md), [`behavioral-analyst`](./behavioral-analyst.md),
-  [`concurrency-analyst`](./concurrency-analyst.md). The upstream agents whose findings this one consumes.
-- [`software-architect`](./software-architect.md). Consumes this agent's risk ratings alongside the upstream findings to
-  produce recommendations.
-- [`/architectural-analysis`](../../../han-coding/docs/skills/architectural-analysis.md). Always dispatches this agent.
-- [`/architectural-decision-record`](../../../han-documentation/docs/skills/architectural-decision-record.md). Dispatches this agent for
-  ADR risk scoring.
-- [`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md). Conditionally dispatches this agent when the feature
-  carries significant blast radius.
-- [`/plan-implementation`](../../../han-planning/docs/skills/plan-implementation.md). Conditionally dispatches this agent when
-  the plan carries significant blast radius.
-- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). Conditionally dispatches this agent
-  when the plan carries significant blast radius.
+- [README של הפלאגין](../../README.md). הדלת הקדמית של הפלאגין: הסקילים שלו, הסוכנים, ואיך הם משתלבים.
+- [README של שורש הריפו](../../../README.md). דף הנחיתה של חבילת Han. התחל כאן אם הגעת מחוץ לעץ התיעוד.
+- [אינדקס הסוכנים](../../../docs/agents/README.md). כל הסוכנים, מקובצים לפי תפקיד.
+- [`structural-analyst`](./structural-analyst.md), [`behavioral-analyst`](./behavioral-analyst.md), [`concurrency-analyst`](./concurrency-analyst.md). הסוכנים במעלה הזרם שהממצאים שלהם נצרכים על ידי הסוכן הזה.
+- [`software-architect`](./software-architect.md). צורך את דירוגי הסיכון של הסוכן הזה לצד הממצאים במעלה הזרם כדי לייצר המלצות.
+- [`/architectural-analysis`](../../../han-coding/docs/skills/architectural-analysis.md). תמיד משגר את הסוכן הזה.
+- [`/architectural-decision-record`](../../../han-documentation/docs/skills/architectural-decision-record.md). משגר את הסוכן הזה לדירוג סיכון של ADR.
+- [`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md). משגר את הסוכן הזה באופן מותנה כשלפיצ'ר יש רדיוס פגיעה משמעותי.
+- [`/plan-implementation`](../../../han-planning/docs/skills/plan-implementation.md). משגר את הסוכן הזה באופן מותנה כשלתוכנית יש רדיוס פגיעה משמעותי.
+- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). משגר את הסוכן הזה באופן מותנה כשלתוכנית יש רדיוס פגיעה משמעותי.

@@ -1,343 +1,208 @@
 # junior-developer
 
-Operator documentation for the `junior-developer` agent in the han plugin. This document helps you decide _when_ and
-_how_ to dispatch the agent. For what the agent does internally, read the agent definition at
-[`han-core/agents/junior-developer.md`](../../agents/junior-developer.md).
+תיעוד מפעיל לסוכן `junior-developer` בפלאגין. המסמך הזה עוזר לך להחליט _מתי_ ו*איך* לשגר את הסוכן. למה שהסוכן עושה בפנים, קרא את הגדרת הסוכן ב-[`han-core/agents/junior-developer.md`](../../agents/junior-developer.md).
 
-> See also: [Plugin README](../../README.md) · [Repo root](../../../README.md) · [All agents](../../../docs/agents/README.md) ·
-> [All skills](../../../docs/skills/README.md) · [YAGNI](../../../docs/yagni.md) · [Evidence](../../../docs/evidence.md)
+> ראה גם: [README של הפלאגין](../../README.md) · [שורש הריפו](../../../README.md) · [כל הסוכנים](../../../docs/agents/README.md) · [כל הסקילים](../../../docs/skills/README.md) · [YAGNI](../../../docs/yagni.md) · [Evidence](../../../docs/evidence.md)
 
 ## TL;DR
 
-- **What it does.** Generalist stress-testing of plans, designs, and live discussions with the clarifying questions a
-  respected junior-to-mid teammate would ask.
-- **When to dispatch it.** A plan, design, or decision looks good on paper and you want someone to force plain-language
-  restatement before specialists dig in. Always included in planning skill review rounds, and required in
-  `/gap-analysis` swarms at every size where it runs the actor-perspective sweep across human users, API callers, AI
-  agents, integration partners, batch processes, and internal services.
-- **What you get back.** A report (artifact mode) or a set of clarifying questions (discussion mode) tied to specific
-  locations or claims, with hidden assumptions and uncited claims surfaced.
+- **מה הוא עושה.** בחינה בלחץ, מעמדה של גנרליסט, של תוכניות, עיצובים ודיונים חיים, עם שאלות ההבהרה שחבר צוות מוערך בעל שלוש עד חמש שנות ניסיון היה שואל.
+- **מתי לשגר אותו.** תוכנית, עיצוב או החלטה נראים טוב על הנייר ואתה רוצה שמישהו יכפה ניסוח מחדש בשפה פשוטה לפני שמומחים חופרים. תמיד נכלל בסבבי הסקירה של סקילי התכנון, ונדרש ב-swarm של `/gap-analysis` בכל גודל שבו הוא רץ, שם הוא מריץ את סריקת נקודות המבט של השחקנים על פני משתמשים אנושיים, קוראי API, סוכני AI, שותפי אינטגרציה, תהליכי אצווה ושירותים פנימיים.
+- **מה אתה מקבל בחזרה.** דוח (במצב תוצר) או מקבץ שאלות הבהרה (במצב דיון), קשורים למיקומים או לטענות ספציפיים, כשהנחות סמויות וטענות לא מצוטטות מועלות.
 
-## Key concepts
+## מושגי מפתח
 
-- **Two modes.** Artifact-review mode reviews completed documents (plans, PRDs, ADR drafts, code branches). Discussion
-  mode chimes into live design reviews, architecture debates, and planning sessions.
-- **Plain-language restatement.** The agent reframes the topic in simpler terms first, then asks clarifying questions.
-  This often exposes an unstated assumption faster than a specialist could.
-- **Adversarial toward the artifact, never toward people.** Every clarifying question traces back to a location in the
-  artifact, the conversation, or the codebase.
-- **Defers to specialists.** Flags where UX, DevOps, security, architecture, or testing depth is needed and names the
-  specialist to dispatch. This agent does not claim their expertise.
-- **Open Questions as first-class output.** The questions the team has not yet answered are surfaced before specialists
-  are dispatched so the specialists can aim their review.
-- **`/code-review` adds a file-list scoping dispatcher directive at Step 3.5.** When dispatched from `/code-review`, the
-  skill appends an instruction that outward reads (adjacent code, callers) are for context only and findings must
-  concern code on the scoped file list. A finding about code outside the file list is permitted only when it directly
-  demonstrates that the changed code on the file list cannot be safely interpreted without the out-of-scope context.
-  This is `/code-review`'s tailoring; the agent's general behavior outside `/code-review` is unchanged.
+- **שני מצבים.** מצב סקירת תוצר סוקר מסמכים גמורים (תוכניות, PRDs, טיוטות ADR, ענפי קוד). מצב דיון מצטרף לסקירות עיצוב חיות, לוויכוחים ארכיטקטוניים ולישיבות תכנון.
+- **ניסוח מחדש בשפה פשוטה.** הסוכן ממסגר מחדש את הנושא במונחים פשוטים יותר קודם, ואז שואל שאלות הבהרה. זה חושף הנחה לא מוצהרת מהר יותר ממה שמומחה היה יכול.
+- **אדוורסרי כלפי התוצר, לעולם לא כלפי אנשים.** כל שאלת הבהרה מתחקה בחזרה למיקום בתוצר, בשיחה או בבסיס הקוד.
+- **מכבד מומחים.** מסמן איפה נדרש עומק של UX, DevOps, אבטחה, ארכיטקטורה או בדיקות, ונוקב במומחה שיש לשגר. הסוכן הזה לא טוען למומחיות שלהם.
+- **שאלות פתוחות כפלט מדרגה ראשונה.** השאלות שהצוות עדיין לא ענה עליהן מועלות לפני שמומחים משוגרים, כדי שהמומחים יוכלו לכוון את הסקירה שלהם.
+- **`/code-review` מוסיף הנחיית משגר לתיחום רשימת הקבצים בצעד 3.5.** כשהוא משוגר מ-`/code-review`, הסקיל מצרף הוראה שקריאות החוצה (קוד סמוך, קוראים) הן להקשר בלבד ושהממצאים חייבים לנגוע לקוד ברשימת הקבצים המתוחמת. ממצא על קוד מחוץ לרשימת הקבצים מותר רק כשהוא מדגים ישירות שלא ניתן לפרש בבטחה את הקוד שהשתנה ברשימה בלי ההקשר שמחוץ להיקף. זו ההתאמה של `/code-review`; ההתנהגות הכללית של הסוכן מחוץ ל-`/code-review` לא משתנה.
 
-## Summary
+## סיכום
 
-A generalist engineer with three to five years of experience who shows up in two places.
+מהנדס גנרליסט עם שלוש עד חמש שנות ניסיון שמופיע בשני מקומות.
 
-First, it _reviews completed artifacts_ (plans, designs, feature proposals, ADR drafts, PRDs, code branches,
-coding-standards documents). It writes a full review report with the clarifying questions a respected junior-to-mid
-teammate would ask.
+ראשית, הוא _סוקר תוצרים גמורים_ (תוכניות, עיצובים, הצעות פיצ'רים, טיוטות ADR, PRDs, ענפי קוד, מסמכי תקני קוד). הוא כותב דוח סקירה מלא עם שאלות ההבהרה שחבר צוות מוערך בשלוש עד חמש שנות ניסיון היה שואל.
 
-Second, it _actively participates in live conversations_: design reviews, architecture debates, planning sessions,
-standups, and chat threads, while plans and designs are still being shaped rather than after they are written. It pushes
-back with the two to five clarifying questions that would most change the decision, in the moment, before the team
-commits.
+שנית, הוא _משתתף באופן פעיל בשיחות חיות_: סקירות עיצוב, ויכוחים ארכיטקטוניים, ישיבות תכנון, סטנד-אפים ושרשורי צ'אט, בזמן שתוכניות ועיצובים עדיין מתעצבים ולא אחרי שהם נכתבו. הוא דוחף חזרה עם שתיים עד חמש שאלות ההבהרה שהכי היו משנות את ההחלטה, ברגע אמת, לפני שהצוות מתחייב.
 
-In both modes, its default stance is that every artifact or discussion contains hidden assumptions, muddied scope, and
-claims made without evidence. A respected teammate willing to say _"I don't understand this in plain terms"_ is the
-person who catches those gaps before specialists are dispatched.
+בשני המצבים, עמדת ברירת המחדל שלו היא שכל תוצר או דיון מכילים הנחות סמויות, היקף מטושטש וטענות שנאמרו בלי ראיות. חבר צוות מוערך שמוכן לומר _"אני לא מבין את זה במונחים פשוטים"_ הוא האדם שתופס את הפערים האלה לפני שמומחים משוגרים.
 
-Questioning is the core behavior. The agent generates and logs the hard questions a generalist would ask of _anyone and
-anything_ it does not understand. It flags any question it cannot answer as an Open Question, so the team can resolve
-it, and traces every finding back to a specific question.
+השאילה היא ההתנהגות המרכזית. הסוכן מייצר ומתעד את השאלות הקשות שגנרליסט היה שואל _כל אחד וכל דבר_ שהוא לא מבין. הוא מסמן כל שאלה שהוא לא יכול לענות עליה כשאלה פתוחה, כדי שהצוות יפתור אותה, ומתחקה אחרי כל ממצא בחזרה לשאלה ספציפית.
 
-The agent is adversarial toward the artifact or the decision under discussion, never toward the people it is talking to.
-It defers to specialist sibling agents (UX, DevOps, security, architecture, testing) whenever a concern requires
-specialist-depth tools or training.
+הסוכן אדוורסרי כלפי התוצר או כלפי ההחלטה שנדונה, לעולם לא כלפי האנשים שהוא מדבר איתם. הוא מכבד סוכנים אחים מומחים (UX, DevOps, אבטחה, ארכיטקטורה, בדיקות) בכל פעם שסוגיה דורשת כלים או הכשרה בעומק של מומחה.
 
-## When to use it
+## מתי להשתמש בו
 
-The agent has two modes (artifact review and live discussion). Invoke the right one for the situation.
+לסוכן שני מצבים (סקירת תוצר ודיון חי). הפעל את הנכון למצב.
 
-**Artifact-review mode. Invoke when:**
+**מצב סקירת תוצר. הפעל כאשר:**
 
-- A plan, design doc, or PRD has landed and needs a generalist stress-test before specialists are dispatched, to surface
-  the Open Questions the team has not yet answered.
-- An ADR draft needs a sounding-board pass to check whether its reasoning is clear, its assumptions are stated, and its
-  scope is crisp.
-- A feature proposal is about to be committed to and the team wants a respected junior-to-mid teammate's questions
-  _before_ the estimates and timelines harden.
-- A branch of code changes needs a _"does this match what we said we were building"_ pass that is looser than a full
-  code review but sharper than a diff glance.
-- A coding-standards document is being drafted or updated and the team wants to know whether a generalist can apply the
-  rules without further clarification.
-- A migration plan or refactoring plan is being sequenced and the team wants hidden assumptions and standards conflicts
-  surfaced early.
-- The team has specialists queued up and wants a generalist to triage which specialist to dispatch first, based on where
-  the artifact touches each specialist's domain.
+- תוכנית, מסמך עיצוב או PRD נחתו וצריכים בחינה בלחץ של גנרליסט לפני שמומחים משוגרים, כדי להעלות את השאלות הפתוחות שהצוות עדיין לא ענה עליהן.
+- טיוטת ADR צריכה מעבר של לוח-הקשה כדי לבדוק אם ההיגיון שלה ברור, ההנחות שלה מוצהרות וההיקף שלה חד.
+- הצעת פיצ'ר עומדת לקבל התחייבות והצוות רוצה את השאלות של חבר צוות מוערך בשלוש עד חמש שנות ניסיון _לפני_ שההערכות ולוחות הזמנים מתקשים.
+- ענף של שינויי קוד צריך מעבר של _"האם זה תואם למה שאמרנו שאנחנו בונים"_ שהוא רופף יותר מסקירת קוד מלאה אבל חד יותר מהצצה ב-diff.
+- מסמך תקני קוד מנוסח או מתעדכן והצוות רוצה לדעת אם גנרליסט יכול להחיל את הכללים בלי הבהרה נוספת.
+- תוכנית מיגרציה או תוכנית ריפקטורינג מסודרות ברצף והצוות רוצה שהנחות סמויות והתנגשויות עם תקנים יעלו מוקדם.
+- לצוות יש מומחים בתור והוא רוצה שגנרליסט ימיין את המומחה שיש לשגר קודם, על בסיס איפה התוצר נוגע בתחום של כל מומחה.
 
-**Conversational mode. Invoke when:**
+**מצב שיחה. הפעל כאשר:**
 
-- You are mid-design-review or mid-architecture-debate and want a generalist voice to push back with clarifying
-  questions before the team commits to a direction.
-- A planning session or backlog-grooming discussion is coalescing around a decision and the team wants the _"I don't
-  understand this in plain terms"_ questions surfaced in the moment.
-- A chat thread or standup discussion is about to turn into a commitment and you want a junior-to-mid generalist's
-  questions asked before the commitment hardens.
-- A teammate is proposing an approach verbally or in a meeting summary and you want an adversarial-collaboration check
-  on the hidden assumptions and uncited claims in what was said.
-- You are drafting your own proposal and want to stress-test it against the questions a respected three-to-five-year
-  teammate would ask before you share it with the team.
+- אתה באמצע סקירת עיצוב או ויכוח ארכיטקטוני ורוצה קול של גנרליסט שידחוף חזרה עם שאלות הבהרה לפני שהצוות מתחייב לכיוון.
+- ישיבת תכנון או דיון סידור-backlog מתלכדים סביב החלטה והצוות רוצה שהשאלות של _"אני לא מבין את זה במונחים פשוטים"_ יעלו ברגע אמת.
+- שרשור צ'אט או דיון בסטנד-אפ עומדים להפוך להתחייבות ואתה רוצה שהשאלות של גנרליסט בשלוש עד חמש שנות ניסיון יישאלו לפני שההתחייבות מתקשה.
+- חבר צוות מציע גישה בעל פה או בסיכום פגישה ואתה רוצה בדיקת שיתוף-פעולה-אדוורסרי על ההנחות הסמויות ועל הטענות הלא מצוטטות במה שנאמר.
+- אתה מנסח הצעה משלך ורוצה לבחון אותה בלחץ מול השאלות שחבר צוות מוערך בשלוש עד חמש שנות ניסיון היה שואל לפני שאתה משתף אותה עם הצוות.
 
-**Do not invoke for:**
+**אל תפעיל עבור:**
 
-- Specialist-depth analysis. If you need named UX heuristic audits, use `user-experience-designer`. Exploit-path
-  security analysis, use `adversarial-security-analyst`. Production readiness, use `devops-engineer`. Intra-codebase
-  architectural SOLID / coupling / cohesion review, use the architectural analyst agents (`structural-analyst`,
-  `behavioral-analyst`, `concurrency-analyst`, `risk-analyst`, `software-architect`). Cross-service / bounded-context
-  topology review, use `system-architect`. Test-plan depth, use `test-engineer` or `edge-case-explorer`.
-- Bug root-cause investigation. Use `evidence-based-investigator` or `/investigate`.
-- Adversarial validation of a completed investigation or fix. Use `adversarial-validator`.
-- Spec-vs-implementation gap analysis. Use `gap-analyzer`.
-- Documentation-update fact preservation. Use `content-auditor`.
-- Full file-level code review for correctness, style, or maintainability. Use `/code-review`.
-- Writing or iterating on the artifact itself. The agent does not modify plans, ADRs, standards, or code. It produces a
-  review report.
+- ניתוח בעומק של מומחה. אם אתה צריך ביקורות היוריסטיקה נקובות של UX, השתמש ב-`user-experience-designer`. ניתוח אבטחה של מסלול ניצול, השתמש ב-`adversarial-security-analyst`. מוכנות לפרודקשן, השתמש ב-`devops-engineer`. סקירה ארכיטקטונית של SOLID / צימוד / לכידוּת בתוך בסיס הקוד, השתמש בסוכני הניתוח הארכיטקטוני (`structural-analyst`, `behavioral-analyst`, `concurrency-analyst`, `risk-analyst`, `software-architect`). סקירת טופולוגיה חוצת-שירותים / חוצת-הקשרים-חסומים, השתמש ב-`system-architect`. עומק תוכנית בדיקות, השתמש ב-`test-engineer` או ב-`edge-case-explorer`.
+- חקירת שורש בעיה של באג. השתמש ב-`evidence-based-investigator` או ב-`/investigate`.
+- אימות אדוורסרי של חקירה או תיקון גמורים. השתמש ב-`adversarial-validator`.
+- ניתוח פערים בין מפרט למימוש. השתמש ב-`gap-analyzer`.
+- שמירת עובדות בעדכון תיעוד. השתמש ב-`content-auditor`.
+- סקירת קוד מלאה ברמת הקובץ לנכונות, לסגנון או לתחזוקתיות. השתמש ב-`/code-review`.
+- כתיבת התוצר עצמו או איטרציה עליו. הסוכן לא משנה תוכניות, ADRs, תקנים או קוד. הוא מייצר דוח סקירה.
 
-## How to invoke it
+## איך להפעיל אותו
 
-Dispatch via the `Agent` tool with `subagent_type: han-core:junior-developer`. Pick the right mode for the situation.
+שגר דרך כלי ה-`Agent` עם `subagent_type: han-core:junior-developer`. בחר את המצב הנכון למצב.
 
-### Artifact-review mode
+### מצב סקירת תוצר
 
-Give it:
+תן לו:
 
-1. **The artifact to review.** A path to a plan file, PRD, ADR draft, design doc, coding-standards document, or a branch
-   of code changes. The narrower the scope, the sharper the questions.
-2. **A brief, if you have one.** Even a one-paragraph description of who the artifact is for, why it is being written,
-   and what decision it is meant to support dramatically reduces Open Questions.
-3. **An output path, optional.** The agent writes the full review to disk and returns only a summary. Default filename
-   is `junior-dev-review.md`.
+1. **את התוצר לסקירה.** נתיב לקובץ תוכנית, PRD, טיוטת ADR, מסמך עיצוב, מסמך תקני קוד, או ענף של שינויי קוד. ככל שההיקף צר יותר, כך השאלות חדות יותר.
+2. **תדריך, אם יש לך.** אפילו תיאור בפסקה אחת של עבור מי התוצר, למה הוא נכתב, ואיזו החלטה הוא אמור לתמוך בה, מפחית דרמטית שאלות פתוחות.
+3. **נתיב פלט, אופציונלי.** הסוכן כותב את הסקירה המלאה לדיסק ומחזיר רק סיכום. שם ברירת המחדל הוא `junior-dev-review.md`.
 
-Example prompts that work well:
+פרומפטים לדוגמה שעובדים היטב:
 
-- _"Review the plan at `docs/plans/webhook-retry.md`. It's a fix plan for intermittent webhook failures. We're about to
-  start work this sprint. Tell us what a respected three-year generalist teammate would ask before we commit to it."_
-- _"Read ADR-0042 draft and tell us whether its reasoning is clear enough that a generalist could enforce the decision
-  without asking follow-up questions."_
-- _"Walk the changes on this branch. I want to know whether the code matches what the plan in `docs/plans/feature-x.md`
-  said we'd build, and what assumptions are baked into the implementation that aren't in the plan."_
-- _"Review the new coding-standards document at `docs/coding-standards/error-handling.md`. Can a three-year generalist
-  apply it, or are the rules too vague?"_
-- _"The team is about to commit to the migration plan at `docs/plans/db-migration.md`. Before we do, I want the
-  clarifying questions a junior-to-mid generalist would ask."_
+- _"תסקור את התוכנית ב-`docs/plans/webhook-retry.md`. זו תוכנית תיקון לכשלי webhook לסירוגין. אנחנו עומדים להתחיל לעבוד בספרינט הזה. תגיד לנו מה גנרליסט מוערך בעל שלוש שנות ניסיון היה שואל לפני שנתחייב לזה."_
+- _"תקרא את טיוטת ADR-0042 ותגיד לנו אם ההיגיון שלה ברור מספיק כדי שגנרליסט יוכל לאכוף את ההחלטה בלי לשאול שאלות המשך."_
+- _"תעבור על השינויים בענף הזה. אני רוצה לדעת אם הקוד תואם למה שהתוכנית ב-`docs/plans/feature-x.md` אמרה שנבנה, ואילו הנחות אפויות במימוש ולא נמצאות בתוכנית."_
+- _"תסקור את מסמך תקני הקוד החדש ב-`docs/coding-standards/error-handling.md`. האם גנרליסט בעל שלוש שנות ניסיון יכול להחיל אותו, או שהכללים מעורפלים מדי?"_
+- _"הצוות עומד להתחייב לתוכנית המיגרציה ב-`docs/plans/db-migration.md`. לפני שנעשה את זה, אני רוצה את שאלות ההבהרה שגנרליסט בעל שלוש עד חמש שנות ניסיון היה שואל."_
 
-### Conversational mode
+### מצב שיחה
 
-Give it:
+תן לו:
 
-1. **What the team is discussing.** A summary of the current conversation, a quoted chat thread, a meeting transcript,
-   or your paraphrase of the proposal on the table. The agent does not need a file. It needs enough context to
-   understand what a teammate would be hearing in the room.
-2. **What the team is about to decide.** One sentence on the commitment the discussion is heading toward, so the agent
-   can focus its questions on the ones that would most change that decision.
-3. **Optionally, any standards context.** Point the agent at CLAUDE.md, ADRs, or coding standards in the repo so it can
-   flag standards conflicts in the moment.
+1. **על מה הצוות מדבר.** סיכום של השיחה הנוכחית, שרשור צ'אט מצוטט, תמליל פגישה, או הניסוח שלך של ההצעה שעל השולחן. הסוכן לא צריך קובץ. הוא צריך מספיק הקשר כדי להבין מה חבר צוות היה שומע בחדר.
+2. **על מה הצוות עומד להחליט.** משפט אחד על ההתחייבות שהדיון מתקדם אליה, כדי שהסוכן יוכל למקד את השאלות שלו באלה שהכי היו משנות את ההחלטה.
+3. **אופציונלית, כל הקשר של תקנים.** הפנה את הסוכן ל-CLAUDE.md, ל-ADRs או לתקני קוד בריפו כדי שיוכל לסמן התנגשויות עם תקנים ברגע אמת.
 
-The agent returns a short conversational response: a plain-language restatement, two to five clarifying questions
-(tagged Answered / Assumed / Open), any hidden assumptions the discussion is resting on, and any specialist sibling the
-team should pull in next. It does not write a file in this mode.
+הסוכן מחזיר תגובה קצרה בשיחה: ניסוח מחדש בשפה פשוטה, שתיים עד חמש שאלות הבהרה (מתויגות ענו / הונח / פתוח), כל הנחה סמויה שהדיון נשען עליה, וכל אח מומחה שהצוות צריך להכניס בהמשך. הוא לא כותב קובץ במצב הזה.
 
-Example prompts that work well:
+פרומפטים לדוגמה שעובדים היטב:
 
-- _"The team is in a design review right now. The proposal on the table is to move webhook delivery to a new queue
-  service because 'the current one is slow.' Chime in as a three-to-five-year generalist. What would you ask before we
-  commit?"_
-- _"Here's the architecture chat thread from the last 10 minutes: [paste]. We're about to agree to split the auth
-  service into two. What's a respected junior-to-mid teammate's pushback?"_
-- _"I'm drafting this proposal to add a caching layer in front of the reports API. Before I share it with the team,
-  stress-test it the way a three-year generalist teammate would if they were reading it for the first time in a planning
-  session."_
-- _"In standup today someone claimed 'users never use the export button' as justification for removing it. What
-  clarifying questions would a generalist teammate ask in the moment?"_
+- _"הצוות בסקירת עיצוב עכשיו. ההצעה שעל השולחן היא להעביר את משלוח ה-webhook לשירות תור חדש כי 'הנוכחי איטי'. תצטרף כגנרליסט בעל שלוש עד חמש שנות ניסיון. מה היית שואל לפני שנתחייב?"_
+- _"הנה שרשור הצ'אט הארכיטקטוני מעשר הדקות האחרונות: [הדבק]. אנחנו עומדים להסכים לפצל את שירות האימות לשניים. מה הדחיפה חזרה של חבר צוות מוערך בשלוש עד חמש שנות ניסיון?"_
+- _"אני מנסח את ההצעה הזו להוסיף שכבת מטמון לפני ה-API של הדוחות. לפני שאני משתף אותה עם הצוות, תבחן אותה בלחץ כמו שחבר צוות גנרליסט בעל שלוש שנות ניסיון היה עושה אם היה קורא אותה בפעם הראשונה בישיבת תכנון."_
+- _"בסטנד-אפ היום מישהו טען ש'משתמשים אף פעם לא משתמשים בכפתור הייצוא' כהצדקה להסיר אותו. אילו שאלות הבהרה חבר צוות גנרליסט היה שואל ברגע אמת?"_
 
-Thin prompts (_"look at this plan"_ or _"chime in on this chat"_) still work but produce more Open Questions and looser
-findings. The agent is designed to lean into questions when the brief is thin, which is often the whole point.
+פרומפטים דלילים (_"תסתכל על התוכנית הזו"_ או _"תצטרף לצ'אט הזה"_) עדיין עובדים אבל מייצרים יותר שאלות פתוחות וממצאים רופפים יותר. הסוכן מתוכנן להישען על שאלות כשהתדריך דליל, וזו לעיתים קרובות כל הנקודה.
 
-## What you get back
+## מה אתה מקבל בחזרה
 
-**In artifact-review mode:**
+**במצב סקירת תוצר:**
 
-- A summary in the tool-call response:
-  - A one-to-three-sentence posture (is the artifact mostly clear, muddied in places, or fundamentally unclear?).
-  - A severity count table (Blocks decision / Muddies artifact / Worth clarifying / Polish).
-  - An Open Questions count.
-  - A Specialist handoffs count.
-  - The path to the full report.
-- A full report on disk with:
-  - Scope.
-  - A plain-language restatement of the artifact.
-  - The full question log (Answered / Assumed / Open).
-  - Assumptions.
-  - Open questions.
-  - Numbered findings tied to protocols and locations.
-  - A Junior-Developer Review Summary with six named sections: _What I Don't Understand Yet_, _What the Artifact Seems
-    to Assume_, _Where the Artifact Conflicts with How We Already Work_, _Where a Specialist Should Take Over_, _What
-    "Done" Looks Like and What It Doesn't_, and _The Artifact in Plain Terms_.
+- סיכום בתגובת הכלי:
+  - עמדה של משפט עד שלושה (האם התוצר ברור ברובו, מטושטש במקומות, או לא ברור מיסודו?).
+  - טבלת ספירת חומרה (חוסם החלטה / מטשטש את התוצר / ראוי להבהרה / ליטוש).
+  - מספר השאלות הפתוחות.
+  - מספר המסירות למומחים.
+  - הנתיב לדוח המלא.
+- דוח מלא על הדיסק שכולל:
+  - היקף.
+  - ניסוח מחדש של התוצר בשפה פשוטה.
+  - יומן השאלות המלא (ענו / הונח / פתוח).
+  - הנחות.
+  - שאלות פתוחות.
+  - ממצאים ממוספרים שקשורים לפרוטוקולים ולמיקומים.
+  - סיכום סקירת ה-junior-developer עם שישה סעיפים נקובים בשם: _מה אני עדיין לא מבין_, _מה נראה שהתוצר מניח_, _איפה התוצר מתנגש עם איך שאנחנו כבר עובדים_, _איפה מומחה צריך להשתלט_, _איך "גמור" נראה ואיך לא_, ו-_התוצר במונחים פשוטים_.
 
-**In conversational mode:**
+**במצב שיחה:**
 
-- A short conversational response (no file written), scoped to the question on the table rather than a full
-  seven-protocol sweep:
-  - A plain-language restatement of what the team is discussing.
-  - The two to five clarifying questions that would most change the decision (tagged Answered / Assumed / Open).
-  - Any hidden assumptions the discussion is resting on.
-  - Any specialist sibling the team should pull in next.
+- תגובה קצרה בשיחה (בלי כתיבת קובץ), מתוחמת לשאלה שעל השולחן ולא לסריקה מלאה של שבעה פרוטוקולים:
+  - ניסוח מחדש בשפה פשוטה של מה שהצוות דן בו.
+  - שתיים עד חמש שאלות ההבהרה שהכי היו משנות את ההחלטה (מתויגות ענו / הונח / פתוח).
+  - כל הנחה סמויה שהדיון נשען עליה.
+  - כל אח מומחה שהצוות צריך להכניס בהמשך.
 
-A finding that rests on an input the agent could not inspect carries its own `Unverified:` line on the finding
-itself, so the disclosure travels with the claim instead of sitting only in the assumptions list.
+ממצא שנשען על קלט שהסוכן לא יכול היה לבחון נושא שורת `Unverified:` משלו על הממצא עצמו, כך שהגילוי נוסע עם הטענה במקום לשבת רק ברשימת ההנחות.
 
-In both modes, every question or finding is traceable to a specific uncertainty and a location in the artifact,
-conversation, or codebase. Every specialist handoff is named explicitly (for example, _"Specialist to consult:
-`user-experience-designer`"_) so the team knows which sibling agent to dispatch next. If something is not traceable, the
-agent is instructed to drop it.
+בשני המצבים, כל שאלה או ממצא ניתנים להתחקות לאי-ודאות ספציפית ולמיקום בתוצר, בשיחה או בבסיס הקוד. כל מסירה למומחה נקובה במפורש (לדוגמה, _"מומחה להתייעצות: `user-experience-designer`"_) כדי שהצוות יידע איזה סוכן אח לשגר בהמשך. אם משהו לא ניתן להתחקות, הסוכן מונחה לזרוק אותו.
 
-## How to get the most out of it
+## איך להפיק ממנו את המרב
 
-- **Provide the brief.** The single biggest lever. A one-paragraph statement of who the artifact is for, why it is being
-  written, and what decision it is meant to support collapses whole classes of Open Questions.
-- **Point it at the standards library.** If your repo has a `CLAUDE.md`, `project-discovery.md`,
-  `docs/coding-standards/`, and an ADR directory, the agent's Standards and Conventions Conflict protocol sharpens
-  dramatically. If those are missing, say so in the prompt. The agent will note the missing standards library as a
-  finding, which is useful signal on its own.
-- **Treat Open Questions as work.** They are not rhetorical. Each one is something the team must answer (from the
-  author, a stakeholder, a specialist agent, prior art, or a decision) to fully trust the severity of the findings that
-  depend on it. Open Questions are the primary artifact this agent produces.
-- **Use it before specialists, not instead of them.** The agent is a pre-specialist filter. It surfaces the
-  generalist-level questions and names the specialist to consult on each specialist-touching section. Dispatch the named
-  specialists next. Do not ask this agent to do a specialist's job.
-- **Re-run after changes.** The agent is cheap to re-dispatch once the brief has been filled in or the artifact has been
-  revised. Open Questions from the first pass become Answered in the second.
-- **Pair with a reviewer agent.** The agent generates findings. It does not evaluate its own output. If you want
-  adversarial validation of the review itself, follow it with `adversarial-validator` or a fresh agent pass. See
-  [multi-agent-economics.md](../../../han-plugin-builder/skills/guidance/references/agent-building-guidelines/multi-agent-economics.md)
-  for why self-evaluation is a bad default.
-- **Invert it on standards documents.** When you point the agent at a coding-standards document or ADR draft, it walks
-  the artifact and asks whether the rules are testable, specific enough to enforce, and conflict-free with existing
-  precedents. This is a useful second opinion before a standards document ships.
+- **ספק את התדריך.** הידית הבודדת הגדולה ביותר. הצהרה בפסקה אחת על עבור מי התוצר, למה הוא נכתב, ואיזו החלטה הוא אמור לתמוך בה, מקפלת מחלקות שלמות של שאלות פתוחות.
+- **הפנה אותו לספריית התקנים.** אם לריפו שלך יש `CLAUDE.md`, `project-discovery.md`, `docs/coding-standards/` ותיקיית ADR, פרוטוקול ההתנגשות עם תקנים ומוסכמות של הסוכן מתחדד דרמטית. אם אלה חסרים, אמור זאת בפרומפט. הסוכן יציין את ספריית התקנים החסרה כממצא, וזה אות שימושי בפני עצמו.
+- **התייחס לשאלות פתוחות כעבודה.** הן לא רטוריות. כל אחת מהן היא משהו שהצוות חייב לענות עליו (מהכותב, מבעל עניין, מסוכן מומחה, ממה שכבר נעשה, או מהחלטה) כדי לבטוח במלואו בחומרה של הממצאים שתלויים בה. שאלות פתוחות הן התוצר העיקרי שהסוכן הזה מייצר.
+- **השתמש בו לפני מומחים, לא במקומם.** הסוכן הוא מסנן שקודם למומחים. הוא מעלה את השאלות ברמת הגנרליסט ונוקב במומחה שיש להתייעץ איתו בכל סעיף שנוגע במומחיות. שגר את המומחים הנקובים בהמשך. אל תבקש מהסוכן הזה לעשות את העבודה של מומחה.
+- **הרץ מחדש אחרי שינויים.** הסוכן זול לשיגור חוזר ברגע שהתדריך מולא או שהתוצר תוקן. שאלות פתוחות מהמעבר הראשון הופכות לענו בשני.
+- **צמד עם סוכן סוקר.** הסוכן מייצר ממצאים. הוא לא מעריך את הפלט של עצמו. אם אתה רוצה אימות אדוורסרי של הסקירה עצמה, המשך איתו ל-`adversarial-validator` או למעבר של סוכן טרי. ראה [multi-agent-economics.md](../../../han-plugin-builder/skills/guidance/references/agent-building-guidelines/multi-agent-economics.md) למה הערכה עצמית היא ברירת מחדל גרועה.
+- **הפוך אותו על מסמכי תקנים.** כשאתה מפנה את הסוכן למסמך תקני קוד או לטיוטת ADR, הוא עובר על התוצר ושואל אם הכללים ניתנים לבדיקה, ספציפיים מספיק לאכיפה, ונקיים מהתנגשויות עם תקדימים קיימים. זו חוות דעת שנייה שימושית לפני שמסמך תקנים משוחרר.
 
-## Cost and latency
+## עלות וזמן תגובה
 
-The agent runs on `opus`. A single review is slower and more expensive than a typical lookup agent, which is
-intentional. The task is multi-dimensional synthesis across the artifact, the codebase, standards documents, ADRs, and
-the question log, plus the judgment call of _which_ questions would change the decision. Avoid dispatching it in
-parallel for the same artifact or in tight loops over every plan file in a repo. Scope tightly and it pays off.
+הסוכן רץ על `opus`. סקירה בודדת איטית ויקרה יותר מסוכן חיפוש טיפוסי, וזה מכוון. המשימה היא סינתזה רב-ממדית על פני התוצר, בסיס הקוד, מסמכי תקנים, ADRs ויומן השאלות, בתוספת שיקול הדעת של _אילו_ שאלות היו משנות את ההחלטה. הימנע משיגור שלו במקביל על אותו תוצר או בלולאות צמודות על כל קובץ תוכנית בריפו. תחם היטב וזה משתלם.
 
 ## YAGNI
 
-The agent applies the **YAGNI Evidence Sweep** protocol when stress-testing a plan, design, or branch of code changes.
-The generalist posture is well-suited to the rule. A junior teammate is the natural voice that asks _do we need this
-right now?_ The question applies to every abstraction, configuration knob, defensive code path at trusted internal
-boundaries, single-implementation interface, and symmetry-driven addition (_"we have create, so we should have
-delete"_). Findings are raised as `Category: YAGNI candidate` with the anti-pattern named. Resolution is either _cite
-the missing evidence_, _replace with a strictly simpler version_, or _defer with a reopen-when trigger_.
+הסוכן מחיל את פרוטוקול **סריקת הראיות של YAGNI** כשהוא בוחן בלחץ תוכנית, עיצוב או ענף של שינויי קוד. עמדת הגנרליסט מתאימה היטב לכלל. חבר צוות זוטר הוא הקול הטבעי ששואל _האם אנחנו צריכים את זה עכשיו?_ השאלה חלה על כל הפשטה, כפתור קונפיגורציה, מסלול קוד הגנתי בגבולות פנימיים מהימנים, ממשק עם מימוש יחיד, ותוספת שמונעת מסימטריה (_"יש לנו create, אז צריך שיהיה delete"_). ממצאים מועלים כ-`Category: YAGNI candidate` כשהאנטי-דפוס נקוב בשם. הפתרון הוא או _לצטט את הראיה החסרה_, או _להחליף בגרסה פשוטה יותר באופן מובהק_, או _לדחות עם טריגר reopen-when_.
 
-See [YAGNI](../../../docs/yagni.md) for the two gates, the acceptable-evidence list, and the named anti-patterns.
+ראה [YAGNI](../../../docs/yagni.md) לשני השערים, לרשימת הראיות הקבילות ולאנטי-דפוסים הנקובים בשם.
 
-Alongside the YAGNI sweep, the agent applies the companion [evidence rule](../../../docs/evidence.md) to characterize each
-surviving item's evidence. It names the trust class of the citation (codebase, web, provided), marks single-source web
-claims that drive an inclusion, and labels items secretly relying on the absence of evidence rather than on positive
-evidence.
+לצד סריקת ה-YAGNI, הסוכן מחיל את [כלל הראיות](../../../docs/evidence.md) הנלווה כדי לאפיין את הראיות של כל פריט ששרד. הוא נוקב במחלקת האמון של הציטוט (בסיס הקוד, רשת, סופק), מסמן טענות מקור-יחיד מהרשת שמניעות הכללה, ומתייג פריטים שנשענים בסתר על היעדר ראיות ולא על ראיות חיוביות.
 
-## Sources
+## מקורות
 
-The agent's posture and protocols draw on published work on adversarial collaboration, clarifying-question practice, and
-general engineering judgment. Each source below is cited because the agent draws specific, named artifacts from it.
+העמדה והפרוטוקולים של הסוכן נשענים על עבודה שפורסמה על שיתוף פעולה אדוורסרי, על פרקטיקת שאלות הבהרה, ועל שיקול דעת הנדסי כללי. כל מקור למטה מצוטט מפני שהסוכן שואב ממנו תוצרים ספציפיים ונקובים בשם.
 
-### Kahneman, Mellers, and Tetlock: Adversarial Collaboration
+### Kahneman, Mellers ו-Tetlock: Adversarial Collaboration
 
-The term "adversarial collaboration" was formalized by Daniel Kahneman and developed further with Barbara Mellers and
-Philip Tetlock. It names a method for resolving disagreement between researchers with opposing views by jointly
-designing studies to test the disagreement. The agent's posture (adversarial toward the artifact, collaborative with the
-people who produced it) is the applied-engineering version of this stance. The agent asks the questions a respected
-teammate would ask in good faith, in service of a decision the team will make together.
+המונח "שיתוף פעולה אדוורסרי" עוגן על ידי Daniel Kahneman ופותח הלאה עם Barbara Mellers ו-Philip Tetlock. הוא נוקב בשיטה ליישוב מחלוקת בין חוקרים בעלי דעות מנוגדות, על ידי תכנון משותף של מחקרים שבודקים את המחלוקת. העמדה של הסוכן (אדוורסרי כלפי התוצר, משתף פעולה עם האנשים שייצרו אותו) היא הגרסה ההנדסית-יישומית של העמדה הזו. הסוכן שואל את השאלות שחבר צוות מוערך היה שואל בתום לב, בשירות החלטה שהצוות יקבל יחד.
 
 URL: https://www.edge.org/conversation/daniel_kahneman-adversarial-collaboration
 
-### Hunt and Thomas: The Pragmatic Programmer (Rubber-Duck Debugging)
+### Hunt ו-Thomas: The Pragmatic Programmer (דיבאג ברווז גומי)
 
-Andy Hunt and Dave Thomas introduced the "rubber duck" practice: explaining a problem out loud in plain language to
-surface the gaps in your own reasoning. The agent's Plain-Language Reframing protocol (Protocol 8) is the rubber duck
-applied to plans, designs, and standards documents. Restating the artifact in the thirty-second-whiteboard version often
-exposes the load-bearing jargon, the missing step, or the hidden assumption that the author could not see.
+Andy Hunt ו-Dave Thomas הציגו את פרקטיקת "ברווז הגומי": להסביר בעיה בקול רם בשפה פשוטה כדי להעלות את הפערים בהיגיון שלך עצמך. פרוטוקול המסגור מחדש בשפה פשוטה של הסוכן (פרוטוקול 8) הוא ברווז הגומי מוחל על תוכניות, עיצובים ומסמכי תקנים. ניסוח מחדש של התוצר בגרסת שלושים-השניות-על-הלוח חושף לעיתים קרובות את הז'רגון נושא-המשקל, את הצעד החסר, או את ההנחה הסמויה שהכותב לא יכול היה לראות.
 
 URL: https://pragprog.com/titles/tpp20/the-pragmatic-programmer-20th-anniversary-edition/
 
-### Ousterhout: A Philosophy of Software Design (Obvious vs. Non-Obvious)
+### Ousterhout: A Philosophy of Software Design (מובן מאליו מול לא מובן מאליו)
 
-John Ousterhout's _A Philosophy of Software Design_ frames "obvious" as a property of the reader, not the author. Code
-(or a plan, or a standard) is obvious only if the reader can understand it quickly with correct inferences. The agent
-applies this frame when it flags words like _obviously_, _of course_, _simply_, and _just_ in the Hidden-Assumption
-Audit. These are tells for assumptions the author found obvious but the reader has to already believe for the artifact
-to make sense.
+_A Philosophy of Software Design_ של John Ousterhout ממסגר את "מובן מאליו" כתכונה של הקורא ולא של הכותב. קוד (או תוכנית, או תקן) מובן מאליו רק אם הקורא יכול להבין אותו במהירות עם הסקות נכונות. הסוכן מחיל את המסגור הזה כשהוא מסמן מילים כמו _מובן מאליו_, _כמובן_, _פשוט_ ו-_רק_ בביקורת ההנחות הסמויות. אלה סימנים להנחות שהכותב מצא מובנות מאליהן אבל שהקורא חייב כבר להאמין בהן כדי שהתוצר יהיה הגיוני.
 
 URL: https://web.stanford.edu/~ouster/cgi-bin/book.php
 
-### Ericsson: Deliberate Practice and the Mid-Career Generalist
+### Ericsson: תרגול מכוון והגנרליסט באמצע הקריירה
 
-Anders Ericsson's work on expertise establishes that _deliberate practice_, not raw years, is what builds specialist
-depth. A three-to-five-year generalist has accumulated enough exposure across domains to recognize specialist territory
-but not enough deliberate practice in any single domain to claim specialist judgment. The agent encodes this directly:
-it asks generalist-level questions about specialist-touching sections, then defers to the named specialist sibling
-agent. Pretending to be an expert is flagged as the `Expert Impersonation` anti-pattern.
+העבודה של Anders Ericsson על מומחיות מבססת ש*תרגול מכוון*, ולא שנים גולמיות, הוא מה שבונה עומק של מומחה. גנרליסט בשלוש עד חמש שנות ניסיון צבר מספיק חשיפה על פני תחומים כדי לזהות טריטוריה של מומחה, אבל לא מספיק תרגול מכוון באף תחום יחיד כדי לטעון לשיקול דעת של מומחה. הסוכן מקודד את זה ישירות: הוא שואל שאלות ברמת גנרליסט על סעיפים שנוגעים במומחיות, ואז מכבד את הסוכן האח המומחה הנקוב. התחזות למומחה מסומנת כאנטי-דפוס `Expert Impersonation`.
 
 URL: https://journals.sagepub.com/doi/abs/10.1111/j.1529-1006.2004.00018.x
 
 ### Nielsen Norman Group: The Five Whys
 
-Root-cause analysis via repeated "why" questioning, popularized at Toyota and adopted widely in software and design
-practice. The agent's Evidence-and-Reasoning Check (Protocol 3) and Clarifying-Question Sweep (Protocol 1) apply a
-softer version of this pattern. They ask _"says who?"_ and _"what is the evidence?"_ on repeated claims that sound true
-because they have been said often, not because they have been proven.
+ניתוח שורש בעיה דרך שאילת "למה" חוזרת, שהתפרסם ב-Toyota ואומץ באופן נרחב בתוכנה ובפרקטיקת העיצוב. בדיקת הראיות וההיגיון של הסוכן (פרוטוקול 3) וסריקת שאלות ההבהרה (פרוטוקול 1) מחילות גרסה רכה יותר של הדפוס הזה. הן שואלות _"אומר מי?"_ ו-_"מה הראיה?"_ על טענות חוזרות שנשמעות נכונות מפני שנאמרו הרבה, ולא מפני שהוכחו.
 
 URL: https://www.nngroup.com/articles/5-whys/
 
-## Related documentation
+## תיעוד קשור
 
-- [Plugin README](../../README.md). The plugin's front door: its skills, agents, and how they fit together.
-- [Repo root README](../../../README.md). The Han suite landing page. Start here if you arrived from outside the docs tree.
-- [YAGNI](../../../docs/yagni.md). The evidence-based "You Aren't Gonna Need It" rule this agent applies. The two gates, the
-  acceptable-evidence list, the named anti-patterns, and the deferral format.
-- [Evidence](../../../docs/evidence.md). The companion rule the agent applies alongside YAGNI. Trust classes, the corroboration
-  gate, and the no-evidence label.
-- [Agents Index](../../../docs/agents/README.md). All agents, grouped by role.
-- [`plan-synthesizer`](./plan-synthesizer.md). The synthesizer this agent pairs with in planning skill review rounds.
-- [`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md) and
-  [`/plan-implementation`](../../../han-planning/docs/skills/plan-implementation.md). Skills that always include this agent in
-  their review rounds.
-- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md),
-  [`/gap-analysis`](../../../han-research/docs/skills/gap-analysis.md),
-  [`/code-review`](../../../han-coding/docs/skills/code-review.md),
-  [`/post-code-review-to-pr`](../../../han-github/docs/skills/post-code-review-to-pr.md),
-  [`/update-pr-description`](../../../han-github/docs/skills/update-pr-description.md),
-  [`/code-overview`](../../../han-coding/docs/skills/code-overview.md),
-  [`/automated-test-planning`](../../../han-coding/docs/skills/automated-test-planning.md),
-  [`/coding-standard`](../../../han-coding/docs/skills/coding-standard.md), and
-  [`/architectural-decision-record`](../../../han-documentation/docs/skills/architectural-decision-record.md). The other
-  skills that dispatch this agent for generalist clarity and assumption checks.
-- [`/design-an-api`](../../../han-coding/docs/skills/design-an-api.md). Dispatches this agent in its four-agent
-  spine, at every size, to question the chosen option as a generalist who was not in the room.
-- [agent-domain-focus.md](../../../han-plugin-builder/skills/guidance/references/agent-building-guidelines/agent-domain-focus.md).
-  Why the agent uses precise domain vocabulary and named anti-patterns even when the domain is "being a generalist."
-- [agent-model-selection.md](../../../han-plugin-builder/skills/guidance/references/agent-building-guidelines/agent-model-selection.md).
-  Rationale for the `opus` model tier on a synthesis-heavy inquiry agent.
-- [graceful-degradation.md](../../../han-plugin-builder/skills/guidance/references/agent-building-guidelines/graceful-degradation.md).
-  Why the agent handles missing git, missing standards documents, and missing ADRs inline rather than failing.
-- [multi-agent-economics.md](../../../han-plugin-builder/skills/guidance/references/agent-building-guidelines/multi-agent-economics.md).
-  Why this agent is a pre-specialist filter, not a specialist replacement.
+- [README של הפלאגין](../../README.md). הדלת הקדמית של הפלאגין: הסקילים שלו, הסוכנים, ואיך הם משתלבים.
+- [README של שורש הריפו](../../../README.md). דף הנחיתה של חבילת Han. התחל כאן אם הגעת מחוץ לעץ התיעוד.
+- [YAGNI](../../../docs/yagni.md). כלל ה-"You Aren't Gonna Need It" מבוסס-הראיות שהסוכן הזה מחיל. שני השערים, רשימת הראיות הקבילות, האנטי-דפוסים הנקובים בשם, ופורמט הדחייה.
+- [Evidence](../../../docs/evidence.md). הכלל הנלווה שהסוכן מחיל לצד YAGNI. מחלקות אמון, שער אימות-ההצלבה, ותווית היעדר-הראיות.
+- [אינדקס הסוכנים](../../../docs/agents/README.md). כל הסוכנים, מקובצים לפי תפקיד.
+- [`plan-synthesizer`](./plan-synthesizer.md). המסנתז שהסוכן הזה מצטמד אליו בסבבי הסקירה של סקילי התכנון.
+- [`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md) ו-[`/plan-implementation`](../../../han-planning/docs/skills/plan-implementation.md). סקילים שתמיד כוללים את הסוכן הזה בסבבי הסקירה שלהם.
+- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md), [`/gap-analysis`](../../../han-research/docs/skills/gap-analysis.md), [`/code-review`](../../../han-coding/docs/skills/code-review.md), [`/post-code-review-to-pr`](../../../han-github/docs/skills/post-code-review-to-pr.md), [`/update-pr-description`](../../../han-github/docs/skills/update-pr-description.md), [`/code-overview`](../../../han-coding/docs/skills/code-overview.md), [`/automated-test-planning`](../../../han-coding/docs/skills/automated-test-planning.md), [`/coding-standard`](../../../han-coding/docs/skills/coding-standard.md), ו-[`/architectural-decision-record`](../../../han-documentation/docs/skills/architectural-decision-record.md). יתר הסקילים שמשגרים את הסוכן הזה לבדיקות בהירות והנחות ברמת גנרליסט.
+- [`/design-an-api`](../../../han-coding/docs/skills/design-an-api.md). משגר את הסוכן הזה בשדרת ארבעת הסוכנים שלו, בכל גודל, כדי לשאול על האפשרות שנבחרה כגנרליסט שלא היה בחדר.
+- [agent-domain-focus.md](../../../han-plugin-builder/skills/guidance/references/agent-building-guidelines/agent-domain-focus.md). למה הסוכן משתמש באוצר מילים מדויק של התחום ובאנטי-דפוסים נקובים בשם, גם כשהתחום הוא "להיות גנרליסט".
+- [agent-model-selection.md](../../../han-plugin-builder/skills/guidance/references/agent-building-guidelines/agent-model-selection.md). הנימוק לדרג המודל `opus` בסוכן שאילה עתיר-סינתזה.
+- [graceful-degradation.md](../../../han-plugin-builder/skills/guidance/references/agent-building-guidelines/graceful-degradation.md). למה הסוכן מטפל בהיעדר git, בהיעדר מסמכי תקנים ובהיעדר ADRs בשורה במקום להיכשל.
+- [multi-agent-economics.md](../../../han-plugin-builder/skills/guidance/references/agent-building-guidelines/multi-agent-economics.md). למה הסוכן הזה הוא מסנן שקודם למומחים ולא תחליף למומחה.

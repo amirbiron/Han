@@ -1,234 +1,153 @@
 # /refactor
 
-Operator documentation for the `/refactor` skill in the han plugin. This document helps you decide _when_ and _how_ to
-use the skill. For what the skill does internally, read the skill definition at
-[`han-coding/skills/refactor/SKILL.md`](../../skills/refactor/SKILL.md).
+תיעוד מפעיל לסקיל `/refactor` בפלאגין. המסמך הזה עוזר לך להחליט _מתי_ ו*איך* להשתמש בסקיל. למה שהסקיל עושה בפנים, קרא את הגדרת הסקיל ב-[`han-coding/skills/refactor/SKILL.md`](../../skills/refactor/SKILL.md).
 
-> See also: [Plugin README](../../README.md) · [Repo root](../../../README.md) · [All skills](../../../docs/skills/README.md) ·
-> [All agents](../../../docs/agents/README.md) · [YAGNI](../../../docs/yagni.md)
+> ראה גם: [README של הפלאגין](../../README.md) · [שורש הריפו](../../../README.md) · [כל הסקילים](../../../docs/skills/README.md) · [כל הסוכנים](../../../docs/agents/README.md) · [YAGNI](../../../docs/yagni.md)
 
 ## TL;DR
 
-- **What it does.** Restructures existing code without changing its behavior, through a test-gated loop: a named target,
-  a green suite before any edit, a planned sequence of small named refactorings, and the full suite re-run after every
-  step.
-- **When to use it.** You have existing code that needs restructuring (a review finding, duplication, a module that
-  fights every change) and you want it done with behavior-preservation discipline instead of a one-shot rewrite.
-- **What you get back.** Restructured code in your tree, plus a summary naming each refactoring applied, the evidence it
-  rested on, what was deferred and why, and the final test, lint, and build output.
+- **מה הוא עושה.** משנה את המבנה של קוד קיים בלי לשנות את ההתנהגות שלו, דרך לולאה מגודרת-בדיקות: יעד נקוב בשם, חבילה ירוקה לפני כל עריכה, רצף מתוכנן של ריפקטורינגים קטנים ונקובים בשם, והרצה חוזרת של כל החבילה אחרי כל צעד.
+- **מתי להשתמש בו.** יש לך קוד קיים שצריך שינוי מבנה (ממצא סקירה, כפילות, מודול שנלחם בכל שינוי) ואתה רוצה שזה ייעשה במשמעת של שימור התנהגות ולא בשכתוב חד-פעמי.
+- **מה אתה מקבל בחזרה.** קוד ששונה מבנית בעץ שלך, ובנוסף סיכום שנוקב בכל ריפקטורינג שהוחל, בראיות שהוא נשען עליהן, במה שנדחה ולמה, ובפלט הסופי של test, lint ו-build.
 
-## Key concepts
+## מושגי מפתח
 
-- **Execution skill.** Like [`/tdd`](./tdd.md), this skill modifies your source tree rather than producing a document.
-  It is the second of the two execution skills in `han-coding`.
-- **Behavior preservation is the definition.** A refactoring changes structure, never observable behavior. A step that
-  turns out to require a behavior change is deferred, not absorbed; a step that reddens the suite is reverted, not
-  patched forward.
-- **Tests are the license.** The skill refuses to start until the full suite is green and the target's behavior is
-  covered. An uncovered target gets a choice: narrow the scope, or write characterization tests first (explicitly
-  labeled as a lower-confidence net).
-- **Named targets, never "clean this up".** The skill requires a named target: files, a module, a named smell, or the
-  findings of a prior review. Open-ended cleanup requests get asked to name one. Both the refactoring literature and the
-  empirical record on coding agents show open-ended runs identify few real opportunities and tend to make structure
-  worse.
-- **The declared scope is a contract.** Each planned step declares its blast radius. A step that spreads beyond it
-  triggers a stop-and-report, because spreading edits are how a refactoring silently becomes a rewrite.
+- **סקיל ביצוע.** כמו [`/tdd`](./tdd.md), הסקיל הזה משנה את עץ המקור שלך ולא מייצר מסמך. הוא השני מבין שני סקילי הביצוע ב-`han-coding`.
+- **שימור התנהגות הוא ההגדרה.** ריפקטורינג משנה מבנה, לעולם לא התנהגות נצפית. צעד שמתברר שהוא דורש שינוי התנהגות נדחה, לא נבלע; צעד שמאדים את החבילה מוחזר לאחור, לא מטולא קדימה.
+- **הבדיקות הן הרישיון.** הסקיל מסרב להתחיל עד שכל החבילה ירוקה וההתנהגות של היעד מכוסה. יעד לא מכוסה מקבל בחירה: לצמצם את ההיקף, או לכתוב בדיקות אפיון קודם (מתויגות במפורש כרשת בעלת ביטחון נמוך יותר).
+- **יעדים נקובים בשם, לעולם לא "תנקה כאן".** הסקיל דורש יעד נקוב בשם: קבצים, מודול, ריח נקוב בשם, או הממצאים של סקירה קודמת. בקשות ניקיון פתוחות מתבקשות לנקוב באחד. גם ספרות הריפקטורינג וגם הרישום האמפירי על סוכני קוד מראים שריצות פתוחות מזהות מעט הזדמנויות אמיתיות ונוטות להחמיר את המבנה.
+- **ההיקף המוצהר הוא חוזה.** כל צעד מתוכנן מצהיר על רדיוס הפגיעה שלו. צעד שמתפשט מעבר לו מפעיל עצור-ודווח, מפני שעריכות שמתפשטות הן איך שריפקטורינג הופך בשקט לשכתוב.
 
-## When to use it
+## מתי להשתמש בו
 
-**Invoke when:**
+**הפעל כאשר:**
 
-- A [`/code-review`](./code-review.md) or
-  [`/architectural-analysis`](./architectural-analysis.md) run produced refactoring recommendations you want
-  executed.
-- A named area of existing code needs restructuring: duplication to remove, a function to break up, a module whose
-  coupling fights every change you make near it.
-- You are about to build in a messy area and want preparatory refactoring first ("make the change easy, then make the
-  easy change"), before driving the feature with `/tdd`.
+- ריצה של [`/code-review`](./code-review.md) או של [`/architectural-analysis`](./architectural-analysis.md) ייצרה המלצות ריפקטורינג שאתה רוצה שיבוצעו.
+- אזור נקוב בשם בקוד קיים צריך שינוי מבנה: כפילות להסיר, פונקציה לפרק, מודול שהצימוד שלו נלחם בכל שינוי שאתה עושה לידו.
+- אתה עומד לבנות באזור מבולגן ורוצה ריפקטורינג מכין קודם ("תהפוך את השינוי לקל, ואז תעשה את השינוי הקל"), לפני שאתה מוביל את הפיצ'ר עם `/tdd`.
 
-**Do not invoke for:**
+**אל תפעיל עבור:**
 
-- **Cleanup inside an active TDD cycle.** The refactor step of [`/tdd`](./tdd.md) owns that; this skill refuses to run
-  alongside a red-green loop in flight.
-- **Finding out what to refactor.** Use [`/code-review`](./code-review.md) or
-  [`/architectural-analysis`](./architectural-analysis.md) to produce the findings; this skill executes
-  them.
-- **Fixing a bug.** A fix changes behavior, which this skill never does. Use
-  [`/investigate`](./investigate.md) and then drive the fix in with [`/tdd`](./tdd.md).
-- **Building new behavior.** Use [`/tdd`](./tdd.md).
+- **ניקיון בתוך מחזור TDD פעיל.** שלב הריפקטור של [`/tdd`](./tdd.md) אחראי על זה; הסקיל הזה מסרב לרוץ לצד לולאת red-green שנמצאת באוויר.
+- **גילוי מה צריך ריפקטורינג.** השתמש ב-[`/code-review`](./code-review.md) או ב-[`/architectural-analysis`](./architectural-analysis.md) כדי לייצר את הממצאים; הסקיל הזה מבצע אותם.
+- **תיקון באג.** תיקון משנה התנהגות, וזה משהו שהסקיל הזה לעולם לא עושה. השתמש ב-[`/investigate`](./investigate.md) ואז הובל את התיקון פנימה עם [`/tdd`](./tdd.md).
+- **בניית התנהגות חדשה.** השתמש ב-[`/tdd`](./tdd.md).
 
-## How to invoke it
+## איך להפעיל אותו
 
-Run `/refactor` in Claude Code.
+הרץ `/refactor` ב-Claude Code.
 
-Give it:
+תן לו:
 
-1. **A named target.** Files or directories, a named smell in a named place ("the duplicated validation in
-   `lib/billing/`"), or a path to a review report whose refactoring findings you want applied. A sharp target names both
-   the place and the reason. The skill will not accept "clean up the codebase"; it asks for a target instead.
-2. **Optionally, the source findings.** When you pass a `/code-review` or `/architectural-analysis` report, the skill
-   extracts the refactoring-shaped findings and traces each applied change back to its finding ID in the summary.
-3. **Nothing about the test framework.** The skill resolves test, lint, build, and type-check commands from your project
-   the same way `/tdd` does.
+1. **יעד נקוב בשם.** קבצים או תיקיות, ריח נקוב בשם במקום נקוב בשם ("האימות הכפול ב-`lib/billing/`"), או נתיב לדוח סקירה שאת ממצאי הריפקטורינג שלו אתה רוצה להחיל. יעד חד נוקב גם במקום וגם בסיבה. הסקיל לא יקבל "תנקה את בסיס הקוד"; הוא מבקש יעד במקום.
+2. **אופציונלית, את ממצאי המקור.** כשאתה מעביר דוח של `/code-review` או של `/architectural-analysis`, הסקיל מחלץ את הממצאים בצורת ריפקטורינג ומתחקה אחרי כל שינוי שהוחל בחזרה למזהה הממצא שלו בסיכום.
+3. **שום דבר על פריימוורק הבדיקות.** הסקיל מפענח את פקודות ה-test, ה-lint, ה-build ובדיקת הטיפוסים מהפרויקט שלך באותה דרך ש-`/tdd` עושה.
 
-The skill runs autonomously after your initial request: it reports the plan and proceeds. It stops and waits only when:
+הסקיל רץ אוטונומית אחרי הבקשה הראשונית שלך: הוא מדווח על התוכנית וממשיך. הוא עוצר ומחכה רק כאשר:
 
-- the target has no test coverage (you choose: narrow the target or write characterization tests first),
-- the suite is red before it starts,
-- the request was open-ended with no named target, or
-- you explicitly asked to approve the plan first.
+- ליעד אין כיסוי בדיקות (אתה בוחר: לצמצם את היעד או לכתוב בדיקות אפיון קודם),
+- החבילה אדומה לפני שהוא מתחיל,
+- הבקשה הייתה פתוחה בלי יעד נקוב בשם, או
+- ביקשת במפורש לאשר את התוכנית קודם.
 
-Stop rules during the run (scope spread, a step that requires a behavior change, two consecutive reverted steps) end
-with a report of where things stand. Everything already applied is green and stands.
+כללי עצירה תוך כדי הריצה (התפשטות היקף, צעד שדורש שינוי התנהגות, שני צעדים רצופים שהוחזרו לאחור) מסתיימים בדיווח על המצב. כל מה שכבר הוחל ירוק ועומד.
 
-Example prompts:
+פרומפטים לדוגמה:
 
-- `/refactor`. _"Apply the structural findings from docs/reviews/code-review-billing.md."_
-- `/refactor`. _"Extract the duplicated retry logic in `lib/http/` into one place."_
-- `/refactor`. _"I'm about to add multi-currency support to `PriceCalculator`; do the preparatory refactoring so that
-  change is easy."_
+- `/refactor`. _"תחיל את הממצאים המבניים מ-docs/reviews/code-review-billing.md."_
+- `/refactor`. _"תחלץ את לוגיקת ה-retry הכפולה ב-`lib/http/` למקום אחד."_
+- `/refactor`. _"אני עומד להוסיף תמיכה רב-מטבעית ל-`PriceCalculator`; תעשה את הריפקטורינג המכין כדי שהשינוי הזה יהיה קל."_
 
-## What you get back
+## מה אתה מקבל בחזרה
 
-Restructured code in your working tree, not a report. Specifically:
+קוד ששונה מבנית בעץ העבודה שלך, לא דוח. באופן ספציפי:
 
-- **A refactoring plan**, shown before the first edit: numbered items, each one named refactoring with the evidence
-  behind it and the files it should touch.
-- **One verified step at a time.** Each step shows the runner's summary line after the change. Red steps are reverted
-  and either retried smaller or deferred with what was learned.
-- **A final summary**, covering:
-  - each refactoring applied (named, with its evidence and finding IDs where a report was the source)
-  - YAGNI deferrals with reopen triggers
-  - items deferred because they required behavior changes
-  - anything spotted but deliberately left alone (bugs, out-of-scope smells, fodder for `/issue-triage`)
-  - the standards and ADRs the code now conforms to
-  - the final test, lint, and build output, shown rather than asserted
+- **תוכנית ריפקטורינג**, שמוצגת לפני העריכה הראשונה: פריטים ממוספרים, כל אחד ריפקטורינג נקוב בשם עם הראיות שמאחוריו והקבצים שהוא אמור לגעת בהם.
+- **צעד מאומת אחד בכל פעם.** כל צעד מציג את שורת הסיכום של המריץ אחרי השינוי. צעדים אדומים מוחזרים לאחור ואז מנוסים שוב בקטן יותר או נדחים עם מה שנלמד.
+- **סיכום סופי**, שמכסה:
+  - כל ריפקטורינג שהוחל (נקוב בשם, עם הראיות שלו ועם מזהי הממצאים במקום שדוח היה המקור)
+  - דחיות YAGNI עם טריגרים לפתיחה מחדש
+  - פריטים שנדחו מפני שהם דרשו שינויי התנהגות
+  - כל מה שאותר אבל הושאר במכוון (באגים, ריחות מחוץ להיקף, חומר ל-`/issue-triage`)
+  - התקנים וה-ADRs שהקוד תואם להם עכשיו
+  - הפלט הסופי של test, lint ו-build, מוצג ולא נטען
 
-## How to get the most out of it
+## איך להפיק ממנו את המרב
 
-- **Feed it review findings.** The strongest input is a `/code-review` or `/architectural-analysis` report: the evidence
-  gate is already satisfied, the targets are already named, and the summary traces back to finding IDs.
-- **Run it before a feature, not after a deadline.** Preparatory refactoring tied to upcoming work is the most
-  economically justified workflow in the refactoring literature. "We'll clean it up someday" sessions are where scope
-  creep lives.
-- **Keep targets small and run it often.** The empirical record favors conservative, tightly scoped passes over
-  aggressive sweeps. Several small runs beat one big one.
-- **Take the coverage stop seriously.** When the skill says the target is uncovered, that is the load-bearing safety
-  check, not friction. Characterization tests prove "unchanged", not "correct"; narrowing the target is often the better
-  choice.
-- **Commit as you go.** Ask for commits and you get one refactor-only commit per green step or logical group, which
-  keeps the diff reviewable and the feature work separable.
-- **Pair with `/tdd` next.** Preparatory refactoring done, drive the actual behavior change in with [`/tdd`](./tdd.md).
+- **הזן לו ממצאי סקירה.** הקלט החזק ביותר הוא דוח של `/code-review` או של `/architectural-analysis`: שער הראיות כבר מסופק, היעדים כבר נקובים בשם, והסיכום מתחקה בחזרה למזהי הממצאים.
+- **הרץ אותו לפני פיצ'ר, לא אחרי דדליין.** ריפקטורינג מכין שקשור לעבודה עתידית הוא זרימת העבודה המוצדקת ביותר כלכלית בספרות הריפקטורינג. סשנים של "ננקה את זה מתישהו" הם המקום שבו סחף ההיקף חי.
+- **שמור על יעדים קטנים והרץ אותו לעיתים קרובות.** הרישום האמפירי מעדיף מעברים שמרניים ומתוחמים היטב על פני סריקות אגרסיביות. כמה ריצות קטנות מנצחות אחת גדולה.
+- **קח את עצירת הכיסוי ברצינות.** כשהסקיל אומר שהיעד לא מכוסה, זו בדיקת הבטיחות נושאת-המשקל, לא חיכוך. בדיקות אפיון מוכיחות "ללא שינוי", לא "נכון"; צמצום היעד הוא לעיתים קרובות הבחירה הטובה יותר.
+- **עשה קומיט תוך כדי.** בקש קומיטים ותקבל קומיט אחד של ריפקטור-בלבד לכל צעד ירוק או לכל קבוצה לוגית, מה ששומר על ה-diff ניתן לסקירה ועל עבודת הפיצ'ר ניתנת להפרדה.
+- **צמד עם `/tdd` אחר כך.** הריפקטורינג המכין נעשה, הובל את שינוי ההתנהגות עצמו פנימה עם [`/tdd`](./tdd.md).
 
 ## YAGNI
 
-`/refactor` applies the YAGNI evidence gate to its own plan. Every planned refactoring needs evidence the code has a
-reason to change: a review finding, named duplication, a standard or ADR it brings the code into conformance with, a
-documented confusing read, or upcoming work in that area. Restructuring to taste, speculative abstraction, configuration
-knobs nobody sets, and indirection "for flexibility" are the named anti-patterns; items without evidence are deferred
-with a reopen trigger, never silently dropped and never silently applied. The rule is enforcing (defer by default), and
-the deferrals appear in the final summary. See [YAGNI](../../../docs/yagni.md) for the two gates, the acceptable-evidence list,
-and the deferral format.
+`/refactor` מחיל את שער הראיות של YAGNI על התוכנית שלו עצמו. כל ריפקטורינג מתוכנן צריך ראיות שלקוד יש סיבה להשתנות: ממצא סקירה, כפילות נקובה בשם, תקן או ADR שהוא מביא את הקוד להתאמה אליו, קריאה מבלבלת מתועדת, או עבודה קרובה באותו אזור. שינוי מבנה לפי טעם, הפשטה ספקולטיבית, כפתורי קונפיגורציה שאף אחד לא קובע, ועקיפין "לגמישות" הם האנטי-דפוסים הנקובים בשם; פריטים בלי ראיות נדחים עם טריגר פתיחה מחדש, לעולם לא נזרקים בשקט ולעולם לא מוחלים בשקט. הכלל אוכף (דחייה כברירת מחדל), והדחיות מופיעות בסיכום הסופי. ראה [YAGNI](../../../docs/yagni.md) לשני השערים, לרשימת הראיות הקבילות, ולפורמט הדחייה.
 
-## Cost and latency
+## עלות וזמן תגובה
 
-`/refactor` runs on the main agent and dispatches no sub-agents; it is not a sizing-aware skill. The cost is the
-verification loop: the full test suite (plus type check where one exists) runs once up front and once after every step,
-so total cost is roughly plan length multiplied by suite runtime. The most expensive single factor is your suite's
-runtime. This is a tight-loop skill built for small, frequent runs; keeping the target narrow is the main cost lever.
+`/refactor` רץ על הסוכן הראשי ולא משגר סאב-סוכנים; הוא אינו סקיל מודע-גודל. העלות היא לולאת האימות: כל חבילת הבדיקות (בתוספת בדיקת טיפוסים אם קיימת) רצה פעם אחת מראש ופעם אחת אחרי כל צעד, ולכן העלות הכוללת היא בערך אורך התוכנית כפול זמן הריצה של החבילה. הגורם הבודד היקר ביותר הוא זמן הריצה של החבילה שלך. זה סקיל של לולאה צמודה שנבנה לריצות קטנות ותכופות; שמירה על יעד צר היא ידית העלות העיקרית.
 
-## In more detail
+## בפירוט
 
-The skill fills a specific gap in the suite. [`/code-review`](./code-review.md) and
-[`/architectural-analysis`](./architectural-analysis.md) recommend refactorings but never modify code; the
-refactor step of [`/tdd`](./tdd.md) modifies code but is deliberately scoped to what the current red-green cycle
-touched. Nothing executed a refactoring recommendation against existing code with safety discipline. This skill is that
-executor, which is why it deliberately does no analysis of its own: it consumes findings (or a user-named target) rather
-than dispatching analyst agents to discover them.
+הסקיל ממלא פער ספציפי בחבילה. [`/code-review`](./code-review.md) ו-[`/architectural-analysis`](./architectural-analysis.md) ממליצים על ריפקטורינגים אבל לעולם לא משנים קוד; שלב הריפקטור של [`/tdd`](./tdd.md) משנה קוד אבל מתוחם במכוון למה שמחזור ה-red-green הנוכחי נגע בו. שום דבר לא ביצע המלצת ריפקטורינג מול קוד קיים במשמעת בטיחות. הסקיל הזה הוא המבצע הזה, ולכן הוא במכוון לא עושה ניתוח משלו: הוא צורך ממצאים (או יעד שהמשתמש נקב בשמו) במקום לשגר סוכני ניתוח כדי לגלות אותם.
 
-The workflow shape (named target, plan before edit, small steps, verification after each, hard stop rules) is not style
-preference. It tracks the strongest converging evidence in both literatures. Practitioner consensus from Fowler,
-Feathers, and Beck covers behavior preservation, test gates, and scope control. The 2024-2026 empirical studies of
-coding agents show that named targets dramatically outperform open-ended prompts, that incremental verification loops
-are the most reliable correctness improver, and that conservative scope beats aggressive sweeps. The research behind the
-design, including the adversarial validation of it, is recorded in
-[docs/research/refactor-skill-research.md](../../../docs/research/refactor-skill-research.md).
+צורת זרימת העבודה (יעד נקוב בשם, תוכנית לפני עריכה, צעדים קטנים, אימות אחרי כל אחד, כללי עצירה קשיחים) אינה העדפת סגנון. היא עוקבת אחרי הראיות המתכנסות החזקות ביותר בשתי הספרויות. הקונצנזוס של אנשי המקצוע מ-Fowler, Feathers ו-Beck מכסה שימור התנהגות, שערי בדיקות ושליטה בהיקף. המחקרים האמפיריים של 2024-2026 על סוכני קוד מראים שיעדים נקובים בשם עולים בהרבה על פרומפטים פתוחים, שלולאות אימות הדרגתיות הן משפר הנכונות האמין ביותר, ושהיקף שמרני מנצח סריקות אגרסיביות. המחקר שמאחורי העיצוב, כולל האימות האדוורסרי שלו, מתועד ב-[docs/research/refactor-skill-research.md](../../../docs/research/refactor-skill-research.md).
 
-The honest limitations are in the same spirit as `/tdd`'s. The green-suite-first gate is enforced by discipline and
-shown evidence (pasted runner output, stop rules), not by a mechanism that can physically prevent an edit. If you watch
-one thing, watch that the suite output before the first edit is real and green. The refactor-only-commit guardrail is
-established human practice whose effectiveness as an agent instruction is not independently validated. That is exactly
-why the skill pairs it with per-step verification rather than relying on it. A passing suite proves the behaviors your
-tests exercise are unchanged, not that all behavior is. Coverage of the target is the gate precisely because the
-guarantee is only as wide as the net.
+המגבלות הכנות הן באותה רוח כמו אלה של `/tdd`. שער החבילה-הירוקה-קודם נאכף על ידי משמעת וראיות מוצגות (פלט מריץ מודבק, כללי עצירה), לא על ידי מנגנון שיכול פיזית למנוע עריכה. אם אתה צופה בדבר אחד, צפה בכך שפלט החבילה לפני העריכה הראשונה אמיתי וירוק. מעקה הקומיט-ריפקטור-בלבד הוא פרקטיקה אנושית מבוססת שהאפקטיביות שלה כהוראה לסוכן לא אומתה באופן בלתי תלוי. בדיוק בגלל זה הסקיל מצמיד אותה לאימות לכל צעד ולא נשען עליה. חבילה עוברת מוכיחה שההתנהגויות שהבדיקות שלך מפעילות לא השתנו, לא שכל התנהגות לא השתנתה. כיסוי היעד הוא השער בדיוק מפני שהערובה רחבה רק כרוחב הרשת.
 
-## Sources
+## מקורות
 
-The skill's protocols and vocabulary are grounded in the refactoring literature and the empirical record on agent-driven
-refactoring. Each source is cited because the skill draws a specific, named artifact from it. The full evidence trail
-with validation is in [docs/research/refactor-skill-research.md](../../../docs/research/refactor-skill-research.md).
+הפרוטוקולים ואוצר המילים של הסקיל מעוגנים בספרות הריפקטורינג וברישום האמפירי על ריפקטורינג מונחה-סוכן. כל מקור מצוטט מפני שהסקיל שואב ממנו תוצר ספציפי ונקוב בשם. שביל הראיות המלא עם האימות נמצא ב-[docs/research/refactor-skill-research.md](../../../docs/research/refactor-skill-research.md).
 
-### Martin Fowler, _Refactoring: Improving the Design of Existing Code_, 2nd ed. 2018; refactoring.com; bliki
+### Martin Fowler, _Refactoring: Improving the Design of Existing Code_, מהדורה שנייה 2018; refactoring.com; bliki
 
-The definition of refactoring, the catalog of named refactorings the plan vocabulary comes from, the two-hats rule, the
-workflows (preparatory, comprehension, litter-pickup), and the never-broken-for-more-than-minutes test.
+ההגדרה של ריפקטורינג, הקטלוג של ריפקטורינגים נקובים בשם שאוצר המילים של התוכנית מגיע ממנו, כלל שני הכובעים, זרימות העבודה (מכין, הבנה, איסוף פסולת), ומבחן ה"לעולם לא שבור ליותר מדקות".
 
 URL: https://refactoring.com/catalog/
 
 ### William Opdyke, _Refactoring Object-Oriented Frameworks_, 1992
 
-The formal behavior-preservation definition (same inputs, same outputs, before and after) and the idea that each
-refactoring has preconditions that make it safe.
+ההגדרה הפורמלית של שימור התנהגות (אותם קלטים, אותם פלטים, לפני ואחרי) והרעיון שלכל ריפקטורינג יש תנאי-קדם שהופכים אותו לבטוח.
 
 URL: https://www.laputan.org/pub/papers/opdyke-thesis.pdf
 
 ### Michael Feathers, _Working Effectively with Legacy Code_, 2004
 
-Legacy code defined as code without tests, characterization tests as the way to pin current behavior before changing
-structure, and seams as the places to test from. The skill's uncovered-target protocol is this, with its lower
-confidence stated out loud.
+קוד מורשת מוגדר כקוד בלי בדיקות, בדיקות אפיון כדרך להצמיד את ההתנהגות הנוכחית לפני שינוי מבנה, ותפרים כמקומות שמהם בודקים. פרוטוקול היעד הלא-מכוסה של הסקיל הוא זה, כשהביטחון הנמוך יותר שלו נאמר בקול.
 
 URL: https://understandlegacycode.com/blog/key-points-of-working-effectively-with-legacy-code/
 
 ### Kent Beck, "make the change easy, then make the easy change"
 
-The preparatory-refactoring framing the skill recommends as its highest-value trigger, cited via Fowler.
+מסגור הריפקטורינג המכין שהסקיל ממליץ עליו כטריגר בעל הערך הגבוה ביותר שלו, מצוטט דרך Fowler.
 
 URL: https://martinfowler.com/articles/preparatory-refactoring-example.html
 
-### Empirical studies of LLM and agent refactoring, 2024-2026
+### מחקרים אמפיריים על ריפקטורינג של LLM וסוכנים, 2024-2026
 
-Separate empirical findings support this design:
+ממצאים אמפיריים נפרדים תומכים בעיצוב הזה:
 
-- named refactoring targets over open-ended prompts (arXiv 2411.04444)
-- the field record of agent refactoring tangling and low-level bias (arXiv 2511.04824)
-- incremental compile-and-test feedback as the most reliable correctness improver (arXiv 2511.03153, 2510.26480)
-- conservative scope beating aggressive sweeps (arXiv 2605.07001)
+- יעדי ריפקטורינג נקובים בשם על פני פרומפטים פתוחים (arXiv 2411.04444)
+- הרישום השדי של הסתבכות בריפקטורינג של סוכנים והטיה לרמה נמוכה (arXiv 2511.04824)
+- משוב הדרגתי של קומפילציה ובדיקה כמשפר הנכונות האמין ביותר (arXiv 2511.03153, 2510.26480)
+- היקף שמרני שמנצח סריקות אגרסיביות (arXiv 2605.07001)
 
-These drove the named-target requirement, the per-step verification, and the stop rules.
+אלה הובילו לדרישת היעד הנקוב בשם, לאימות לכל צעד, ולכללי העצירה.
 
 URL: https://arxiv.org/abs/2411.04444
 
-## Related documentation
+## תיעוד קשור
 
-- [Plugin README](../../README.md). The plugin's front door: its skills, agents, and how they fit together.
-- [Repo root README](../../../README.md). The Han suite landing page. Start here if you arrived from outside the docs tree.
-- [`/pairing`](../../../han-core/docs/skills/pairing.md). Drive this sequence collaboratively, stopping after each named
-  refactoring so you review it as it lands. Invoking `/refactor` directly runs the sequence to completion without
-  pausing.
-- [Skills Index](../../../docs/skills/README.md). All skills, grouped by purpose.
-- [YAGNI](../../../docs/yagni.md). The evidence gate every planned refactoring passes, with the named anti-patterns and the
-  deferral format.
-- [`/tdd`](./tdd.md). The sibling execution skill. Its refactor step owns cleanup inside a red-green cycle; this skill
-  owns restructuring outside one. Preparatory refactoring here, then drive the behavior change there.
-- [`/code-review`](./code-review.md) and
-  [`/architectural-analysis`](./architectural-analysis.md). Where the strongest input comes from: their
-  findings are this skill's work orders.
-- [`/investigate`](./investigate.md). For when the "refactoring" you want is really a bug to diagnose and
-  fix.
-- [`/design-an-api`](./design-an-api.md). For when the restructuring you want is really a new contract to design. It
-  settles the interface shape; this skill restructures existing code without changing its behavior.
-- [Research: refactor skill design](../../../docs/research/refactor-skill-research.md). The evidence-based, adversarially
-  validated research behind this skill's design.
-- [Skill building guidance](../../../han-plugin-builder/skills/guidance/references/skill-building-guidance). The
-  progressive disclosure, description frontmatter, and bash-permission rules this skill follows.
+- [README של הפלאגין](../../README.md). הדלת הקדמית של הפלאגין: הסקילים שלו, הסוכנים, ואיך הם משתלבים.
+- [README של שורש הריפו](../../../README.md). דף הנחיתה של חבילת Han. התחל כאן אם הגעת מחוץ לעץ התיעוד.
+- [`/pairing`](../../../han-core/docs/skills/pairing.md). הובל את הרצף הזה בשיתוף פעולה, עם עצירה אחרי כל ריפקטורינג נקוב בשם כדי שתסקור אותו תוך כדי שהוא נוחת. הפעלה ישירה של `/refactor` מריצה את הרצף עד הסוף בלי לעצור.
+- [אינדקס הסקילים](../../../docs/skills/README.md). כל הסקילים, מקובצים לפי מטרה.
+- [YAGNI](../../../docs/yagni.md). שער הראיות שכל ריפקטורינג מתוכנן עובר, עם האנטי-דפוסים הנקובים בשם ופורמט הדחייה.
+- [`/tdd`](./tdd.md). סקיל הביצוע האח. שלב הריפקטור שלו אחראי על ניקיון בתוך מחזור red-green; הסקיל הזה אחראי על שינוי מבנה מחוצה לו. ריפקטורינג מכין כאן, ואז הובלת שינוי ההתנהגות שם.
+- [`/code-review`](./code-review.md) ו-[`/architectural-analysis`](./architectural-analysis.md). מהיכן מגיע הקלט החזק ביותר: הממצאים שלהם הם הוראות העבודה של הסקיל הזה.
+- [`/investigate`](./investigate.md). למקרה שה"ריפקטורינג" שאתה רוצה הוא באמת באג לאבחן ולתקן.
+- [`/design-an-api`](./design-an-api.md). למקרה ששינוי המבנה שאתה רוצה הוא באמת חוזה חדש לעצב. הוא מיישב את צורת הממשק; הסקיל הזה משנה מבנה של קוד קיים בלי לשנות את ההתנהגות שלו.
+- [מחקר: עיצוב סקיל הריפקטור](../../../docs/research/refactor-skill-research.md). המחקר מבוסס-הראיות ומאומת-אדוורסרית שמאחורי העיצוב של הסקיל הזה.
+- [הנחיות בניית סקילים](../../../han-plugin-builder/skills/guidance/references/skill-building-guidance). כללי החשיפה ההדרגתית, ה-frontmatter של התיאור, והרשאות ה-bash שהסקיל הזה הולך לפיהם.

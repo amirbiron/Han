@@ -1,193 +1,124 @@
 # /design-an-api
 
-Operator documentation for the `/design-an-api` skill in the han plugin. This document helps you decide _when_ and _how_
-to use the skill. For what the skill does internally, read the skill definition at
-[`han-coding/skills/design-an-api/SKILL.md`](../../skills/design-an-api/SKILL.md).
+תיעוד מפעיל לסקיל `/design-an-api` בפלאגין. המסמך הזה עוזר לך להחליט _מתי_ ו*איך* להשתמש בסקיל. למה שהסקיל עושה בפנים, קרא את הגדרת הסקיל ב-[`han-coding/skills/design-an-api/SKILL.md`](../../skills/design-an-api/SKILL.md).
 
-> See also: [Plugin README](../../README.md) · [Repo root](../../../README.md) ·
-> [All skills](../../../docs/skills/README.md) · [All agents](../../../docs/agents/README.md) ·
-> [YAGNI](../../../docs/yagni.md)
+> ראה גם: [README של הפלאגין](../../README.md) · [שורש הריפו](../../../README.md) · [כל הסקילים](../../../docs/skills/README.md) · [כל הסוכנים](../../../docs/agents/README.md) · [YAGNI](../../../docs/yagni.md)
 
 ## TL;DR
 
-- **What it does.** Designs the contract for an API change inside one codebase, running the design past a question round
-  and an adversarial validation round before you commit to it.
-- **When to use it.** You know what the capability should do, and you need to decide the shape of the interface that
-  delivers it, sized for roughly one pull request.
-- **What you get back.** A run folder holding a context brief, a design-options document, and the final design document
-  that a `/tdd` run implements against.
+- **מה הוא עושה.** מעצב את החוזה לשינוי API בתוך בסיס קוד אחד, ומעביר את העיצוב דרך סבב שאלות וסבב אימות אדוורסרי לפני שאתה מתחייב אליו.
+- **מתי להשתמש בו.** אתה יודע מה היכולת צריכה לעשות, ואתה צריך להחליט על הצורה של הממשק שמספק אותה, בגודל של בערך pull request אחד.
+- **מה אתה מקבל בחזרה.** תיקיית ריצה שמחזיקה תדריך הקשר, מסמך אפשרויות עיצוב, ומסמך העיצוב הסופי שריצת `/tdd` מממשת מולו.
 
-## Key concepts
+## מושגי מפתח
 
-- **The stated goal.** One ticket, issue, or written requirement the whole design answers to. The skill will not run
-  without one, because it is the only thing the design can be justified against.
-- **The justification field.** Every parameter, field, type, default, precedence rule, and failure behavior names either
-  the goal language it descends from or the asked-for behavior it is a necessity of.
-- **The cut list.** Anything the interface could plausibly carry that the goal never asks for, recorded with what it
-  would have done so you can put it back.
-- **The two gates.** You pick the design option, and later you answer each open item one at a time. Everything else
-  runs unattended.
+- **המטרה המוצהרת.** כרטיס, issue או דרישה כתובה אחת שכל העיצוב עונה לה. הסקיל לא ירוץ בלעדיה, מפני שהיא הדבר היחיד שאפשר להצדיק מולו את העיצוב.
+- **שדה ההצדקה.** כל פרמטר, שדה, טיפוס, ברירת מחדל, כלל קדימות והתנהגות כשל נוקבים או בשפת המטרה שהם נגזרים ממנה, או בהתנהגות שהתבקשה שהם הכרח שלה.
+- **רשימת הקיצוצים.** כל דבר שהממשק היה יכול באופן סביר לשאת ושהמטרה אף פעם לא מבקשת, מתועד עם מה שהוא היה עושה כדי שתוכל להחזיר אותו.
+- **שני השערים.** אתה בוחר את אפשרות העיצוב, ומאוחר יותר אתה עונה על כל פריט פתוח אחד בכל פעם. כל השאר רץ ללא השגחה.
 
-## When to use it
+## מתי להשתמש בו
 
-**Invoke when:**
+**הפעל כאשר:**
 
-- A ticket asks for a capability and the real work is deciding the interface: a component's props, a function surface,
-  URL or query parameters, an event payload, or a module boundary.
-- You are about to change a shared surface and want the consumer audit and the failure behavior settled before anyone
-  writes code.
-- A branch already carries a half-built attempt and you want the contract redesigned from the merge base instead.
+- כרטיס מבקש יכולת והעבודה האמיתית היא להחליט על הממשק: ה-props של רכיב, משטח של פונקציה, פרמטרים של URL או שאילתה, מטען של אירוע, או גבול של מודול.
+- אתה עומד לשנות משטח משותף ורוצה שביקורת הצרכנים והתנהגות הכשל יתיישבו לפני שמישהו כותב קוד.
+- ענף כבר נושא ניסיון בנוי-למחצה ואתה רוצה שהחוזה יעוצב מחדש מבסיס המיזוג במקום.
 
-**Do not invoke for:**
+**אל תפעיל עבור:**
 
-- **Deciding what a feature should do.** Use [`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md)
-  instead; it settles behavior, this settles contract shape.
-- **Planning how to deliver the work.** Use
-  [`/plan-implementation`](../../../han-planning/docs/skills/plan-implementation.md) instead.
-- **Judging the architecture already in the codebase.** Use
-  [`/architectural-analysis`](./architectural-analysis.md) instead; it assesses what exists rather than designing what
-  comes next.
-- **Writing the code.** Use [`/tdd`](./tdd.md) to implement the design, or [`/refactor`](./refactor.md) to restructure
-  existing code without changing its behavior.
+- **החלטה מה פיצ'ר צריך לעשות.** השתמש ב-[`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md) במקום; הוא מיישב התנהגות, זה מיישב צורת חוזה.
+- **תכנון איך לספק את העבודה.** השתמש ב-[`/plan-implementation`](../../../han-planning/docs/skills/plan-implementation.md) במקום.
+- **שיפוט הארכיטקטורה שכבר בבסיס הקוד.** השתמש ב-[`/architectural-analysis`](./architectural-analysis.md) במקום; הוא מעריך את מה שקיים ולא מעצב את מה שבא אחר כך.
+- **כתיבת הקוד.** השתמש ב-[`/tdd`](./tdd.md) כדי לממש את העיצוב, או ב-[`/refactor`](./refactor.md) כדי לשנות מבנה של קוד קיים בלי לשנות את ההתנהגות שלו.
 
-## How to invoke it
+## איך להפעיל אותו
 
-Run `/design-an-api` in Claude Code.
+הרץ `/design-an-api` ב-Claude Code.
 
-Give it:
+תן לו:
 
-1. **The goal.** A ticket reference, issue URL, file path, or one paragraph describing what this change is for. A sharp
-   goal names the user-visible outcome ("a link can prefill the first two steps of the signup flow"). A thin goal names
-   only the mechanism ("add query param support"), which gives the justification field nothing to cite.
-2. **The interface.** Which component, function, module, route, or payload is being designed, and where it lives. A new
-   surface with no file yet is fine; name the module it will live in.
-3. **A size, optionally.** `small`, `medium`, `large`, or `dynamic` as the first argument. Leave it off and the skill
-   classifies from signals it detects in the interface and its consumers.
+1. **את המטרה.** הפניה לכרטיס, URL של issue, נתיב קובץ, או פסקה אחת שמתארת בשביל מה השינוי הזה. מטרה חדה נוקבת בתוצאה שהמשתמש רואה ("קישור יכול למלא מראש את שני השלבים הראשונים של זרימת ההרשמה"). מטרה דלילה נוקבת רק במנגנון ("להוסיף תמיכה בפרמטר שאילתה"), וזה לא נותן לשדה ההצדקה מה לצטט.
+2. **את הממשק.** איזה רכיב, פונקציה, מודול, נתיב או מטען מעוצבים, ואיפה הם חיים. משטח חדש שעדיין אין לו קובץ זה בסדר; נקוב במודול שהוא יחיה בו.
+3. **גודל, אופציונלית.** `small`, `medium`, `large` או `dynamic` כארגומנט הראשון. השאר אותו בחוץ והסקיל מסווג מאותות שהוא מזהה בממשק ובצרכנים שלו.
 
-Example prompts:
+פרומפטים לדוגמה:
 
-- `/design-an-api`. _"Design the change to FlowProvider that lets URL query values prefill a flow's steps, per
-  ticket ABC-142."_
+- `/design-an-api`. _"תעצב את השינוי ל-FlowProvider שמאפשר לערכי שאילתה ב-URL למלא מראש את השלבים של זרימה, לפי כרטיס ABC-142."_
 - `/design-an-api medium https://github.com/acme/app/issues/88 the exported cache client surface in src/cache/`.
 
-## What you get back
+## מה אתה מקבל בחזרה
 
-Three files in one run folder, placed under your configured `output-directory` or a folder named for the interface
-under the project's documentation root:
+שלושה קבצים בתיקיית ריצה אחת, שממוקמים תחת ה-`output-directory` שהגדרת או בתיקייה שנקראת על שם הממשק תחת שורש התיעוד של הפרויקט:
 
-- **`context-brief.md`.** Numbered findings `F1`, `F2`, `F3`, … from the discovery wave. Each finding carries a
-  `file:line` citation or the label `inferred`, plus the agent that reported it. Conflicting findings stay as separate
-  entries with both citations rather than being resolved silently.
-- **`design-options.md`.** The two or three options the architect produced, with one recommendation, the rejected
-  alternatives and why, and pseudocode sketches of each option's signatures.
-- **`api-design.md`.** The deliverable. It holds the designed contract in three parts (surface, invariants, failure
-  behavior), the justification table, the options considered, the questions resolved (`Q1`, `Q2`, … each with its
-  answer's source), the validation findings (`V1`, `V2`, … each accepted or rejected), the cut list, and the open
-  risks.
+- **`context-brief.md`.** ממצאים ממוספרים `F1`, `F2`, `F3`, … מגל הגילוי. כל ממצא נושא ציטוט `file:line` או את התווית `inferred`, בתוספת הסוכן שדיווח עליו. ממצאים סותרים נשארים כרשומות נפרדות עם שני הציטוטים במקום להיפתר בשקט.
+- **`design-options.md`.** שתיים או שלוש האפשרויות שהארכיטקט ייצר, עם המלצה אחת, החלופות שנדחו ולמה, וסקיצות פסאודו-קוד של החתימות של כל אפשרות.
+- **`api-design.md`.** התוצר. הוא מחזיק את החוזה המעוצב בשלושה חלקים (משטח, אינווריאנטים, התנהגות כשל), את טבלת ההצדקה, את האפשרויות שנשקלו, את השאלות שנפתרו (`Q1`, `Q2`, … כל אחת עם המקור של התשובה שלה), את ממצאי האימות (`V1`, `V2`, … כל אחד מתקבל או נדחה), את רשימת הקיצוצים, ואת הסיכונים הפתוחים.
 
-If any of the three files already exists in the folder, the run date-suffixes all three so one run's files stay
-together, and tells you which names it wrote. It never overwrites.
+אם אחד משלושת הקבצים כבר קיים בתיקייה, הריצה מוסיפה סיומת תאריך לשלושתם כך שהקבצים של ריצה אחת יישארו יחד, ואומרת לך באילו שמות היא כתבה. היא לעולם לא דורסת.
 
-## How to get the most out of it
+## איך להפיק ממנו את המרב
 
-- **Paste the ticket, do not paraphrase it.** The justification field quotes the goal. A paraphrase you wrote from
-  memory becomes the scope authority, and it drifts.
-- **Answer the open items with the consequence in mind.** Each one is surfaced with candidate answers and what changes
-  in the contract; the answer you give becomes the recorded justification for those elements.
-- **Read the cut list before you approve.** It is the only place the design tells you what it deliberately left out.
-  Reinstating an entry is one sentence, and your direction becomes its justification.
-- **Re-run larger when the closing summary names an omitted domain.** The band cap can drop a signalled specialist. The
-  summary says which one.
-- **Pair with `/tdd` next.** The design document is written to be the input to a test-first implementation run.
+- **הדבק את הכרטיס, אל תנסח אותו מחדש.** שדה ההצדקה מצטט את המטרה. ניסוח מחדש שכתבת מהזיכרון הופך לסמכות ההיקף, והוא נסחף.
+- **ענה על הפריטים הפתוחים כשההשלכה בראש.** כל אחד מהם עולה עם תשובות מועמדות ועם מה שמשתנה בחוזה; התשובה שאתה נותן הופכת להצדקה המתועדת של האלמנטים האלה.
+- **קרא את רשימת הקיצוצים לפני שאתה מאשר.** זה המקום היחיד שבו העיצוב אומר לך מה הוא השאיר בחוץ במכוון. החזרת רשומה היא משפט אחד, וההנחיה שלך הופכת להצדקה שלה.
+- **הרץ מחדש בגדול יותר כשסיכום הסיום נוקב בתחום שהושמט.** תקרת הרצועה יכולה להשמיט מומחה שקיבל אות. הסיכום אומר איזה.
+- **צמד עם `/tdd` אחר כך.** מסמך העיצוב נכתב כדי להיות הקלט לריצת מימוש test-first.
 
-## Sizing
+## גודל
 
-| Size                  | Typical target                                                                                                          | Roster                                |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| **Small** _(default)_ | One interface with a contained consumer set inside one module, and none of the cross-cutting signals                    | Spine only (4 agents)                 |
-| **Medium**            | A consumer-spread signal, or exactly one ordering, data-contract, trust-boundary, failure-path, or boundary-data signal | Spine + up to 2 specialists (up to 6) |
-| **Large**             | Two or more of those cross-cutting signals together, or a system-seam signal                                            | Spine + up to 4 specialists (up to 8) |
+| גודל                   | יעד אופייני                                                                                    | מערך                      |
+| ---------------------- | ---------------------------------------------------------------------------------------------- | ------------------------- |
+| **קטן** _(ברירת מחדל)_ | ממשק אחד עם מקבץ צרכנים מוכל בתוך מודול אחד, ואף אחד מהאותות החוצים                            | שדרה בלבד (4 סוכנים)      |
+| **בינוני**             | אות של פיזור צרכנים, או בדיוק אות אחד של סדר, חוזה נתונים, גבול אמון, מסלול כשל, או נתוני גבול | שדרה + עד 2 מומחים (עד 6) |
+| **גדול**               | שניים או יותר מהאותות החוצים האלה יחד, או אות של תפר מערכת                                     | שדרה + עד 4 מומחים (עד 8) |
 
-The four-agent spine runs at every size: `codebase-explorer`, `software-architect`, `junior-developer`, and
-`adversarial-validator`. Specialists join only when their signal is present, so a band you set by hand can sit well
-under its ceiling. When more specialists are signalled than the cap allows, the run keeps the band's count, prefers the
-strongest signals, and names the omitted domains in the design document's summary so you can re-run larger. See
-[Sizing](../../../docs/sizing.md) for the cross-skill model.
+שדרת ארבעת הסוכנים רצה בכל גודל: `codebase-explorer`, `software-architect`, `junior-developer` ו-`adversarial-validator`. מומחים מצטרפים רק כשהאות שלהם נוכח, ולכן רצועה שקבעת ידנית יכולה לשבת הרבה מתחת לתקרה שלה. כשיותר מומחים מקבלים אות ממה שהתקרה מאפשרת, הריצה שומרת על המספר של הרצועה, מעדיפה את האותות החזקים ביותר, ונוקבת בתחומים שהושמטו בסיכום של מסמך העיצוב כדי שתוכל להריץ מחדש בגדול יותר. ראה [Sizing](../../../docs/sizing.md) למודל החוצה-סקילים.
 
 ## YAGNI
 
-This skill is enforcing, not advisory. An element that cannot fill its justification field does not enter the design at
-all; it moves to the cut list with what it would have done and why it was cut. The cut list appears in the closing
-message as well as the document, so a wrong cut is visible in the turn rather than buried in a file you have no reason
-to open.
+הסקיל הזה אוכף, לא ייעוצי. אלמנט שלא יכול למלא את שדה ההצדקה שלו לא נכנס לעיצוב בכלל; הוא עובר לרשימת הקיצוצים עם מה שהוא היה עושה ולמה הוא קוצץ. רשימת הקיצוצים מופיעה גם בהודעת הסיום וגם במסמך, כך שקיצוץ שגוי גלוי בתור ולא קבור בקובץ שאין לך סיבה לפתוח.
 
-One floor bounds that discipline: silence never cuts a necessity. A goal that never mentions a caching layer justifies
-cutting one, but the same goal's silence about invalid input, error behavior, and types cuts nothing, because those are
-necessities of the surface it did ask for. See [YAGNI](../../../docs/yagni.md) for the shared evidence and
-simpler-version gates this sits beside.
+רצפה אחת תוחמת את המשמעת הזו: שתיקה לעולם לא מקצצת הכרח. מטרה שאף פעם לא מזכירה שכבת מטמון מצדיקה לקצץ אחת, אבל השתיקה של אותה מטרה על קלט לא תקין, על התנהגות שגיאה ועל טיפוסים לא מקצצת כלום, מפני שאלה הכרחים של המשטח שהיא כן ביקשה. ראה [YAGNI](../../../docs/yagni.md) לשערי הראיות והגרסה-הפשוטה-יותר המשותפים שזה יושב לצידם.
 
-## Cost and latency
+## עלות וזמן תגובה
 
-A small run dispatches four agents in sequence-with-one-parallel-wave: the discovery wave, then the architect, the
-junior developer, and the adversarial validator. A large run adds as many as four signalled specialists to the discovery
-wave, for up to eight agents total. Only signalled specialists are added, so a run at a size you set by hand can sit
-under its band's ceiling. The architect is the most expensive single participant, because it runs up to four times: once
-for options and once after each of the question round, the open items, and the validation round.
+ריצה קטנה משגרת ארבעה סוכנים ברצף-עם-גל-מקבילי-אחד: גל הגילוי, ואז הארכיטקט, המפתח הזוטר, והמאמת האדוורסרי. ריצה גדולה מוסיפה עד ארבעה מומחים שקיבלו אות לגל הגילוי, לסך הכול של עד שמונה סוכנים. רק מומחים שקיבלו אות מתווספים, ולכן ריצה בגודל שקבעת ידנית יכולה לשבת מתחת לתקרה של הרצועה שלה. הארכיטקט הוא המשתתף הבודד היקר ביותר, מפני שהוא רץ עד ארבע פעמים: פעם אחת לאפשרויות ופעם אחת אחרי כל אחד מסבב השאלות, הפריטים הפתוחים, וסבב האימות.
 
-This is an infrequent, high-signal run. It sits before implementation, not inside a tight loop.
+זו ריצה נדירה בעלת אות גבוה. היא יושבת לפני המימוש, לא בתוך לולאה צמודה.
 
-## In more detail
+## בפירוט
 
-The skill exists because the arrangement it packages was already working by hand. A session documented in
-[issue #173](https://github.com/testdouble/han/issues/173) dispatched `han-core:software-architect`,
-`han-core:junior-developer`, and `han-core:adversarial-validator` directly, against a hand-assembled context brief, to
-design a query-parameter prefill contract on a shared React flow provider. The designed API shipped essentially as
-specified and survived a later code review. One junior-developer question reversed a naming decision before any code
-existed.
+הסקיל קיים מפני שהסידור שהוא אורז כבר עבד ידנית. סשן שתועד ב-[issue #173](https://github.com/testdouble/han/issues/173) שיגר את `han-core:software-architect`, `han-core:junior-developer` ו-`han-core:adversarial-validator` ישירות, מול תדריך הקשר שהורכב ידנית, כדי לעצב חוזה מילוי-מראש של פרמטרי שאילתה על ספק זרימה משותף ב-React. ה-API המעוצב שוחרר בעיקרון כפי שהוגדר ושרד סקירת קוד מאוחרת יותר. שאלה אחת של המפתח הזוטר הפכה החלטת שמות לפני שהיה קוד כלשהו.
 
-What the skill adds to that arrangement is the discovery step the session assembled ad hoc, the size band that scales
-the roster, and the two gates in fixed positions. What it deliberately does not add is the full analyst fan-out that
-`/architectural-analysis` runs: that roster is built to assess an existing module across every dimension, and it is
-oversized for shaping one contract.
+מה שהסקיל מוסיף לסידור הזה הוא צעד הגילוי שהסשן הרכיב אד-הוק, רצועת הגודל שמתאימה את המערך, ושני השערים במיקומים קבועים. מה שהוא במכוון לא מוסיף הוא ההתפרשות המלאה של האנליסטים ש-`/architectural-analysis` מריץ: המערך ההוא בנוי להעריך מודול קיים לרוחב כל ממד, והוא גדול מדי לעיצוב חוזה אחד.
 
-## Related documentation
+## תיעוד קשור
 
-- [Plugin README](../../README.md). The plugin's front door: its skills, agents, and how they fit together.
-- [Repo root README](../../../README.md). The Han suite landing page. Start here if you arrived from outside the docs
-  tree.
-- [`/pairing`](../../../han-core/docs/skills/pairing.md). Drive these rounds collaboratively, stopping after each one so
-  you review it as it lands. Invoking `/design-an-api` directly runs the rounds to completion without pausing between
-  them.
-- [YAGNI](../../../docs/yagni.md). The evidence-based "You Aren't Gonna Need It" rule: the two gates, the
-  acceptable-evidence list, the named anti-patterns, and the deferral format.
-- [`/tdd`](./tdd.md). The implementation run this design document feeds.
-- [`/architectural-analysis`](./architectural-analysis.md). Assesses the module you are about to change, when you want
-  the existing structure judged before designing into it.
+- [README של הפלאגין](../../README.md). הדלת הקדמית של הפלאגין: הסקילים שלו, הסוכנים, ואיך הם משתלבים.
+- [README של שורש הריפו](../../../README.md). דף הנחיתה של חבילת Han. התחל כאן אם הגעת מחוץ לעץ התיעוד.
+- [`/pairing`](../../../han-core/docs/skills/pairing.md). הובל את הסבבים האלה בשיתוף פעולה, עם עצירה אחרי כל אחד כדי שתסקור אותו תוך כדי שהוא נוחת. הפעלה ישירה של `/design-an-api` מריצה את הסבבים עד הסוף בלי לעצור ביניהם.
+- [YAGNI](../../../docs/yagni.md). כלל ה-"You Aren't Gonna Need It" מבוסס-הראיות: שני השערים, רשימת הראיות הקבילות, האנטי-דפוסים הנקובים בשם, ופורמט הדחייה.
+- [`/tdd`](./tdd.md). ריצת המימוש שמסמך העיצוב הזה מזין.
+- [`/architectural-analysis`](./architectural-analysis.md). מעריך את המודול שאתה עומד לשנות, כשאתה רוצה שהמבנה הקיים יישפט לפני שאתה מעצב לתוכו.
 
-The four spine agents run at every size:
+ארבעת סוכני השדרה רצים בכל גודל:
 
-- [`codebase-explorer`](../../../han-core/docs/agents/codebase-explorer.md). Discovers the current surface, its
-  consumers, and the constraints the design has to live inside.
-- [`software-architect`](../../../han-core/docs/agents/software-architect.md). Produces the options and every
-  amendment.
-- [`junior-developer`](../../../han-core/docs/agents/junior-developer.md). Questions the chosen option as a generalist
-  who was not in the room.
-- [`adversarial-validator`](../../../han-core/docs/agents/adversarial-validator.md). Attacks the amended design and the
-  evidence under it.
+- [`codebase-explorer`](../../../han-core/docs/agents/codebase-explorer.md). מגלה את המשטח הנוכחי, את הצרכנים שלו, ואת האילוצים שהעיצוב צריך לחיות בתוכם.
+- [`software-architect`](../../../han-core/docs/agents/software-architect.md). מייצר את האפשרויות ואת כל התיקונים.
+- [`junior-developer`](../../../han-core/docs/agents/junior-developer.md). שואל על האפשרות שנבחרה כגנרליסט שלא היה בחדר.
+- [`adversarial-validator`](../../../han-core/docs/agents/adversarial-validator.md). תוקף את העיצוב המתוקן ואת הראיות שמתחתיו.
 
-These specialists join the discovery wave when the interface shows their signal and the band allows:
+המומחים האלה מצטרפים לגל הגילוי כשהממשק מראה את האות שלהם והרצועה מאפשרת:
 
-- [`structural-analyst`](../../../han-core/docs/agents/structural-analyst.md). Added on a consumer-spread signal.
-- [`behavioral-analyst`](../../../han-core/docs/agents/behavioral-analyst.md). Added on a boundary-data signal.
-- [`concurrency-analyst`](../../../han-core/docs/agents/concurrency-analyst.md). Added on an ordering signal.
-- [`data-engineer`](../../../han-core/docs/agents/data-engineer.md). Added on a data-contract signal.
-- [`on-call-engineer`](../../../han-core/docs/agents/on-call-engineer.md). Added on a failure-path signal.
-- [`adversarial-security-analyst`](../../../han-core/docs/agents/adversarial-security-analyst.md). Added on a
-  trust-boundary signal.
-- [`system-architect`](../../../han-core/docs/agents/system-architect.md). Added on a system-seam signal, at the large
-  band only.
+- [`structural-analyst`](../../../han-core/docs/agents/structural-analyst.md). מתווסף על אות של פיזור צרכנים.
+- [`behavioral-analyst`](../../../han-core/docs/agents/behavioral-analyst.md). מתווסף על אות של נתוני גבול.
+- [`concurrency-analyst`](../../../han-core/docs/agents/concurrency-analyst.md). מתווסף על אות של סדר.
+- [`data-engineer`](../../../han-core/docs/agents/data-engineer.md). מתווסף על אות של חוזה נתונים.
+- [`on-call-engineer`](../../../han-core/docs/agents/on-call-engineer.md). מתווסף על אות של מסלול כשל.
+- [`adversarial-security-analyst`](../../../han-core/docs/agents/adversarial-security-analyst.md). מתווסף על אות של גבול אמון.
+- [`system-architect`](../../../han-core/docs/agents/system-architect.md). מתווסף על אות של תפר מערכת, ברצועה הגדולה בלבד.
 
-One more agent runs after the design document exists:
+סוכן אחד נוסף רץ אחרי שמסמך העיצוב קיים:
 
-- [`readability-editor`](../../../han-communication/docs/agents/readability-editor.md). Audits and rewrites the
-  finished document for the engineer who will implement the contract and the reviewer who will approve it.
+- [`readability-editor`](../../../han-communication/docs/agents/readability-editor.md). מבקר ומשכתב את המסמך הגמור עבור המהנדס שיממש את החוזה והסוקר שיאשר אותו.

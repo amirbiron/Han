@@ -1,146 +1,93 @@
 # /manual-test-planning
 
-Operator documentation for the `/manual-test-planning` skill in the han plugin. This document helps you decide _when_
-and _how_ to use the skill. For what the skill does internally, read the skill definition at
-[`han-coding/skills/manual-test-planning/SKILL.md`](../../skills/manual-test-planning/SKILL.md).
+תיעוד מפעיל לסקיל `/manual-test-planning` בפלאגין. המסמך הזה עוזר לך להחליט _מתי_ ו*איך* להשתמש בסקיל. למה שהסקיל עושה בפנים, קרא את הגדרת הסקיל ב-[`han-coding/skills/manual-test-planning/SKILL.md`](../../skills/manual-test-planning/SKILL.md).
 
-> See also: [Plugin README](../../README.md) · [Repo root](../../../README.md) · [All skills](../../../docs/skills/README.md) ·
-> [All agents](../../../docs/agents/README.md) · [YAGNI](../../../docs/yagni.md)
+> ראה גם: [README של הפלאגין](../../README.md) · [שורש הריפו](../../../README.md) · [כל הסקילים](../../../docs/skills/README.md) · [כל הסוכנים](../../../docs/agents/README.md) · [YAGNI](../../../docs/yagni.md)
 
 ## TL;DR
 
-- **What it does.** Produces a plain-language manual test plan from the context you supply: an executive summary, a
-  high-level list of named tests, and a detail section per test with the steps a person follows by hand and the
-  outcomes they should expect.
-- **When to use it.** You have a feature, change, branch, plan, or PR and want a document a person can follow to
-  verify it by hand, without reading any code.
-- **What you get back.** A `manual-test-plan.md` file written in short, plain sentences, free of technical detail,
-  with expected outcomes in every test, or a plain statement instead of a document when nothing in the context can be
-  manually tested.
+- **מה הוא עושה.** מייצר תוכנית בדיקות ידנית בשפה פשוטה מתוך ההקשר שאתה מספק: סיכום מנהלים, רשימה ברמה גבוהה של בדיקות נקובות בשם, וסעיף פירוט לכל בדיקה עם השלבים שאדם מבצע ידנית והתוצאות שהוא אמור לצפות להן.
+- **מתי להשתמש בו.** יש לך פיצ'ר, שינוי, ענף, תוכנית או PR ואתה רוצה מסמך שאדם יכול ללכת לפיו כדי לאמת אותו ידנית, בלי לקרוא קוד כלשהו.
+- **מה אתה מקבל בחזרה.** קובץ `manual-test-plan.md` שכתוב במשפטים קצרים ופשוטים, נקי מפרטים טכניים, עם תוצאות צפויות בכל בדיקה, או הצהרה פשוטה במקום מסמך כששום דבר בהקשר לא ניתן לבדיקה ידנית.
 
-## Key concepts
+## מושגי מפתח
 
-- **Manually testable outcome.** An outcome qualifies only when a person can reach it through the product's own
-  surfaces (a screen, a command, a request, a document), the steps can be written without asking them to read or
-  change code, and the result is directly observable. Internal refactors and dependency bumps do not qualify.
-- **One test per outcome, grouped only on identical steps.** A test verifies a single outcome, or a group of related
-  outcomes only when the exact same steps produce every outcome in the group. Different steps means a different test.
-- **Categories for larger plans.** When the plan holds more than five tests, the skill looks for natural
-  plain-language categories among them. When at least two emerge, both the test list and the detail sections are
-  organized under the category names, and any test that fits no category goes under a final "Other tests" category.
-  With one natural category or none, the flat list stays.
-- **No manual tests means no document.** When the supplied context has nothing a person can test by hand, the skill
-  says so and asks whether there is more context to consider. If there is none, its only output is that statement.
-- **Plain language throughout.** The plan is written for the person running the tests, who may not be technical. No
-  file paths, function names, code, or framework jargon appear anywhere in the document.
-- **Adversarial validation before the file exists.** The `adversarial-validator` agent attacks the draft: it tries to
-  disprove that each expected outcome is promised by the context, that the steps as written produce it, and that
-  grouped outcomes truly share identical steps. Confirmed findings adjust, split, or remove tests before anything is
-  written.
+- **תוצאה שניתנת לבדיקה ידנית.** תוצאה נחשבת רק כשאדם יכול להגיע אליה דרך המשטחים של המוצר עצמו (מסך, פקודה, בקשה, מסמך), כשאפשר לכתוב את השלבים בלי לבקש ממנו לקרוא או לשנות קוד, וכשהתוצאה נצפית ישירות. ריפקטורים פנימיים ועדכוני תלויות לא נחשבים.
+- **בדיקה אחת לכל תוצאה, קיבוץ רק על שלבים זהים.** בדיקה מאמתת תוצאה יחידה, או קבוצה של תוצאות קשורות רק כשבדיוק אותם שלבים מייצרים כל תוצאה בקבוצה. שלבים שונים אומרים בדיקה שונה.
+- **קטגוריות לתוכניות גדולות יותר.** כשהתוכנית מחזיקה יותר מחמש בדיקות, הסקיל מחפש קטגוריות טבעיות בשפה פשוטה ביניהן. כששתיים לפחות עולות, גם רשימת הבדיקות וגם סעיפי הפירוט מאורגנים תחת שמות הקטגוריות, וכל בדיקה שלא מתאימה לאף קטגוריה הולכת תחת קטגוריה אחרונה של "בדיקות אחרות". עם קטגוריה טבעית אחת או אפס, הרשימה השטוחה נשארת.
+- **אין בדיקות ידניות אומר אין מסמך.** כשלהקשר שסופק אין שום דבר שאדם יכול לבדוק ידנית, הסקיל אומר זאת ושואל אם יש עוד הקשר לשקול. אם אין, הפלט היחיד שלו הוא ההצהרה הזו.
+- **שפה פשוטה לכל אורך הדרך.** התוכנית נכתבת עבור האדם שמריץ את הבדיקות, שאולי אינו טכני. שום נתיבי קבצים, שמות פונקציות, קוד או ז'רגון של פריימוורק לא מופיעים בשום מקום במסמך.
+- **אימות אדוורסרי לפני שהקובץ קיים.** סוכן ה-`adversarial-validator` תוקף את הטיוטה: הוא מנסה להפריך שכל תוצאה צפויה מובטחת על ידי ההקשר, שהשלבים כפי שנכתבו מייצרים אותה, ושתוצאות מקובצות באמת חולקות שלבים זהים. ממצאים מאושרים מתקנים, מפצלים או מסירים בדיקות לפני שנכתב משהו.
 
-## When to use it
+## מתי להשתמש בו
 
-**Invoke when:**
+**הפעל כאשר:**
 
-- You finished a feature or a branch and want a hands-on verification walkthrough someone can run before release.
-- You have a plan, spec, or PR and want manual QA steps derived from what it promises.
-- A non-technical teammate will verify the work and needs a document they can follow on their own.
+- סיימת פיצ'ר או ענף ואתה רוצה הליכת אימות מעשית שמישהו יוכל להריץ לפני שחרור.
+- יש לך תוכנית, מפרט או PR ואתה רוצה שלבי QA ידניים שנגזרים ממה שהוא מבטיח.
+- חבר צוות לא-טכני יאמת את העבודה וצריך מסמך שהוא יכול ללכת לפיו בעצמו.
 
-**Do not invoke for:**
+**אל תפעיל עבור:**
 
-- **Automated test coverage plans.** Use [`/automated-test-planning`](./automated-test-planning.md) for coverage-gap and edge-case test
-  plans with file references and test levels.
-- **Writing test code.** Use [`/tdd`](./tdd.md) to implement behavior test-first.
-- **Reviewing code quality.** Use [`/code-review`](./code-review.md).
-- **Stress-testing an existing plan.** Use
-  [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md).
+- **תוכניות כיסוי בדיקות אוטומטיות.** השתמש ב-[`/automated-test-planning`](./automated-test-planning.md) לתוכניות בדיקה של פערי כיסוי ומקרי קצה עם הפניות לקבצים ורמות בדיקה.
+- **כתיבת קוד בדיקות.** השתמש ב-[`/tdd`](./tdd.md) כדי לממש התנהגות test-first.
+- **סקירת איכות קוד.** השתמש ב-[`/code-review`](./code-review.md).
+- **בחינה בלחץ של תוכנית קיימת.** השתמש ב-[`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md).
 
-## How to invoke it
+## איך להפעיל אותו
 
-Run `/manual-test-planning` in Claude Code.
+הרץ `/manual-test-planning` ב-Claude Code.
 
-Give it:
+תן לו:
 
-1. **Context to plan from.** Files, a branch, a plan document, a PR, or a description of the feature or change. The
-   richer the context, the sharper the tests. Without any context, the skill asks what you want a plan for.
-2. **A target path, optional.** The plan defaults to `manual-test-plan.md` in the current directory; name a path to
-   put it somewhere else. When the default file already exists, the skill picks a short unique name instead of
-   overwriting, keeping `manual-test-plan` in it (for example, `sign-in-manual-test-plan.md`).
+1. **הקשר לתכנן ממנו.** קבצים, ענף, מסמך תוכנית, PR, או תיאור של הפיצ'ר או השינוי. ככל שההקשר עשיר יותר, כך הבדיקות חדות יותר. בלי שום הקשר, הסקיל שואל למה אתה רוצה תוכנית.
+2. **נתיב יעד, אופציונלי.** התוכנית נופלת כברירת מחדל ל-`manual-test-plan.md` בתיקייה הנוכחית; נקוב בנתיב כדי לשים אותה במקום אחר. כשקובץ ברירת המחדל כבר קיים, הסקיל בוחר שם ייחודי קצר במקום לדרוס, ושומר בו את `manual-test-plan` (לדוגמה, `sign-in-manual-test-plan.md`).
 
-Example prompts:
+פרומפטים לדוגמה:
 
-- `/manual-test-planning`. _"Create a manual test plan for the changes on this branch."_
-- `/manual-test-planning docs/plans/checkout-flow/feature-specification.md`. Derive the tests from a spec.
-- `/manual-test-planning`. _"Plan manual tests for the new sign-in flow we just discussed."_
+- `/manual-test-planning`. _"תיצור תוכנית בדיקות ידנית לשינויים בענף הזה."_
+- `/manual-test-planning docs/plans/checkout-flow/feature-specification.md`. גזור את הבדיקות ממפרט.
+- `/manual-test-planning`. _"תתכנן בדיקות ידניות לזרימת ההתחברות החדשה שדיברנו עליה."_
 
-## What you get back
+## מה אתה מקבל בחזרה
 
-A `manual-test-plan.md` file with three sections:
+קובץ `manual-test-plan.md` עם שלושה סעיפים:
 
-- **Summary.** The executive summary: what the plan covers, who can run it, how many tests it contains, and where to
-  start.
-- **Tests at a Glance.** Every test name with one sentence on what it verifies, in the order to run them.
-- **Test Details.** One section per named test: what it verifies, a numbered list of steps to follow by hand, and the
-  expected outcome or outcomes the person should observe.
+- **Summary.** סיכום המנהלים: מה התוכנית מכסה, מי יכול להריץ אותה, כמה בדיקות היא מכילה, ואיפה להתחיל.
+- **Tests at a Glance.** כל שם בדיקה עם משפט אחד על מה היא מאמתת, בסדר שבו יש להריץ אותן.
+- **Test Details.** סעיף אחד לכל בדיקה נקובה בשם: מה היא מאמתת, רשימה ממוספרת של שלבים לבצע ידנית, והתוצאה או התוצאות הצפויות שהאדם אמור לראות.
 
-When the plan holds more than five tests and at least two natural categories emerge, both Tests at a Glance and Test
-Details are organized under plain-language category names, with the same categories in the same order in both
-sections and any uncategorized test under a final "Other tests" category.
+כשהתוכנית מחזיקה יותר מחמש בדיקות ולפחות שתי קטגוריות טבעיות עולות, גם Tests at a Glance וגם Test Details מאורגנים תחת שמות קטגוריות בשפה פשוטה, עם אותן קטגוריות באותו סדר בשני הסעיפים וכל בדיקה לא מקוטלגת תחת קטגוריה אחרונה של "בדיקות אחרות".
 
-When nothing in the context can be manually tested and you have no more context to add, there is no file; the skill
-tells you that in the channel and stops.
+כששום דבר בהקשר לא ניתן לבדיקה ידנית ואין לך עוד הקשר להוסיף, אין קובץ; הסקיל אומר לך זאת בערוץ ועוצר.
 
-## How to get the most out of it
+## איך להפיק ממנו את המרב
 
-- **Supply the behavior, not the code.** The skill plans from what the work promises a user can do. A spec, a PR
-  description, or a plain description of the feature gives it more to work with than a bare file list.
-- **Say who will run the tests.** If the tester is non-technical, say so; the wording of steps and outcomes tightens
-  around what they can see and do.
-- **Pair with `/automated-test-planning`** when you also want automated coverage: this skill covers the by-hand walkthrough,
-  that one covers the tests engineers write.
+- **ספק את ההתנהגות, לא את הקוד.** הסקיל מתכנן ממה שהעבודה מבטיחה שמשתמש יוכל לעשות. מפרט, תיאור PR, או תיאור פשוט של הפיצ'ר נותנים לו יותר לעבוד איתו מרשימת קבצים חשופה.
+- **אמור מי יריץ את הבדיקות.** אם הבודק אינו טכני, אמור זאת; הניסוח של השלבים והתוצאות מתהדק סביב מה שהוא יכול לראות ולעשות.
+- **צמד עם `/automated-test-planning`** כשאתה רוצה גם כיסוי אוטומטי: הסקיל הזה מכסה את ההליכה הידנית, וזה מכסה את הבדיקות שמהנדסים כותבים.
 
-## Cost and latency
+## עלות וזמן תגובה
 
-The skill runs in the main conversation and dispatches two agents in sequence: `han-core:adversarial-validator`,
-which attacks the draft before the file is written, and `han-communication:readability-editor`, which rewrites the
-finished document's prose for the person running the tests. Typical runs take a few minutes. It is built for
-tight-loop iteration; re-run it when the underlying change grows.
+הסקיל רץ בשיחה הראשית ומשגר שני סוכנים ברצף: `han-core:adversarial-validator`, שתוקף את הטיוטה לפני שהקובץ נכתב, ו-`han-communication:readability-editor`, שמשכתב את הטקסט של המסמך הגמור עבור האדם שמריץ את הבדיקות. ריצות טיפוסיות לוקחות כמה דקות. הוא בנוי לאיטרציה בלולאה צמודה; הרץ אותו מחדש כשהשינוי הבסיסי גדל.
 
-## In more detail
+## בפירוט
 
-The skill walks a seven-step process:
+הסקיל עובר תהליך של שבעה צעדים:
 
-1. **Gather the context.** Everything supplied to the call: arguments, conversation, referenced files, and (when git
-   is available) the diff behind a referenced branch or PR. The git detail informs understanding only and never
-   appears in the plan.
-2. **Identify what can be manually tested.** List candidate outcomes a person can verify by hand. If the list is
-   empty, say so and ask for more context; with none, stop with no document.
-3. **Group outcomes into named tests.** One outcome per test, merged only when the exact same steps produce every
-   outcome in the group, each with a short plain-language name. When there are more than five tests, the skill looks
-   for natural plain-language categories; when at least two emerge, the plan is organized under them with any
-   uncategorized test under a final "Other tests" category, and otherwise the flat list stays.
-4. **Draft the plan.** Source the shared readability standard via `han-communication:readability-guidance`, then fill
-   the template at [`references/template.md`](../../skills/manual-test-planning/references/template.md).
-5. **Adversarially validate the plan.** Dispatch `adversarial-validator` against the draft with the context it was
-   derived from. It tries to disprove that outcomes are promised by the context, that the steps produce them, that a
-   person can follow them without touching code, and that grouped outcomes share identical steps. Confirmed findings
-   fix steps, correct or remove outcomes, split grouped tests, or remove tests; if every test falls, the skill returns
-   to the nothing-to-test path. Findings that turn on ambiguity in the context go to the user with a recommendation.
-6. **Write the file.** Default `manual-test-plan.md`; a user-supplied path wins. When the default file already
-   exists, the skill derives a short unique name from the context that keeps `manual-test-plan` in it, rather than
-   overwriting. A user-supplied path that already exists is never overwritten without confirmation.
-7. **Readability edit and self-check.** Dispatch `readability-editor` against the file for the named audience, then
-   run the standardized readability self-check and fix any failure before presenting a short in-channel summary.
+1. **איסוף ההקשר.** כל מה שסופק לקריאה: ארגומנטים, שיחה, קבצים מוזכרים, ו(כש-git זמין) ה-diff שמאחורי ענף או PR שהוזכר. הפרטים מ-git מיידעים את ההבנה בלבד ולעולם לא מופיעים בתוכנית.
+2. **זיהוי מה ניתן לבדיקה ידנית.** רשימת תוצאות מועמדות שאדם יכול לאמת ידנית. אם הרשימה ריקה, לומר זאת ולבקש עוד הקשר; אם אין, לעצור בלי מסמך.
+3. **קיבוץ תוצאות לבדיקות נקובות בשם.** תוצאה אחת לכל בדיקה, ממוזגות רק כשבדיוק אותם שלבים מייצרים כל תוצאה בקבוצה, כל אחת עם שם קצר בשפה פשוטה. כשיש יותר מחמש בדיקות, הסקיל מחפש קטגוריות טבעיות בשפה פשוטה; כששתיים לפחות עולות, התוכנית מאורגנת תחתיהן וכל בדיקה לא מקוטלגת נמצאת תחת קטגוריה אחרונה של "בדיקות אחרות", ואחרת הרשימה השטוחה נשארת.
+4. **ניסוח התוכנית.** שאיבת תקן הקריאוּת המשותף דרך `han-communication:readability-guidance`, ואז מילוי התבנית ב-[`references/template.md`](../../skills/manual-test-planning/references/template.md).
+5. **אימות אדוורסרי של התוכנית.** שיגור `adversarial-validator` מול הטיוטה עם ההקשר שממנו היא נגזרה. הוא מנסה להפריך שהתוצאות מובטחות על ידי ההקשר, שהשלבים מייצרים אותן, שאדם יכול ללכת לפיהם בלי לגעת בקוד, ושתוצאות מקובצות חולקות שלבים זהים. ממצאים מאושרים מתקנים שלבים, מתקנים או מסירים תוצאות, מפצלים בדיקות מקובצות, או מסירים בדיקות; אם כל בדיקה נופלת, הסקיל חוזר למסלול של אין-מה-לבדוק. ממצאים שתלויים בעמימות בהקשר הולכים למשתמש עם המלצה.
+6. **כתיבת הקובץ.** ברירת המחדל `manual-test-plan.md`; נתיב שהמשתמש סיפק מנצח. כשקובץ ברירת המחדל כבר קיים, הסקיל גוזר שם ייחודי קצר מההקשר ששומר בו את `manual-test-plan`, במקום לדרוס. נתיב שהמשתמש סיפק וכבר קיים לעולם לא נדרס בלי אישור.
+7. **עריכת קריאוּת ובדיקה עצמית.** שיגור `readability-editor` מול הקובץ עבור הקהל הנקוב, ואז הרצת הבדיקה העצמית הסטנדרטית של קריאוּת ותיקון כל כשל לפני הצגת סיכום קצר בערוץ.
 
-## Related documentation
+## תיעוד קשור
 
-- [Plugin README](../../README.md). The plugin's front door: its skills, agents, and how they fit together.
-- [Repo root README](../../../README.md). The Han suite landing page. Start here if you arrived from outside the docs
-  tree.
-- [`/automated-test-planning`](./automated-test-planning.md). The automated-coverage sibling: prioritized test plans with file references
-  and test levels.
-- [`adversarial-validator`](../../../han-core/docs/agents/adversarial-validator.md). Dispatched against the draft to
-  disprove invalid tests, steps, and expected outcomes before the file is written.
-- [`readability-editor`](../../../han-communication/docs/agents/readability-editor.md). Dispatched once the plan is
-  written, to rewrite its prose for the person who will run the tests.
-- [`SKILL.md` for /manual-test-planning](../../skills/manual-test-planning/SKILL.md). The internal process definition.
+- [README של הפלאגין](../../README.md). הדלת הקדמית של הפלאגין: הסקילים שלו, הסוכנים, ואיך הם משתלבים.
+- [README של שורש הריפו](../../../README.md). דף הנחיתה של חבילת Han. התחל כאן אם הגעת מחוץ לעץ התיעוד.
+- [`/automated-test-planning`](./automated-test-planning.md). האח של הכיסוי האוטומטי: תוכניות בדיקה מתועדפות עם הפניות לקבצים ורמות בדיקה.
+- [`adversarial-validator`](../../../han-core/docs/agents/adversarial-validator.md). משוגר מול הטיוטה כדי להפריך בדיקות, שלבים ותוצאות צפויות לא תקפים לפני שהקובץ נכתב.
+- [`readability-editor`](../../../han-communication/docs/agents/readability-editor.md). משוגר ברגע שהתוכנית נכתבה, כדי לשכתב את הטקסט שלה עבור האדם שיריץ את הבדיקות.
+- [`SKILL.md` של /manual-test-planning](../../skills/manual-test-planning/SKILL.md). הגדרת התהליך הפנימי.

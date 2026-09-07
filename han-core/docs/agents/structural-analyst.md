@@ -1,138 +1,102 @@
 # structural-analyst
 
-Operator documentation for the `structural-analyst` agent in the han plugin. This document helps you decide _when_ and
-_how_ to dispatch the agent. For what the agent does internally, read the agent definition at
-[`han-core/agents/structural-analyst.md`](../../agents/structural-analyst.md).
+תיעוד מפעיל לסוכן `structural-analyst` בפלאגין. המסמך הזה עוזר לך להחליט _מתי_ ו*איך* לשגר את הסוכן. למה שהסוכן עושה בפנים, קרא את הגדרת הסוכן ב-[`han-core/agents/structural-analyst.md`](../../agents/structural-analyst.md).
 
-> See also: [Plugin README](../../README.md) · [Repo root](../../../README.md) · [All agents](../../../docs/agents/README.md) ·
-> [All skills](../../../docs/skills/README.md)
+> ראה גם: [README של הפלאגין](../../README.md) · [שורש הריפו](../../../README.md) · [כל הסוכנים](../../../docs/agents/README.md) · [כל הסקילים](../../../docs/skills/README.md)
 
 ## TL;DR
 
-- **What it does.** Analyzes the static structure of a specified codebase focus area: module boundaries, coupling,
-  dependency direction, abstractions, and duplication. Produces numbered structural findings with file paths and
-  verbatim code.
-- **When to dispatch it.** You want a principled static-structure pass on a module or focus area, independent of runtime
-  behavior or risk assessment. Always dispatched by `/architectural-analysis`. Conditionally dispatched by
-  `/code-review`, and by `/iterative-plan-review` and `/plan-implementation` when the plan or review covers module
-  boundaries, coupling, or dependency direction. Available to `/plan-a-feature` as an opt-in specialist, included on
-  request.
-- **What you get back.** Numbered `S#` findings, each tied to a structural dimension (Boundaries / Coupling / Dependency
-  Direction / Abstraction / Duplication), file paths, verbatim code, and an impact statement.
+- **מה הוא עושה.** מנתח את המבנה הסטטי של אזור מיקוד נתון בבסיס הקוד: גבולות מודולים, צימוד, כיוון תלויות, הפשטות וכפילויות. מייצר ממצאים מבניים ממוספרים עם נתיבי קבצים וקוד מילה במילה.
+- **מתי לשגר אותו.** אתה רוצה מעבר עקרוני על מבנה סטטי של מודול או אזור מיקוד, בנפרד מהתנהגות בזמן ריצה או מהערכת סיכונים. תמיד משוגר על ידי `/architectural-analysis`. משוגר באופן מותנה על ידי `/code-review`, ועל ידי `/iterative-plan-review` ו-`/plan-implementation` כשהתוכנית או הסקירה מכסות גבולות מודולים, צימוד או כיוון תלויות. זמין ל-`/plan-a-feature` כמומחה אופציונלי, שנכלל לפי בקשה.
+- **מה אתה מקבל בחזרה.** ממצאי `S#` ממוספרים, כל אחד קשור לממד מבני (גבולות / צימוד / כיוון תלויות / הפשטה / כפילות), נתיבי קבצים, קוד מילה במילה, ומשפט השפעה.
 
-## Key concepts
+## מושגי מפתח
 
-- **Static, not runtime.** The agent reads code as written. Data flow, error propagation, and concurrency are out of
-  scope and deferred to `behavioral-analyst` and `concurrency-analyst`.
-- **Five dimensions, all required.** Module Boundaries and Cohesion, Coupling Analysis, Dependency Direction,
-  Abstraction Assessment, Duplication and Pattern Candidates. Skipping a dimension makes the analysis incomplete.
-- **Coupling has texture.** The agent distinguishes afferent (who depends on this?) from efferent (what does this depend
-  on?), and stable-dependency from volatile-dependency, rather than counting imports as a single number.
-- **Negative results are valuable.** When a dimension surfaces no issues, the agent says so explicitly.
-  _"Well-structured"_ is a finding too.
-- **Discovers findings, does not synthesize.** Recommendations belong to `software-architect`. Risk assessment belongs
-  to `risk-analyst`.
-- **`/code-review` adds a default-SUGG dispatcher directive at Step 3.5.** When dispatched from `/code-review`, the
-  skill appends an instruction: default the severity of every finding to SUGG. Escalate to WARN or CRIT only when the
-  change actively introduces or worsens the issue. This is `/code-review`'s tailoring; the agent's general behavior
-  outside `/code-review` is unchanged. Other callers (such as `/architectural-analysis`) receive the agent's default
-  skeptical posture.
+- **סטטי, לא זמן ריצה.** הסוכן קורא את הקוד כפי שנכתב. זרימת נתונים, התפשטות שגיאות ומקביליות מחוץ להיקף ונדחות ל-`behavioral-analyst` ול-`concurrency-analyst`.
+- **חמישה ממדים, כולם נדרשים.** גבולות מודולים וליכוד, ניתוח צימוד, כיוון תלויות, הערכת הפשטה, כפילויות ומועמדים לדפוס. דילוג על ממד הופך את הניתוח לחלקי.
+- **לצימוד יש מרקם.** הסוכן מבחין בין צימוד נכנס (מי תלוי בזה?) לצימוד יוצא (במה זה תלוי?), ובין תלות יציבה לתלות תנודתית, במקום לספור ייבואים כמספר יחיד.
+- **תוצאות שליליות הן בעלות ערך.** כשממד לא מעלה בעיות, הסוכן אומר זאת במפורש. _"מובנה היטב"_ הוא גם ממצא.
+- **מגלה ממצאים, לא מסנתז.** ההמלצות שייכות ל-`software-architect`. הערכת הסיכונים שייכת ל-`risk-analyst`.
+- **`/code-review` מוסיף הנחיית משגר של ברירת-מחדל-SUGG בשלב 3.5.** כשהוא משוגר מ-`/code-review`, הסקיל מצרף הנחיה: קבע את חומרת ברירת המחדל של כל ממצא ל-SUGG. הסלם ל-WARN או ל-CRIT רק כשהשינוי מכניס או מחמיר את הבעיה באופן פעיל. זו ההתאמה של `/code-review`; ההתנהגות הכללית של הסוכן מחוץ ל-`/code-review` אינה משתנה. קוראים אחרים (כמו `/architectural-analysis`) מקבלים את עמדת הספקנות שהיא ברירת המחדל של הסוכן.
 
-## When to use it
+## מתי להשתמש בו
 
-**Dispatch when:**
+**שגר כאשר:**
 
-- `/architectural-analysis` is running. The agent is one of the three parallel analysts the skill always dispatches.
-- `/code-review` flags structural concerns in the file list (new module boundaries, large refactors, suspicious import
-  patterns).
-- You suspect a coupling or cohesion problem in a module but cannot point at the specific finding. The agent surfaces
-  them concretely.
-- A pre-refactor baseline is needed before splitting or restructuring a module.
+- `/architectural-analysis` רץ. הסוכן הוא אחד משלושת האנליסטים המקבילים שהסקיל תמיד משגר.
+- `/code-review` מסמן חששות מבניים ברשימת הקבצים (גבולות מודולים חדשים, ריפקטורים גדולים, דפוסי ייבוא חשודים).
+- אתה חושד בבעיית צימוד או ליכוד במודול אבל לא מצליח להצביע על הממצא הספציפי. הסוכן מעלה אותם באופן קונקרטי.
+- דרוש בסיס-השוואה לפני ריפקטור, לפני פיצול או שינוי מבנה של מודול.
 
-**Do not dispatch for:**
+**אל תשגר עבור:**
 
-- Runtime behavior, data flow, error propagation. Use `behavioral-analyst`.
-- Concurrency hazards. Use `concurrency-analyst`.
-- Risk prioritization. Use `risk-analyst` (which consumes this agent's findings).
-- Architectural recommendations or refactoring plans. Use `software-architect`.
-- Cross-service topology. Use `system-architect`.
+- התנהגות בזמן ריצה, זרימת נתונים, התפשטות שגיאות. השתמש ב-`behavioral-analyst`.
+- סכנות מקביליות. השתמש ב-`concurrency-analyst`.
+- תיעדוף סיכונים. השתמש ב-`risk-analyst` (שצורך את הממצאים של הסוכן הזה).
+- המלצות ארכיטקטוניות או תוכניות ריפקטור. השתמש ב-`software-architect`.
+- טופולוגיה חוצת-שירותים. השתמש ב-`system-architect`.
 
-## How to invoke it
+## איך להפעיל אותו
 
-Dispatch via the `Agent` tool with `subagent_type: han-core:structural-analyst`. Give it a focus area (module,
-directory, or set of files). The agent examines the focus area plus one layer outward in each direction (what depends on
-it, what it depends on).
+שגר דרך כלי ה-`Agent` עם `subagent_type: han-core:structural-analyst`. תן לו אזור מיקוד (מודול, תיקייה או קבוצת קבצים). הסוכן בוחן את אזור המיקוד ובנוסף שכבה אחת החוצה בכל כיוון (מה תלוי בו, במה הוא תלוי).
 
-Example prompts:
+פרומפטים לדוגמה:
 
-- _"Analyze the static structure of `src/billing/`. Focus on module boundaries and coupling. Use git churn to identify
-  volatile dependencies if available."_
-- _"Examine `packages/notifications/` for cohesion and abstraction quality. We are about to split this package into
-  two."_
+- _"תנתח את המבנה הסטטי של `src/billing/`. תתמקד בגבולות מודולים ובצימוד. השתמש ב-churn של git כדי לזהות תלויות תנודתיות אם זמין."_
+- _"תבחן את `packages/notifications/` לאיכות ליכוד והפשטה. אנחנו עומדים לפצל את החבילה הזו לשתיים."_
 
-## What you get back
+## מה אתה מקבל בחזרה
 
-- Numbered `S#` findings, each with: dimension (Boundaries / Coupling / Dependency Direction / Abstraction /
-  Duplication), relevant file paths, verbatim code in fenced blocks, and an impact statement.
-- A **Structural Summary** with the focus area analyzed, the 2-3 key concerns, and any well-structured areas. It also
-  names any dimensions that could not be fully assessed (for example, when git is unavailable for churn analysis).
+- ממצאי `S#` ממוספרים, כל אחד עם: ממד (גבולות / צימוד / כיוון תלויות / הפשטה / כפילות), נתיבי קבצים רלוונטיים, קוד מילה במילה בבלוקים מגודרים, ומשפט השפעה.
+- **Structural Summary** עם אזור המיקוד שנותח, 2-3 החששות המרכזיים, וכל אזור מובנה היטב. הוא גם נוקב בכל ממד שלא ניתן היה להעריך במלואו (לדוגמה, כש-git אינו זמין לניתוח churn).
 
-A finding that rests on an input the agent could not inspect carries its own `Unverified:` line on the finding
-itself, so the disclosure travels with the claim instead of sitting only in the summary's skipped-dimensions note.
+ממצא שנשען על קלט שהסוכן לא הצליח לבחון נושא שורת `Unverified:` משלו על הממצא עצמו, כך שהגילוי נוסע יחד עם הטענה במקום לשבת רק בהערת הממדים שדולגו בסיכום.
 
-## How to get the most out of it
+## איך להפיק ממנו את המרב
 
-- **Scope narrowly.** A single module produces sharp findings. A broad scope flattens into generic concerns.
-- **Run with git available.** The agent uses `git log --since="90 days ago"` to identify high-churn modules. Without
-  git, churn-based findings drop and the agent says so explicitly.
-- **Pair with `behavioral-analyst` and `concurrency-analyst`.** The three analysts together cover static structure,
-  runtime behavior, and concurrency. `/architectural-analysis` dispatches all three.
-- **Feed findings into `risk-analyst`.** The agent's findings are the upstream input for risk prioritization.
+- **תחם בצמצום.** מודול יחיד מייצר ממצאים חדים. היקף רחב משתטח לחששות גנריים.
+- **הרץ כש-git זמין.** הסוכן משתמש ב-`git log --since="90 days ago"` כדי לזהות מודולים בעלי churn גבוה. בלי git, ממצאים מבוססי churn נושרים והסוכן אומר זאת במפורש.
+- **צמד עם `behavioral-analyst` ועם `concurrency-analyst`.** שלושת האנליסטים יחד מכסים מבנה סטטי, התנהגות בזמן ריצה ומקביליות. `/architectural-analysis` משגר את שלושתם.
+- **הזן את הממצאים ל-`risk-analyst`.** הממצאים של הסוכן הם קלט ה-upstream לתיעדוף סיכונים.
 
-## Cost and latency
+## עלות וזמן תגובה
 
-The agent runs on `sonnet`. A focused-scope analysis runs in a couple of minutes. Built for per-module cadence, not
-tight-loop iteration.
+הסוכן רץ על `sonnet`. ניתוח בהיקף ממוקד רץ בכמה דקות. בנוי לקצב של מודול-אחר-מודול, לא לאיטרציה בלולאה צמודה.
 
-## Sources
+## מקורות
 
-The agent's vocabulary and dimensions are grounded in established structural-analysis practice.
+אוצר המילים והממדים של הסוכן מעוגנים בפרקטיקה מבוססת של ניתוח מבני.
 
 ### Robert C. Martin: Stability Metrics
 
-Martin's afferent / efferent coupling and Instability Index frame the agent's coupling analysis.
+הצימוד הנכנס / היוצא ומדד חוסר היציבות של Martin ממסגרים את ניתוח הצימוד של הסוכן.
 
 URL: https://blog.cleancoder.com/uncle-bob/2018/11/27/Comments-by-Tests.html
 
 ### Eric Evans: Domain-Driven Design
 
-Evans's bounded-context and aggregate framings inform the agent's module-boundary findings inside a single codebase.
+מסגורי ההקשר התחום והאגרגט של Evans מיידעים את ממצאי גבולות המודולים של הסוכן בתוך בסיס קוד יחיד.
 
 URL: https://www.domainlanguage.com/ddd/
 
 ### Martin Fowler: Refactoring Catalog
 
-Fowler's catalog (Extract Class, Move Method, Inline Class) names the structural moves the agent surfaces.
+הקטלוג של Fowler (Extract Class, Move Method, Inline Class) נוקב בשמות המהלכים המבניים שהסוכן מעלה.
 
 URL: https://martinfowler.com/books/refactoring.html
 
-## Related documentation
+## תיעוד קשור
 
-- [Plugin README](../../README.md). The plugin's front door: its skills, agents, and how they fit together.
-- [Repo root README](../../../README.md). The Han suite landing page. Start here if you arrived from outside the docs tree.
-- [Agents Index](../../../docs/agents/README.md). All agents, grouped by role.
-- [`behavioral-analyst`](./behavioral-analyst.md). Sibling analyst for runtime behavior.
-- [`concurrency-analyst`](./concurrency-analyst.md). Sibling analyst for concurrency hazards.
-- [`risk-analyst`](./risk-analyst.md). Consumes this agent's findings for risk prioritization.
-- [`software-architect`](./software-architect.md). Synthesizes findings into intra-codebase recommendations.
-- [`/architectural-analysis`](../../../han-coding/docs/skills/architectural-analysis.md). Always dispatches this agent.
-- [`/code-review`](../../../han-coding/docs/skills/code-review.md). Conditionally dispatches this agent when the change touches
-  module boundaries.
-- [`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md). Dispatches this agent as an opt-in specialist,
-  included on request.
-- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). Conditionally dispatches this agent
-  when the review covers module boundaries, coupling, or dependency direction.
-- [`/plan-implementation`](../../../han-planning/docs/skills/plan-implementation.md). Conditionally dispatches this agent when
-  the plan covers module boundaries, coupling, or dependency direction.
-- [`/design-an-api`](../../../han-coding/docs/skills/design-an-api.md). Adds this agent to the discovery wave on a
-  consumer-spread signal, at the medium band and above.
+- [README של הפלאגין](../../README.md). הדלת הקדמית של הפלאגין: הסקילים שלו, הסוכנים, ואיך הם משתלבים.
+- [README של שורש הריפו](../../../README.md). דף הנחיתה של חבילת Han. התחל כאן אם הגעת מחוץ לעץ התיעוד.
+- [אינדקס הסוכנים](../../../docs/agents/README.md). כל הסוכנים, מקובצים לפי תפקיד.
+- [`behavioral-analyst`](./behavioral-analyst.md). אנליסט אח להתנהגות בזמן ריצה.
+- [`concurrency-analyst`](./concurrency-analyst.md). אנליסט אח לסכנות מקביליות.
+- [`risk-analyst`](./risk-analyst.md). צורך את הממצאים של הסוכן הזה לתיעדוף סיכונים.
+- [`software-architect`](./software-architect.md). מסנתז ממצאים להמלצות בתוך בסיס הקוד.
+- [`/architectural-analysis`](../../../han-coding/docs/skills/architectural-analysis.md). תמיד משגר את הסוכן הזה.
+- [`/code-review`](../../../han-coding/docs/skills/code-review.md). משגר את הסוכן הזה באופן מותנה כשהשינוי נוגע בגבולות מודולים.
+- [`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md). משגר את הסוכן הזה כמומחה אופציונלי, שנכלל לפי בקשה.
+- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). משגר את הסוכן הזה באופן מותנה כשהסקירה מכסה גבולות מודולים, צימוד או כיוון תלויות.
+- [`/plan-implementation`](../../../han-planning/docs/skills/plan-implementation.md). משגר את הסוכן הזה באופן מותנה כשהתוכנית מכסה גבולות מודולים, צימוד או כיוון תלויות.
+- [`/design-an-api`](../../../han-coding/docs/skills/design-an-api.md). מוסיף את הסוכן הזה לגל הגילוי על אות של פיזור צרכנים, ברצועה הבינונית ומעלה.

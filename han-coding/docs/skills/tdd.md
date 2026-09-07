@@ -1,285 +1,164 @@
 # /tdd
 
-Operator documentation for the `/tdd` skill in the han plugin. This document helps you decide _when_ and _how_ to use
-the skill. For what the skill does internally, read the skill definition at
-[`han-coding/skills/tdd/SKILL.md`](../../skills/tdd/SKILL.md).
+תיעוד מפעיל לסקיל `/tdd` בפלאגין. המסמך הזה עוזר לך להחליט _מתי_ ו*איך* להשתמש בסקיל. למה שהסקיל עושה בפנים, קרא את הגדרת הסקיל ב-[`han-coding/skills/tdd/SKILL.md`](../../skills/tdd/SKILL.md).
 
-> See also: [Plugin README](../../README.md) · [Repo root](../../../README.md) · [All skills](../../../docs/skills/README.md) ·
-> [All agents](../../../docs/agents/README.md) · [YAGNI](../../../docs/yagni.md)
+> ראה גם: [README של הפלאגין](../../README.md) · [שורש הריפו](../../../README.md) · [כל הסקילים](../../../docs/skills/README.md) · [כל הסוכנים](../../../docs/agents/README.md) · [YAGNI](../../../docs/yagni.md)
 
 ## TL;DR
 
-- **What it does.** Drives writing code through a disciplined, BDD-framed red-green-refactor loop, one behavior at a
-  time, with a gate that refuses production code until a test has been run and seen to fail.
-- **When to use it.** You want a feature or behavior implemented test-first, the right way, instead of code with tests
-  bolted on after.
-- **What you get back.** Working, tested code in your tree, grown behavior by behavior, with the test list, the
-  standards applied, anything the scope gate declined to build, and the verification output shown at the end.
+- **מה הוא עושה.** מוביל כתיבת קוד דרך לולאת red-green-refactor ממושמעת במסגרת BDD, התנהגות אחת בכל פעם, עם שער שמסרב לקוד פרודקשן עד שבדיקה רצה ונצפתה נכשלת.
+- **מתי להשתמש בו.** אתה רוצה פיצ'ר או התנהגות שממומשים test-first, בדרך הנכונה, במקום קוד עם בדיקות שמוברגות אחר כך.
+- **מה אתה מקבל בחזרה.** קוד עובד ובדוק בעץ שלך, שגדל התנהגות אחרי התנהגות, עם רשימת הבדיקות, התקנים שהוחלו, כל מה ששער ההיקף סירב לבנות, ופלט האימות שמוצג בסוף.
 
-## Key concepts
+## מושגי מפתח
 
-- **Execution skill.** The analysis and planning skills produce markdown documents. This one modifies your source tree:
-  it writes the tests and the production code. That is the point, and it is why the skill reports scope and recommends a
-  branch before it starts, so a watching human can see what it will do. Its sibling [`/refactor`](./refactor.md) is the
-  other execution skill, for restructuring code that already exists.
-- **The observed-failure gate.** No production code changes unless a test has been run and watched to fail for the
-  intended reason in that loop. A test that passes the first time it runs means red was never seen, which is a process
-  violation, not a success.
-- **The scope gate.** A genuine red proves the behavior is missing. It does not prove this build owns producing it.
-  Step 1 records a scope boundary in files and directories, and before every production edit the skill names the file it
-  is about to change and tests it against that boundary. An edit that lands outside, most of all in a shared library or
-  engine other applications consume, is a stop. The skill then works a three-rung ladder: redesign the test so it does
-  not need the out-of-scope behavior, defer the item as its own ticket, or, only when the requested behavior cannot be
-  delivered without the change, stop and ask you. A severity label on an incoming finding does not open the gate; CRIT
-  says the finding is real, not that the fix belongs to this ticket.
-- **Two hats.** Making a test pass and improving structure are different jobs done at different times. The skill never
-  refactors while a test is red. Make it run, then make it right.
-- **BDD framing.** Tests describe observable behavior, named in your project's existing convention, asserting outcomes
-  through the public interface, never private state. For user-facing behavior the skill works outside-in: a failing
-  acceptance test on the outside, red-green-refactor on the inside.
-- **Next-test selection by simplest transformation.** When several candidate tests remain, the skill picks the one whose
-  passing requires the simplest change to the code: a constant before a variable, a conditional before a loop. That is
-  the Transformation Priority Premise, made concrete by the ZOMBIES ordering (Zero, One, Many, then Boundaries,
-  Interface, Exceptions). Chosen this way, each green step is the smallest generalization the code can make, and the
-  design grows instead of lurching.
-- **Standards split across green and refactor.** Going green obeys only the standards that govern correctness and where
-  code is allowed to live (an ADR boundary you cross is wrong code, not deferrable mess). Full stylistic and structural
-  conformance, plus YAGNI, happen in refactor.
+- **סקיל ביצוע.** סקילי הניתוח והתכנון מייצרים מסמכי markdown. זה משנה את עץ המקור שלך: הוא כותב את הבדיקות ואת קוד הפרודקשן. זו הנקודה, ובגלל זה הסקיל מדווח על ההיקף וממליץ על ענף לפני שהוא מתחיל, כדי שאדם שצופה יראה מה הוא עומד לעשות. האח שלו [`/refactor`](./refactor.md) הוא סקיל הביצוע השני, לשינוי מבנה של קוד שכבר קיים.
+- **שער הכשל הנצפה.** שום קוד פרודקשן לא משתנה אלא אם בדיקה רצה ונצפתה נכשלת מהסיבה המיועדת באותה לולאה. בדיקה שעוברת בפעם הראשונה שהיא רצה אומרת שאדום מעולם לא נראה, וזו הפרת תהליך ולא הצלחה.
+- **שער ההיקף.** אדום אמיתי מוכיח שההתנהגות חסרה. הוא לא מוכיח שהבנייה הזו אחראית לייצר אותה. צעד 1 מתעד גבול היקף בקבצים ובתיקיות, ולפני כל עריכת פרודקשן הסקיל נוקב בקובץ שהוא עומד לשנות ובודק אותו מול הגבול הזה. עריכה שנוחתת מחוץ לגבול, ובמיוחד בספרייה משותפת או במנוע שאפליקציות אחרות צורכות, היא עצירה. הסקיל אז עובד סולם של שלושה שלבים: לעצב מחדש את הבדיקה כך שלא תזדקק להתנהגות שמחוץ להיקף, לדחות את הפריט ככרטיס משלו, או, רק כשההתנהגות המבוקשת לא ניתנת לאספקה בלי השינוי, לעצור ולשאול אותך. תווית חומרה על ממצא נכנס לא פותחת את השער; CRIT אומר שהממצא אמיתי, לא שהתיקון שייך לכרטיס הזה.
+- **שני כובעים.** להעביר בדיקה ולשפר מבנה הן עבודות שונות שנעשות בזמנים שונים. הסקיל לעולם לא מבצע ריפקטורינג בזמן שבדיקה אדומה. תגרום לזה לרוץ, ואז תגרום לזה להיות נכון.
+- **מסגור BDD.** בדיקות מתארות התנהגות נצפית, נקובות במוסכמה הקיימת של הפרויקט שלך, ומאמתות תוצאות דרך הממשק הציבורי, לעולם לא מצב פרטי. עבור התנהגות שהמשתמש רואה, הסקיל עובד מבחוץ פנימה: בדיקת קבלה נכשלת מבחוץ, red-green-refactor מבפנים.
+- **בחירת הבדיקה הבאה לפי הטרנספורמציה הפשוטה ביותר.** כשנשארות כמה בדיקות מועמדות, הסקיל בוחר בזו שהעברתה דורשת את השינוי הפשוט ביותר בקוד: קבוע לפני משתנה, תנאי לפני לולאה. זו ה-Transformation Priority Premise, שמוקנקרטת בסדר ZOMBIES (Zero, One, Many, ואז Boundaries, Interface, Exceptions). כשבוחרים כך, כל צעד ירוק הוא ההכללה הקטנה ביותר שהקוד יכול לעשות, והעיצוב גדל במקום להיטלטל.
+- **תקנים מפוצלים בין ירוק לריפקטור.** המעבר לירוק מציית רק לתקנים ששולטים בנכונות ובמקום שבו מותר לקוד לחיות (גבול ADR שאתה חוצה הוא קוד שגוי, לא בלגן שניתן לדחייה). ציות סגנוני ומבני מלא, יחד עם YAGNI, קורים בריפקטור.
 
-## When to use it
+## מתי להשתמש בו
 
-**Invoke when:**
+**הפעל כאשר:**
 
-- You have a feature, behavior, or function to build and you want it driven test-first through a correct
-  red-green-refactor cycle.
-- You want to grow code behavior by behavior with the tests leading, not write code and add tests afterward.
-- You are working from a specification or plan and want the implementation built with TDD discipline rather than in one
-  pass.
-- You have a fix in mind for a bug and want to drive it in as a regression test: the test asserts the desired correct
-  behavior, fails because the bug is still present, and passes once the fix lands. (Find the root cause first with
-  [`/investigate`](./investigate.md).)
+- יש לך פיצ'ר, התנהגות או פונקציה לבנות ואתה רוצה שהם יובלו test-first דרך מחזור red-green-refactor נכון.
+- אתה רוצה לגדל קוד התנהגות אחרי התנהגות כשהבדיקות מובילות, ולא לכתוב קוד ולהוסיף בדיקות אחר כך.
+- אתה עובד ממפרט או מתוכנית ורוצה שהמימוש ייבנה במשמעת TDD ולא במעבר אחד.
+- יש לך תיקון בראש לבאג ואתה רוצה להוביל אותו פנימה כבדיקת רגרסיה: הבדיקה מאמתת את ההתנהגות הנכונה הרצויה, נכשלת מפני שהבאג עדיין קיים, ועוברת ברגע שהתיקון נוחת. (מצא קודם את שורש הבעיה עם [`/investigate`](./investigate.md).)
 
-**Do not invoke for:**
+**אל תפעיל עבור:**
 
-- **Producing a test plan without writing code.** Use [`/automated-test-planning`](./automated-test-planning.md) instead. It
-  analyzes coverage gaps and prioritizes what to test; it does not implement. For a plain-language plan a person runs
-  by hand, use [`/manual-test-planning`](./manual-test-planning.md).
-- **Reviewing or auditing code that already exists.** Use [`/code-review`](./code-review.md) instead.
-- **Deciding what a feature should do.** Use [`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md) to specify behavior
-  first, then bring the spec here.
-- **Finding the root cause of a bug.** Use [`/investigate`](./investigate.md). Once you have a fix in mind,
-  you can drive it back in through `/tdd`: the regression test asserts the desired correct behavior (red until the fix
-  lands), not that the bug's error is raised.
-- **Restructuring existing code outside a TDD cycle.** Use [`/refactor`](./refactor.md). The refactor step inside `/tdd`
-  cleans up only what the current red-green cycle touched; restructuring code that predates the cycle is its sibling's
-  job.
+- **ייצור תוכנית בדיקות בלי לכתוב קוד.** השתמש ב-[`/automated-test-planning`](./automated-test-planning.md) במקום. הוא מנתח פערי כיסוי ומתעדף מה לבדוק; הוא לא מממש. לתוכנית בשפה פשוטה שאדם מריץ ידנית, השתמש ב-[`/manual-test-planning`](./manual-test-planning.md).
+- **סקירה או ביקורת של קוד שכבר קיים.** השתמש ב-[`/code-review`](./code-review.md) במקום.
+- **החלטה מה פיצ'ר צריך לעשות.** השתמש ב-[`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md) כדי להגדיר התנהגות קודם, ואז הבא את המפרט לכאן.
+- **מציאת שורש הבעיה של באג.** השתמש ב-[`/investigate`](./investigate.md). ברגע שיש לך תיקון בראש, אתה יכול להוביל אותו בחזרה דרך `/tdd`: בדיקת הרגרסיה מאמתת את ההתנהגות הנכונה הרצויה (אדומה עד שהתיקון נוחת), לא שהשגיאה של הבאג נזרקת.
+- **שינוי מבנה של קוד קיים מחוץ למחזור TDD.** השתמש ב-[`/refactor`](./refactor.md). שלב הריפקטור בתוך `/tdd` מנקה רק את מה שמחזור ה-red-green הנוכחי נגע בו; שינוי מבנה של קוד שקדם למחזור הוא העבודה של האח שלו.
 
-## How to invoke it
+## איך להפעיל אותו
 
-Run `/tdd` in Claude Code.
+הרץ `/tdd` ב-Claude Code.
 
-Give it:
+תן לו:
 
-1. **What to build.** A behavior, a feature, or a path to a specification or plan. A sharp version names the observable
-   behavior ("the fee calculator rounds half-up to the cent"). A thin version ("build the fee thing") still works too,
-   because Step 2 turns it into a behavior list you review before any code is written.
-2. **Any context to respect.** A `feature-specification.md`, a linked issue, or a plan. The skill reads it as the source
-   of behaviors for the test list.
-3. **Nothing about the test framework.** The skill resolves the test, lint, and build commands from your project itself
-   (see _What you get back_). You do not need to pass them.
+1. **מה לבנות.** התנהגות, פיצ'ר, או נתיב למפרט או לתוכנית. גרסה חדה נוקבת בהתנהגות הנצפית ("מחשבון העמלה מעגל חצי-כלפי-מעלה לסנט"). גרסה דלילה ("תבנה את עניין העמלה") עדיין עובדת גם, מפני שצעד 2 הופך אותה לרשימת התנהגויות שאתה סוקר לפני שנכתב קוד כלשהו.
+2. **כל הקשר לכבד.** `feature-specification.md`, issue מקושר, או תוכנית. הסקיל קורא את זה כמקור ההתנהגויות לרשימת הבדיקות.
+3. **שום דבר על פריימוורק הבדיקות.** הסקיל מפענח את פקודות ה-test, ה-lint וה-build מהפרויקט שלך עצמו (ראה _מה אתה מקבל בחזרה_). אתה לא צריך להעביר אותן.
 
-The skill runs autonomously after your initial request. Before the loop, it reports scope: the behavior to build, the
-resolved test, lint, and build commands, the standards and ADRs it found, the current branch, and a branch
-recommendation if you are on the default branch. It then proceeds without waiting; that report is informational, not a
-gate. The one exception: if your request or the provided context explicitly says you want to review, verify, or approve
-the plan or test list before implementation, the skill builds the test list and presents it with the scope report. It
-then waits for your approval before writing any code. The only input that can otherwise block it is a test command it
-cannot resolve or infer, because there is no way to run tests without one.
+הסקיל רץ אוטונומית אחרי הבקשה הראשונית שלך. לפני הלולאה, הוא מדווח על ההיקף: ההתנהגות לבנות, פקודות ה-test, ה-lint וה-build שהתפענחו, התקנים וה-ADRs שהוא מצא, הענף הנוכחי, והמלצת ענף אם אתה על ענף ברירת המחדל. אחר כך הוא ממשיך בלי לחכות; הדיווח הזה מיידע ולא שער. היוצא מן הכלל היחיד: אם הבקשה שלך או ההקשר שסופק אומרים במפורש שאתה רוצה לסקור, לאמת או לאשר את התוכנית או את רשימת הבדיקות לפני המימוש, הסקיל בונה את רשימת הבדיקות ומציג אותה עם דיווח ההיקף. אז הוא מחכה לאישור שלך לפני שהוא כותב קוד. הקלט היחיד שיכול אחרת לחסום אותו הוא פקודת בדיקה שהוא לא מצליח לפענח או להסיק, מפני שאין דרך להריץ בדיקות בלעדיה.
 
-Example prompts:
+פרומפטים לדוגמה:
 
-- `/tdd`. _"Implement the discount engine from docs/specs/discount/feature-specification.md test-first."_
-- `/tdd`. _"Drive a new `parseDuration` function red-green-refactor: it should accept `1h30m` style strings and reject
-  garbage."_
+- `/tdd`. _"תממש את מנוע ההנחות מ-docs/specs/discount/feature-specification.md test-first."_
+- `/tdd`. _"תוביל פונקציית `parseDuration` חדשה red-green-refactor: היא צריכה לקבל מחרוזות בסגנון `1h30m` ולדחות זבל."_
 
-## What you get back
+## מה אתה מקבל בחזרה
 
-Code in your working tree, not a report. Specifically:
+קוד בעץ העבודה שלך, לא דוח. באופן ספציפי:
 
-- **A test list**, shown to you before the loop starts and updated as behaviors are completed and as new scenarios are
-  discovered (discovered scenarios are deferred, never built mid-loop).
-- **Tests and production code**, grown one behavior per cycle. Each cycle shows you the real test-runner output for red
-  (the test failing for the intended reason) and green (the new test passing, all prior tests still passing).
-- **A final summary**, covering:
-  - behaviors implemented
-  - the state of the test list, including any deferred items with their reopen triggers
-  - which coding standards and ADRs were applied and where
-  - anything the scope gate moved, with the rung that resolved it: the test it redesigned, or the ticket write-up for a
-    change this build declined to make
-  - any YAGNI deferrals from refactor
-  - the final test, lint, and build status, with output shown rather than asserted
+- **רשימת בדיקות**, שמוצגת לך לפני שהלולאה מתחילה ומתעדכנת ככל שהתנהגויות מושלמות וככל שתרחישים חדשים מתגלים (תרחישים שהתגלו נדחים, לעולם לא נבנים באמצע הלולאה).
+- **בדיקות וקוד פרודקשן**, שגדלים התנהגות אחת למחזור. כל מחזור מציג לך את הפלט האמיתי של מריץ הבדיקות עבור אדום (הבדיקה נכשלת מהסיבה המיועדת) ועבור ירוק (הבדיקה החדשה עוברת, כל הבדיקות הקודמות עדיין עוברות).
+- **סיכום סופי**, שמכסה:
+  - התנהגויות שמומשו
+  - מצב רשימת הבדיקות, כולל כל פריט דחוי עם טריגר הפתיחה מחדש שלו
+  - אילו תקני קוד ו-ADRs הוחלו ואיפה
+  - כל מה ששער ההיקף הזיז, עם השלב שפתר את זה: הבדיקה שהוא עיצב מחדש, או תיאור הכרטיס לשינוי שהבנייה הזו סירבה לעשות
+  - כל דחיית YAGNI מהריפקטור
+  - הסטטוס הסופי של test, lint ו-build, כשהפלט מוצג ולא נטען
 
-The skill resolves your test, lint, and build commands from CLAUDE.md's `## Project Discovery` section, falling back to
-`project-discovery.md`. If neither exists, it falls back to a one-time discovery script that infers them from your
-manifest files (package.json, pyproject.toml, go.mod, Cargo.toml, Gemfile, mix.exs, pom.xml, gradle, .csproj, or a
-Makefile test target). Commands the script infers are treated as best-effort suggestions, surfaced in the scope report
-so you can correct them if you are watching, not trusted blindly. If none of those resolve the test command, the skill
-asks you for it before the loop starts, because the loop cannot run without it. That is one of only two things that can
-block an otherwise autonomous run. The other is the scope gate's top rung, reached when the behavior you asked for
-cannot be delivered without changing code outside the boundary, where your call is to widen the scope or split the
-work.
+הסקיל מפענח את פקודות ה-test, ה-lint וה-build שלך מהסעיף `## Project Discovery` ב-CLAUDE.md, ונופל לאחור ל-`project-discovery.md`. אם אף אחד מהם לא קיים, הוא נופל לאחור לסקריפט גילוי חד-פעמי שמסיק אותן מקובצי המניפסט שלך (package.json, pyproject.toml, go.mod, Cargo.toml, Gemfile, mix.exs, pom.xml, gradle, .csproj, או יעד test ב-Makefile). פקודות שהסקריפט מסיק נחשבות להצעות במאמץ סביר, שמוצגות בדיווח ההיקף כדי שתוכל לתקן אותן אם אתה צופה, ולא סומכים עליהן בעיוורון. אם אף אחד מאלה לא מפענח את פקודת הבדיקה, הסקיל שואל אותך לפני שהלולאה מתחילה, מפני שהלולאה לא יכולה לרוץ בלעדיה. זה אחד משני הדברים היחידים שיכולים לחסום ריצה שאחרת אוטונומית. השני הוא השלב העליון של שער ההיקף, שמגיעים אליו כשההתנהגות שביקשת לא ניתנת לאספקה בלי לשנות קוד מחוץ לגבול, ושם ההחלטה שלך היא להרחיב את ההיקף או לפצל את העבודה.
 
-## How to get the most out of it
+## איך להפיק ממנו את המרב
 
-- **Bring a specification when you have one.** `/tdd` builds a better test list from a `feature-specification.md` than
-  from a one-line prompt, because the behaviors and edge cases are already named. Run
-  [`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md) first for anything non-trivial.
-- **Have your standards and ADRs discoverable.** The green and refactor steps apply your coding standards and
-  architectural decisions. If they live in `docs/coding-standards/` or `docs/adr/`, or are recorded by
-  [`/coding-standard`](./coding-standard.md) and
-  [`/architectural-decision-record`](../../../han-documentation/docs/skills/architectural-decision-record.md), the skill finds and applies them. If
-  they do not exist, it infers conventions from surrounding code, which is weaker.
-- **Name the files when the boundary matters.** Step 1 infers the scope boundary from what your request names, falling
-  back to the application or package the behavior lives in. If shared code sits close to the work and you do not want it
-  touched, say so in the invocation. That turns a judgment call into a stated boundary, and the gate gets stricter for
-  free.
-- **Let the list be the scope signal.** If the open test list grows past about ten items, the skill flags a scope
-  warning and keeps going, then recommends splitting the work in its final summary. Take that warning seriously: a
-  ballooning list usually means the feature wanted to be planned, not grown in one sitting.
-- **Read the red output.** The skill pastes real runner output for every red. Glancing at it is how you catch a test
-  that fails for the wrong reason before it drives wrong code.
-- **Pair with `/code-review` next.** TDD produces self-testing code; it does not replace a second set of eyes. Run
-  [`/code-review`](./code-review.md) on the branch when the list is empty.
+- **הבא מפרט כשיש לך.** `/tdd` בונה רשימת בדיקות טובה יותר מ-`feature-specification.md` מאשר מפרומפט בשורה אחת, מפני שההתנהגויות ומקרי הקצה כבר נקובים בשם. הרץ [`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md) קודם לכל דבר לא טריוויאלי.
+- **דאג שהתקנים וה-ADRs שלך יהיו ניתנים לגילוי.** שלבי הירוק והריפקטור מחילים את תקני הקוד וההחלטות הארכיטקטוניות שלך. אם הם חיים ב-`docs/coding-standards/` או ב-`docs/adr/`, או מתועדים על ידי [`/coding-standard`](./coding-standard.md) ו-[`/architectural-decision-record`](../../../han-documentation/docs/skills/architectural-decision-record.md), הסקיל מוצא ומחיל אותם. אם הם לא קיימים, הוא מסיק מוסכמות מהקוד הסובב, וזה חלש יותר.
+- **נקוב בקבצים כשהגבול משנה.** צעד 1 מסיק את גבול ההיקף ממה שהבקשה שלך נוקבת בו, ונופל לאחור לאפליקציה או לחבילה שההתנהגות חיה בה. אם קוד משותף יושב קרוב לעבודה ואתה לא רוצה שייגעו בו, אמור זאת בהפעלה. זה הופך שיקול דעת לגבול מוצהר, והשער נעשה מחמיר יותר בחינם.
+- **תן לרשימה להיות אות ההיקף.** אם רשימת הבדיקות הפתוחה גדלה מעבר לכעשרה פריטים, הסקיל מסמן אזהרת היקף וממשיך, ואז ממליץ לפצל את העבודה בסיכום הסופי שלו. קח את האזהרה הזו ברצינות: רשימה מתנפחת בדרך כלל אומרת שהפיצ'ר רצה להיות מתוכנן, לא לגדול בישיבה אחת.
+- **קרא את הפלט האדום.** הסקיל מדביק פלט אמיתי של המריץ עבור כל אדום. הצצה בו היא איך שאתה תופס בדיקה שנכשלת מהסיבה הלא נכונה, לפני שהיא מובילה קוד שגוי.
+- **צמד עם `/code-review` אחר כך.** TDD מייצר קוד שבודק את עצמו; הוא לא מחליף זוג עיניים שני. הרץ [`/code-review`](./code-review.md) על הענף כשהרשימה ריקה.
 
 ## YAGNI
 
-`/tdd` produces two things YAGNI gates: the test list and the code that comes out of refactor.
+`/tdd` מייצר שני דברים ש-YAGNI שומר עליהם: רשימת הבדיקות והקוד שיוצא מהריפקטור.
 
-- **The test list.** A scenario earns a place only with evidence it is needed now (a user-described need, a named
-  dependency, an existing code path that breaks, an applicable regulation, a real incident). Scenarios that fail the
-  evidence test, or that exist for symmetry or completeness, are deferred with the trigger that would reopen them, not
-  padded onto the list.
-- **The refactor step.** Removing duplication is the job. Adding an interface with one implementation, a configuration
-  knob no caller sets, or a generalization from a single example is not. "Duplication is a hint, not a command": the
-  skill abstracts only when two or more concrete examples force it, which is the Rule of Three and also Beck's
-  Triangulate. Speculative structure introduced for future flexibility is a YAGNI candidate, deferred with a named
-  reopen trigger and surfaced to you, never silently added and never silently dropped.
+- **רשימת הבדיקות.** תרחיש זוכה למקום רק עם ראיות שהוא נחוץ עכשיו (צורך שהמשתמש תיאר, תלות נקובה בשם, מסלול קוד קיים שנשבר, רגולציה שחלה, תקרית אמיתית). תרחישים שנכשלים במבחן הראיות, או שקיימים לשם סימטריה או שלמות, נדחים עם הטריגר שיפתח אותם מחדש, ולא נדחפים לרשימה.
+- **שלב הריפקטור.** הסרת כפילות היא העבודה. הוספת ממשק עם מימוש אחד, כפתור קונפיגורציה שאף קורא לא קובע, או הכללה מדוגמה יחידה, אינה. "כפילות היא רמז, לא פקודה": הסקיל מפשיט רק כששתי דוגמאות קונקרטיות או יותר מכריחות אותו, וזה כלל השלוש וגם ה-Triangulate של Beck. מבנה ספקולטיבי שהוכנס לגמישות עתידית הוא מועמד YAGNI, נדחה עם טריגר פתיחה מחדש נקוב ומוצג לך, לעולם לא מתווסף בשקט ולעולם לא נזרק בשקט.
 
-The rule is enforcing in refactor (speculative structure is deferred by default), and the deferrals appear in the final
-summary. See [YAGNI](../../../docs/yagni.md) for the two gates, the acceptable-evidence list, the named anti-patterns, and the
-deferral format.
+הכלל אוכף בריפקטור (מבנה ספקולטיבי נדחה כברירת מחדל), והדחיות מופיעות בסיכום הסופי. ראה [YAGNI](../../../docs/yagni.md) לשני השערים, לרשימת הראיות הקבילות, לאנטי-דפוסים הנקובים בשם, ולפורמט הדחייה.
 
-## Cost and latency
+## עלות וזמן תגובה
 
-`/tdd` runs on the main agent. It dispatches no sub-agents and is not a sizing-aware skill, so there is no fan-out cost.
-The cost is the loop itself: a multi-turn, tight iteration where each behavior is three phases (red, green, refactor)
-and each phase runs your test command. The most expensive single factor is the number of test list items multiplied by
-your suite's runtime, since the full suite runs at green and after every refactor. This is a tight-loop skill built to
-run while you build, not an infrequent high-signal report. Keeping the test list scoped (the skill flags lists past ~10
-items) is the main lever on total cost.
+`/tdd` רץ על הסוכן הראשי. הוא לא משגר סאב-סוכנים ואינו סקיל מודע-גודל, ולכן אין עלות התפרשות. העלות היא הלולאה עצמה: איטרציה צמודה ורבת-תורים שבה כל התנהגות היא שלושה שלבים (אדום, ירוק, ריפקטור) וכל שלב מריץ את פקודת הבדיקה שלך. הגורם הבודד היקר ביותר הוא מספר הפריטים ברשימת הבדיקות כפול זמן הריצה של החבילה שלך, מפני שכל החבילה רצה בירוק ואחרי כל ריפקטור. זה סקיל של לולאה צמודה שנבנה לרוץ תוך כדי שאתה בונה, לא דוח נדיר בעל אות גבוה. שמירה על רשימת בדיקות מתוחמת (הסקיל מסמן רשימות מעבר ל-10 פריטים בערך) היא הידית העיקרית על העלות הכוללת.
 
-## In more detail
+## בפירוט
 
-The skill is structurally modeled on two existing skills. The loop and its stop condition follow
-[`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md): front-loaded constraints, a deterministic
-per-cycle process, a bounded list. The project and command discovery follows
-[`/automated-test-planning`](./automated-test-planning.md): resolve from CLAUDE.md's `## Project Discovery`, fall back to
-`project-discovery.md`, fall back to a one-time script.
+הסקיל ממודל מבנית על שני סקילים קיימים. הלולאה ותנאי העצירה שלה הולכים לפי [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md): אילוצים בטעינה מוקדמת, תהליך דטרמיניסטי לכל מחזור, רשימה תחומה. גילוי הפרויקט והפקודות הולך לפי [`/automated-test-planning`](./automated-test-planning.md): פענוח מהסעיף `## Project Discovery` ב-CLAUDE.md, נפילה לאחור ל-`project-discovery.md`, נפילה לאחור לסקריפט חד-פעמי.
 
-One design decision is worth knowing. Classic TDD says green should "commit whatever sins are necessary" and clean up in
-refactor. Taken literally, that would mean ignoring coding standards while going green. The skill splits the difference.
-Standards that govern _correctness and architectural placement_ (which boundary code must go through, where it is
-allowed to live, which contract it honors) are obeyed in green. Violating an ADR boundary is not a temporary sin you
-tidy later; it is the wrong code. Stylistic and structural standards, the kind you genuinely can defer, are the refactor
-hat. This keeps the green step minimal (the Three Laws still hold) while making sure the code that survives the cycle
-respects the project's architecture.
+יש החלטת עיצוב אחת שכדאי להכיר. TDD קלאסי אומר שירוק צריך "לחטוא כל חטא שנדרש" ולנקות בריפקטור. אם לוקחים את זה כפשוטו, זה היה אומר להתעלם מתקני קוד תוך כדי המעבר לירוק. הסקיל מפצל את ההפרש. תקנים ששולטים ב*נכונות ובמיקום ארכיטקטוני* (דרך איזה גבול הקוד חייב לעבור, איפה מותר לו לחיות, איזה חוזה הוא מכבד) מכובדים בירוק. הפרת גבול ADR אינה חטא זמני שמסדרים אחר כך; היא הקוד השגוי. תקנים סגנוניים ומבניים, מהסוג שבאמת אפשר לדחות, הם כובע הריפקטור. זה שומר על שלב הירוק מינימלי (שלושת החוקים עדיין מתקיימים) ובו בזמן מוודא שהקוד ששורד את המחזור מכבד את הארכיטקטורה של הפרויקט.
 
-The scope gate is the newer of the two gates and answers the question the observed-failure gate cannot. That gate asks
-whether the red is real; the scope gate asks whether the test deserved to exist in this build. Both have to hold before
-a production edit, and a finding that is honest, severe, and correctly evidenced can still fail the second one.
+שער ההיקף הוא החדש מבין שני השערים והוא עונה על השאלה ששער הכשל הנצפה לא יכול. השער ההוא שואל אם האדום אמיתי; שער ההיקף שואל אם הבדיקה הגיעה לה להתקיים בבנייה הזו. שניהם צריכים להתקיים לפני עריכת פרודקשן, וממצא שהוא כן, חמור ומגובה ראיות נכון, עדיין יכול להיכשל בשני.
 
-The hardest honest limitation: the observed-failure gate is enforced by discipline and shown evidence (pasted runner
-output, the first-run-pass stop rule, strict step sequencing). It is not enforced by a mechanism that can physically
-prevent a premature write. No skill in the plugin model can enforce a "you must have observed X before doing Y"
-constraint with certainty. The skill makes the failure visible and diagnosable instead, which is the strongest available
-guarantee. If you watch one thing while it runs, watch that the red output is real and fails for the reason intended.
+המגבלה הכנה הקשה ביותר: שער הכשל הנצפה נאכף על ידי משמעת ועל ידי ראיות מוצגות (פלט מריץ מודבק, כלל העצירה של מעבר-בריצה-ראשונה, רצף צעדים מחמיר). הוא לא נאכף על ידי מנגנון שיכול פיזית למנוע כתיבה מוקדמת מדי. שום סקיל במודל הפלאגין לא יכול לאכוף אילוץ של "אתה חייב לצפות ב-X לפני שאתה עושה Y" בוודאות. הסקיל הופך את הכשל לגלוי ולניתן לאבחון במקום, וזו הערובה החזקה ביותר שזמינה. אם אתה צופה בדבר אחד תוך כדי שהוא רץ, צפה בכך שהפלט האדום אמיתי ונכשל מהסיבה המיועדת.
 
-## Sources
+## מקורות
 
-The skill's protocols and vocabulary are grounded in the primary TDD and BDD literature. Each source is cited because
-the skill draws a specific, named artifact from it.
+הפרוטוקולים ואוצר המילים של הסקיל מעוגנים בספרות ה-TDD וה-BDD הראשונית. כל מקור מצוטט מפני שהסקיל שואב ממנו תוצר ספציפי ונקוב בשם.
 
-### Kent Beck, _Test-Driven Development: By Example_, 2002; and "Canon TDD", 2023
+### Kent Beck, _Test-Driven Development: By Example_, 2002; ו-"Canon TDD", 2023
 
-The test list pattern, the red-green-refactor mantra, the two-hats rule, and the implementation gears (Fake It,
-Triangulate, Obvious Implementation) come from here. The skill's loop is the Canon TDD five-step loop.
+דפוס רשימת הבדיקות, המנטרה red-green-refactor, כלל שני הכובעים, וגלגלי המימוש (Fake It, Triangulate, Obvious Implementation) מגיעים מכאן. הלולאה של הסקיל היא לולאת חמשת הצעדים של Canon TDD.
 
 URL: https://tidyfirst.substack.com/p/canon-tdd
 
-### Robert C. Martin, "The Three Rules of TDD" and "The Cycles of TDD"
+### Robert C. Martin, "The Three Rules of TDD" ו-"The Cycles of TDD"
 
-The verbatim Three Laws the observed-failure gate is built on, including "compilation failures are failures" and "the
-one failing unit test".
+שלושת החוקים המילוליים ששער הכשל הנצפה בנוי עליהם, כולל "compilation failures are failures" ו-"the one failing unit test".
 
 URL: https://blog.cleancoder.com/uncle-bob/2014/12/17/TheCyclesOfTDD.html
 
-### Robert C. Martin, "The Transformation Priority Premise" and "Transformation Priority and Sorting"
+### Robert C. Martin, "The Transformation Priority Premise" ו-"Transformation Priority and Sorting"
 
-The ranked list of transformations behind the skill's next-test selection, the decision-point rule (when two changes
-could pass the test, prefer the simpler one), and the sorting demonstration that test order steers which algorithm
-emerges.
+הרשימה המדורגת של טרנספורמציות שמאחורי בחירת הבדיקה הבאה של הסקיל, כלל נקודת ההחלטה (כששני שינויים יכולים להעביר את הבדיקה, העדף את הפשוט יותר), וההדגמה של המיון שמראה שסדר הבדיקות מכוון איזה אלגוריתם צומח.
 
 URL: https://blog.cleancoder.com/uncle-bob/2013/05/27/TheTransformationPriorityPremise.html
 
 ### James Grenning, "TDD Guided by ZOMBIES"
 
-The Zero, One, Many, Boundaries, Interface, Exceptions, Simple ordering the test list follows when one behavior expands
-into several candidate tests.
+הסדר Zero, One, Many, Boundaries, Interface, Exceptions, Simple שרשימת הבדיקות הולכת לפיו כשהתנהגות אחת מתרחבת לכמה בדיקות מועמדות.
 
 URL: https://blog.wingman-sw.com/tdd-guided-by-zombies
 
 ### Martin Fowler, "Test Driven Development", "Mocks Aren't Stubs", "GivenWhenThen"
 
-The refactor-is-the-most-skipped-step warning, the classicist default for test doubles, the stub-query / mock-command
-rule, and Given-When-Then mapped onto Arrange-Act-Assert.
+האזהרה שהריפקטור הוא הצעד המדולג ביותר, ברירת המחדל הקלאסיציסטית ל-test doubles, כלל stub-לשאילתה / mock-לפקודה, ו-Given-When-Then ממופה על Arrange-Act-Assert.
 
 URL: https://martinfowler.com/articles/mocksArentStubs.html
 
 ### Dan North, "Introducing BDD"
 
-Behavior over "test", the should-sentence framing, and the "should it? really?" failure triage.
+התנהגות במקום "בדיקה", מסגור משפט ה-should, ומיון הכשלים של "should it? really?".
 
 URL: https://dannorth.net/introducing-bdd/
 
 ### Steve Freeman & Nat Pryce, _Growing Object-Oriented Software, Guided by Tests_
 
-The outside-in double loop: an outer acceptance test, an inner red-green-refactor loop, collaborator interfaces
-discovered via mocks at the call site, acceptance test green only with real implementations.
+הלולאה הכפולה מבחוץ פנימה: בדיקת קבלה חיצונית, לולאת red-green-refactor פנימית, ממשקי משתפי פעולה שמתגלים דרך mocks בנקודת הקריאה, ובדיקת קבלה שמוריקה רק עם מימושים אמיתיים.
 
 URL: https://growing-object-oriented-software.com/
 
-## Related documentation
+## תיעוד קשור
 
-- [Plugin README](../../README.md). The plugin's front door: its skills, agents, and how they fit together.
-- [Repo root README](../../../README.md). The Han suite landing page. Start here if you arrived from outside the docs tree.
-- [`/pairing`](../../../han-core/docs/skills/pairing.md). Drive this loop collaboratively, stopping after each behavior
-  so you review it as it lands. Invoking `/tdd` directly runs the loop to completion without pausing.
-- [Skills Index](../../../docs/skills/README.md). All skills, grouped by purpose.
-- [YAGNI](../../../docs/yagni.md). The evidence-based "You Aren't Gonna Need It" rule the refactor step and test list apply. The
-  two gates, the acceptable-evidence list, the named anti-patterns, and the deferral format.
-- [`/refactor`](./refactor.md). The sibling execution skill. Run it for preparatory refactoring before a `/tdd` run
-  ("make the change easy, then make the easy change"), or to execute review findings against existing code. Never run
-  the two on the same code at the same time.
-- [`/automated-test-planning`](./automated-test-planning.md). Plan what to test without writing code. Use it before `/tdd` to
-  enumerate behaviors, or instead of it when you want analysis rather than implementation.
-- [`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md). Specify behavior first; the spec becomes the test list `/tdd`
-  builds from.
-- [`/design-an-api`](./design-an-api.md). Settles the shape of an interface before you build it. Its design document is
-  written to be the input to a `/tdd` run.
-- [`/code-review`](./code-review.md). Run it on the branch once the list is empty. TDD produces self-testing
-  code; it does not replace review.
-- [`/coding-standard`](./coding-standard.md) and
-  [`/architectural-decision-record`](../../../han-documentation/docs/skills/architectural-decision-record.md). The standards and ADRs `/tdd`
-  applies in green and refactor come from here.
-- [Skill building guidance](../../../han-plugin-builder/skills/guidance/references/skill-building-guidance). The
-  progressive disclosure, description frontmatter, and bash-permission rules this skill follows.
+- [README של הפלאגין](../../README.md). הדלת הקדמית של הפלאגין: הסקילים שלו, הסוכנים, ואיך הם משתלבים.
+- [README של שורש הריפו](../../../README.md). דף הנחיתה של חבילת Han. התחל כאן אם הגעת מחוץ לעץ התיעוד.
+- [`/pairing`](../../../han-core/docs/skills/pairing.md). הובל את הלולאה הזו בשיתוף פעולה, עם עצירה אחרי כל התנהגות כדי שתסקור אותה תוך כדי שהיא נוחתת. הפעלה ישירה של `/tdd` מריצה את הלולאה עד הסוף בלי לעצור.
+- [אינדקס הסקילים](../../../docs/skills/README.md). כל הסקילים, מקובצים לפי מטרה.
+- [YAGNI](../../../docs/yagni.md). כלל ה-"You Aren't Gonna Need It" מבוסס-הראיות ששלב הריפקטור ורשימת הבדיקות מחילים. שני השערים, רשימת הראיות הקבילות, האנטי-דפוסים הנקובים בשם, ופורמט הדחייה.
+- [`/refactor`](./refactor.md). סקיל הביצוע האח. הרץ אותו לריפקטורינג מכין לפני ריצת `/tdd` ("תהפוך את השינוי לקל, ואז תעשה את השינוי הקל"), או כדי לבצע ממצאי סקירה מול קוד קיים. לעולם אל תריץ את השניים על אותו קוד באותו זמן.
+- [`/automated-test-planning`](./automated-test-planning.md). תכנן מה לבדוק בלי לכתוב קוד. השתמש בו לפני `/tdd` כדי למנות התנהגויות, או במקומו כשאתה רוצה ניתוח ולא מימוש.
+- [`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md). הגדר התנהגות קודם; המפרט הופך לרשימת הבדיקות ש-`/tdd` בונה ממנה.
+- [`/design-an-api`](./design-an-api.md). מיישב את הצורה של ממשק לפני שאתה בונה אותו. מסמך העיצוב שלו נכתב כדי להיות הקלט לריצת `/tdd`.
+- [`/code-review`](./code-review.md). הרץ אותו על הענף ברגע שהרשימה ריקה. TDD מייצר קוד שבודק את עצמו; הוא לא מחליף סקירה.
+- [`/coding-standard`](./coding-standard.md) ו-[`/architectural-decision-record`](../../../han-documentation/docs/skills/architectural-decision-record.md). התקנים וה-ADRs ש-`/tdd` מחיל בירוק ובריפקטור מגיעים מכאן.
+- [הנחיות בניית סקילים](../../../han-plugin-builder/skills/guidance/references/skill-building-guidance). כללי החשיפה ההדרגתית, ה-frontmatter של התיאור, והרשאות ה-bash שהסקיל הזה הולך לפיהם.

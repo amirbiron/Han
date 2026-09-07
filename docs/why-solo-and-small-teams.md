@@ -63,7 +63,7 @@ teams. The output of every skill lands in your working copy and, if you commit, 
 whole distribution surface.
 
 This is a deliberate scope choice, not a missing feature. Han is a personal project with best-effort maintenance and no
-SLA (see the [README](../README.md#maintenance-and-support) for the full posture). Adding a server component, a shared
+SLA (see the [README](../README.md#תחזוקה-ותמיכה) for the full posture). Adding a server component, a shared
 registry, or a governance console would mean building an org-level operations surface that the project is not staffed to
 run. The value Han targets lands in the engineer's working copy by design, where the engineer remains the decision-maker
 on what to commit.

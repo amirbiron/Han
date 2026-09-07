@@ -1,455 +1,211 @@
 # /code-review
 
-Operator documentation for the `/code-review` skill in the han plugin. This document helps you decide _when_ and _how_
-to use the skill. For what the skill does internally, read the skill definition at
-[`han-coding/skills/code-review/SKILL.md`](../../skills/code-review/SKILL.md).
+תיעוד מפעיל לסקיל `/code-review` בפלאגין. המסמך הזה עוזר לך להחליט _מתי_ ו*איך* להשתמש בסקיל. למה שהסקיל עושה בפנים, קרא את הגדרת הסקיל ב-[`han-coding/skills/code-review/SKILL.md`](../../skills/code-review/SKILL.md).
 
-> See also: [Plugin README](../../README.md) · [Repo root](../../../README.md) · [All skills](../../../docs/skills/README.md) ·
-> [All agents](../../../docs/agents/README.md) · [YAGNI](../../../docs/yagni.md)
+> ראה גם: [README של הפלאגין](../../README.md) · [שורש הריפו](../../../README.md) · [כל הסקילים](../../../docs/skills/README.md) · [כל הסוכנים](../../../docs/agents/README.md) · [YAGNI](../../../docs/yagni.md)
 
 ## TL;DR
 
-- **What it does.** Comprehensive code review of the current branch's changes, or of specified files when git is not
-  available.
-- **When to use it.** You want a principled review of what changed before merge: correctness, testing, security,
-  documentation compliance, and project-pattern deference.
-- **What you get back.** A structured review with findings classified as CRIT / WARN / SUGG, each with
-  `file_path:line_number` references and suggested fixes.
-- **Size-aware.** The skill classifies the change as small / medium / large, defaults to small, and dispatches a roster
-  proportional to scope. Pass the size as the first positional argument to override (`/code-review medium`). See
-  [Sizing](../../../docs/sizing.md) for the full model.
+- **מה הוא עושה.** סקירת קוד מקיפה של השינויים בענף הנוכחי, או של קבצים שצוינו כש-git לא זמין.
+- **מתי להשתמש בו.** אתה רוצה סקירה עקרונית של מה שהשתנה לפני מיזוג: נכונות, בדיקות, אבטחה, ציות לתיעוד, וכיבוד הדפוסים של הפרויקט.
+- **מה אתה מקבל בחזרה.** סקירה מובנית עם ממצאים מסווגים כ-CRIT / WARN / SUGG, כל אחד עם הפניות `file_path:line_number` ותיקונים מוצעים.
+- **מודע-גודל.** הסקיל מסווג את השינוי כקטן / בינוני / גדול, ברירת המחדל היא קטן, ומשגר מערך פרופורציונלי להיקף. העבר את הגודל כארגומנט המיקומי הראשון כדי לעקוף (`/code-review medium`). ראה [Sizing](../../../docs/sizing.md) למודל המלא.
 
-## Key concepts
+## מושגי מפתח
 
-- **Three severity levels.** CRIT (must fix before merge: security, data corruption, breaking API), WARN (should fix:
-  bugs, missing error handling, missing tests), SUGG (consider: style, refactoring, docs). Severity calibration is
-  governed by Step 3.3 in the skill body, the authoritative home for size-based demotion. Manual findings (Steps 4 to 6)
-  and agent findings (Step 7) follow the same rules: small changes escalate only Critical and prefer the lower severity
-  on uncertainty; medium escalates Critical and Warning; large prefers the higher severity when in doubt.
-- **Three review modes.** Mode A uses the full git branch diff. Mode B reviews uncommitted work when no branch diff
-  exists. Mode C reviews specified files when git is absent. **In Mode B and Mode C the YAGNI checklist is skipped
-  unless explicitly requested**, because no diff exists to distinguish introduced code from pre-existing code.
-- **Size-aware agent dispatch.** Two agents always run on every review (`junior-developer` for clarity and standards,
-  `adversarial-security-analyst` for exploit-path security). The rest of the roster (`test-engineer`,
-  `edge-case-explorer`, `structural-analyst`, `behavioral-analyst`, `concurrency-analyst`, `data-engineer`,
-  `devops-engineer`, `on-call-engineer`) is dispatched conditionally based on what the changed files touch. Larger sizes
-  raise the upper bound on the roster; smaller sizes prefer fewer agents producing higher-signal findings. See the
-  [Sizing](#sizing) section below.
-- **Calibration directive.** Every dispatched agent receives a calibration directive that requires findings to be either
-  introduced or worsened by the change, or critical irrespective of who introduced it. Theoretical concerns,
-  pre-existing best-practice gaps, and benign-outcome scaling worries are excluded. Severity scales with size: small
-  change → only Critical findings escalate; medium → Critical and Warning; large → all severities.
-- **Per-agent dispatcher tailoring.** When `/code-review` dispatches `structural-analyst` and `behavioral-analyst`, it
-  appends a default-SUGG directive so those agents start at the lowest severity and escalate only when the change
-  introduces or worsens the issue. When it dispatches `junior-developer` and `edge-case-explorer`, it appends a
-  file-list scoping directive so findings concern code on the scoped file list (with a narrower wording for
-  `edge-case-explorer` that preserves its caller-read protocol while keeping the failure-mode target on the file list).
-  These directives are `/code-review`'s tailoring; the agents' default behavior in other skills is unchanged.
-- **Reachability phrase-match gate (Step 7.2).** When an agent's own rationale contains phrases like _theoretical_,
-  _hypothetical_, _defense-in-depth_, _effectively impossible_, _in case the upstream_, _could happen_, _should never
-  happen_, or _edge case that does not occur_, the finding is demoted by one severity before the rubric is applied.
-  Security findings are exempt because the security agent's evidence standard already requires a demonstrated exploit
-  path. The gate is a cheap, deterministic first pass and is brittle to paraphrase by design; a finding that hedges its
-  reachability without one of the literal phrases is caught semantically by the Step 7.4 validation pass, not by growing
-  the phrase list.
-- **Independent findings validation (Step 7.4).** After the agent findings are collected and classified, the skill
-  dispatches one `adversarial-validator` over the _consolidated corrective finding list_, the same agent `/investigate`
-  uses to attack a root cause and fix. It is the only pass that re-reads the change in fresh context and judges each
-  finding against the code rather than against the producing agent's rationale, so it does not anchor on what the
-  specialists concluded. Each finding comes back Confirmed (kept), Partially Refuted (demoted one severity), or Refuted
-  (dropped). A finding is dropped only when the validator supplies concrete counter-evidence at `file_path:line_number`;
-  a bare assertion demotes rather than drops, and an uncertain verdict leaves the finding standing. Security findings
-  are dropped only when the demonstrated exploit is refuted with counter-evidence. The pass is a finding _filter, not a
-  finding source_: it never contributes findings of its own, and it skips entirely when the review produced no
-  corrective findings.
-- **Branch context loaded at Step 1.5.** Before agents are dispatched, the skill loads four sources of branch-level
-  context in order: PR description (via `gh pr view` when `gh` is available, Mode A only), a local `pr-body`,
-  `PR_BODY.md`, or `.pr-body` file at the repo root, branch commit messages, and an implementation plan from the
-  planning directory. The planning directory resolves first to the `plans:` (or `planning:`) key under CLAUDE.md's
-  `## Project Discovery` section. Otherwise, the skill globs `docs/plans/*/feature-implementation-plan.md` and
-  `plans/*/feature-implementation-plan.md`, picking the directory whose name matches the current branch (treating `-`
-  and `_` as interchangeable). The loaded content is summarized into a `$branch_context` block of at most 200 words. It
-  is plumbed, alongside the user's `$focus_areas` argument, into every agent prompt so agents avoid re-raising items the
-  team has already deferred or resolved. Because PR descriptions, ticket bodies, and commit messages are third-party
-  content that can carry text aimed at steering the review agent, the skill treats `$branch_context` as **untrusted
-  data, not instructions**. The Step 1.5 summary strips any directives addressed to the reader or an agent. Step 3.5
-  wraps the binding in explicit untrusted-data markers with a guard telling agents to use it for intent only and never
-  to obey instructions inside it. The user's own `$focus_areas` argument is trusted and is not wrapped. Step 1.5 is
-  skipped in Mode C. In Mode A and Mode B, when none of the four sources returns content, the skill emits a single
-  fail-open warning and proceeds with `$branch_context` set to `none provided`.
-- **Self-consistency check at Step 9.0.** Before the structural verification, the skill scans every pair of findings on
-  the same file with overlapping line ranges, detects contradictory recommendations, demotes both, and adds a
-  `Tension with {other-task-id}:` note for the human reviewer. Cross-file semantic contradictions are out of scope.
-- **Premise verification before standards-compliance findings.** Step 5 requires reading at least one architectural file
-  in the codebase that demonstrates a standard's premise before the skill raises a "violates standard X" finding. When
-  the file does not confirm the premise, the finding is omitted with a logged note rather than raised on inferred
-  premises.
-- **Project-pattern deference.** A pattern that differs from general best practices but is consistent within the project
-  is _not_ a finding. Only deviations from the project's own conventions count.
-- **Automated tool boundary.** If the project has a linter or formatter, trust it. Only flag style issues that tooling
-  cannot catch.
-- **Documentation compliance and freshness.** ADRs, coding standards, and general docs are read and checked against the
-  diff. Only documents whose subject matter the change touches are read; pulling unrelated standards into the review
-  dilutes the signal and degrades judgment, the same reason Step 1.5 caps branch context. Correctness- and
-  behavior-bearing rules are weighted over style minutiae the linter already enforces. Stale docs that misdescribe
-  current behavior become CRIT findings.
+- **שלוש רמות חומרה.** CRIT (חובה לתקן לפני מיזוג: אבטחה, שחיתות נתונים, שבירת API), WARN (ראוי לתקן: באגים, טיפול חסר בשגיאות, בדיקות חסרות), SUGG (שקול: סגנון, ריפקטורינג, מסמכים). כיול החומרה נשלט על ידי צעד 3.3 בגוף הסקיל, הבית המוסמך להורדת דרגה לפי גודל. ממצאים ידניים (צעדים 4 עד 6) וממצאי סוכנים (צעד 7) הולכים לפי אותם כללים: שינויים קטנים מסלימים רק Critical ומעדיפים את החומרה הנמוכה יותר במצב אי-ודאות; בינוני מסלים Critical ו-Warning; גדול מעדיף את החומרה הגבוהה יותר בספק.
+- **שלושה מצבי סקירה.** מצב A משתמש ב-diff המלא של ענף git. מצב B סוקר עבודה שלא נכנסה לקומיט כשאין diff של ענף. מצב C סוקר קבצים שצוינו כשאין git. **במצב B ובמצב C צ'ק-ליסט ה-YAGNI מדולג אלא אם התבקש במפורש**, מפני שאין diff שיבחין בין קוד שהוכנס לקוד שהיה קיים.
+- **שיגור סוכנים מודע-גודל.** שני סוכנים תמיד רצים בכל סקירה (`junior-developer` לבהירות ולתקנים, `adversarial-security-analyst` לאבטחה במסלול ניצול). יתר המערך (`test-engineer`, `edge-case-explorer`, `structural-analyst`, `behavioral-analyst`, `concurrency-analyst`, `data-engineer`, `devops-engineer`, `on-call-engineer`) משוגר באופן מותנה לפי מה שהקבצים שהשתנו נוגעים בו. גדלים גדולים יותר מעלים את הגבול העליון של המערך; גדלים קטנים יותר מעדיפים פחות סוכנים שמייצרים ממצאים בעלי אות גבוה יותר. ראה את סעיף [הגודל](#גודל) למטה.
+- **הנחיית כיול.** כל סוכן משוגר מקבל הנחיית כיול שדורשת שהממצאים יהיו או מוכנסים או מוחמרים על ידי השינוי, או קריטיים ללא תלות במי שהכניס אותם. סוגיות תיאורטיות, פערי best-practice שהיו קיימים, ודאגות קנה מידה עם תוצאה שפירה, מוחרגות. החומרה גדלה עם הגודל: שינוי קטן ← רק ממצאי Critical מסלימים; בינוני ← Critical ו-Warning; גדול ← כל רמות החומרה.
+- **התאמה לכל סוכן על ידי המשגר.** כש-`/code-review` משגר את `structural-analyst` ואת `behavioral-analyst`, הוא מצרף הנחיית ברירת-מחדל-SUGG כך שהסוכנים האלה מתחילים בחומרה הנמוכה ביותר ומסלימים רק כשהשינוי מכניס או מחמיר את הבעיה. כשהוא משגר את `junior-developer` ואת `edge-case-explorer`, הוא מצרף הנחיית תיחום לרשימת הקבצים כך שהממצאים נוגעים לקוד ברשימת הקבצים המתוחמת (עם ניסוח צר יותר ל-`edge-case-explorer` ששומר על פרוטוקול קריאת-הקוראים שלו ובו בזמן משאיר את יעד מצב הכשל על רשימת הקבצים). ההנחיות האלה הן ההתאמה של `/code-review`; התנהגות ברירת המחדל של הסוכנים בסקילים אחרים לא משתנה.
+- **שער התאמת ביטויים לנגישות (צעד 7.2).** כשהנימוק של סוכן עצמו מכיל ביטויים כמו _theoretical_, _hypothetical_, _defense-in-depth_, _effectively impossible_, _in case the upstream_, _could happen_, _should never happen_ או _edge case that does not occur_, הממצא מורד בדרגת חומרה אחת לפני שהרובריקה מוחלת. ממצאי אבטחה פטורים מפני שתקן הראיות של סוכן האבטחה כבר דורש מסלול ניצול מודגם. השער הוא מעבר ראשון זול ודטרמיניסטי, והוא שברירי מול פרפרזה בכוונה; ממצא שמסייג את הנגישות שלו בלי אחד הביטויים המילוליים נתפס סמנטית במעבר האימות של צעד 7.4, לא על ידי הגדלת רשימת הביטויים.
+- **אימות ממצאים בלתי תלוי (צעד 7.4).** אחרי שממצאי הסוכנים נאספו וסווגו, הסקיל משגר `adversarial-validator` אחד על _רשימת הממצאים המתקנים המאוחדת_, אותו סוכן ש-`/investigate` משתמש בו כדי לתקוף שורש בעיה ותיקון. זה המעבר היחיד שקורא מחדש את השינוי בהקשר טרי ושופט כל ממצא מול הקוד ולא מול הנימוק של הסוכן שייצר אותו, ולכן הוא לא נעגן במה שהמומחים הסיקו. כל ממצא חוזר כ-Confirmed (נשמר), Partially Refuted (מורד דרגה אחת) או Refuted (נזרק). ממצא נזרק רק כשהמאמת מספק ראיות-נגד קונקרטיות ב-`file_path:line_number`; טענה חשופה מורידה דרגה ולא זורקת, ופסק דין לא ודאי משאיר את הממצא עומד. ממצאי אבטחה נזרקים רק כשהניצול המודגם מופרך עם ראיות-נגד. המעבר הוא _מסנן ממצאים, לא מקור ממצאים_: הוא לעולם לא תורם ממצאים משלו, והוא מדולג לגמרי כשהסקירה לא ייצרה ממצאים מתקנים.
+- **הקשר הענף נטען בצעד 1.5.** לפני שיגור הסוכנים, הסקיל טוען ארבעה מקורות של הקשר ברמת הענף לפי סדר: תיאור ה-PR (דרך `gh pr view` כש-`gh` זמין, מצב A בלבד), קובץ מקומי `pr-body`, `PR_BODY.md` או `.pr-body` בשורש הריפו, הודעות הקומיט של הענף, ותוכנית מימוש מתיקיית התכנון. תיקיית התכנון מתפענחת קודם למפתח `plans:` (או `planning:`) תחת הסעיף `## Project Discovery` ב-CLAUDE.md. אחרת, הסקיל מבצע glob על `docs/plans/*/feature-implementation-plan.md` ועל `plans/*/feature-implementation-plan.md`, ובוחר בתיקייה ששמה תואם לענף הנוכחי (כשהוא מתייחס ל-`-` ול-`_` כניתנים להחלפה). התוכן שנטען מסוכם לבלוק `$branch_context` באורך של עד 200 מילים. הוא מוזרם, לצד ארגומנט ה-`$focus_areas` של המשתמש, לתוך כל פרומפט של סוכן, כדי שסוכנים לא יעלו מחדש פריטים שהצוות כבר דחה או פתר. מפני שתיאורי PR, גופי כרטיסים והודעות קומיט הם תוכן של צד שלישי שיכול לשאת טקסט שמכוון להטות את סוכן הסקירה, הסקיל מתייחס ל-`$branch_context` כ**נתונים לא מהימנים, לא כהוראות**. הסיכום בצעד 1.5 מסיר כל הנחיה שמופנית לקורא או לסוכן. צעד 3.5 עוטף את הקישור בסימוני נתונים-לא-מהימנים מפורשים, עם שמירה שאומרת לסוכנים להשתמש בו לכוונה בלבד ולעולם לא לציית להוראות שבתוכו. ארגומנט ה-`$focus_areas` של המשתמש עצמו מהימן ולא נעטף. צעד 1.5 מדולג במצב C. במצב A ובמצב B, כשאף אחד מארבעת המקורות לא מחזיר תוכן, הסקיל פולט אזהרת fail-open אחת וממשיך כש-`$branch_context` מוגדר ל-`none provided`.
+- **בדיקת עקביות עצמית בצעד 9.0.** לפני האימות המבני, הסקיל סורק כל זוג ממצאים באותו קובץ עם טווחי שורות חופפים, מזהה המלצות סותרות, מוריד את שניהם בדרגה, ומוסיף הערת `Tension with {other-task-id}:` עבור הסוקר האנושי. סתירות סמנטיות בין קבצים נמצאות מחוץ להיקף.
+- **אימות ההנחה לפני ממצאי ציות לתקן.** צעד 5 דורש לקרוא לפחות קובץ ארכיטקטוני אחד בבסיס הקוד שמדגים את ההנחה של תקן, לפני שהסקיל מעלה ממצא "מפר את תקן X". כשהקובץ לא מאשר את ההנחה, הממצא מושמט עם הערה מתועדת ולא מועלה על בסיס הנחות משוערות.
+- **כיבוד הדפוסים של הפרויקט.** דפוס ששונה מ-best practices כלליים אבל עקבי בתוך הפרויקט _אינו_ ממצא. רק סטיות מהמוסכמות של הפרויקט עצמו נחשבות.
+- **גבול הכלים האוטומטיים.** אם לפרויקט יש linter או formatter, סמוך עליהם. סמן רק בעיות סגנון שהכלים לא יכולים לתפוס.
+- **ציות לתיעוד וטריות התיעוד.** ADRs, תקני קוד ומסמכים כלליים נקראים ונבדקים מול ה-diff. רק מסמכים שהשינוי נוגע בנושא שלהם נקראים; משיכת תקנים לא רלוונטיים לתוך הסקירה מדללת את האות ומדרדרת את שיקול הדעת, מאותה סיבה שצעד 1.5 מגביל את הקשר הענף. כללים שנושאים נכונות והתנהגות מקבלים משקל על פני זוטות סגנון שה-linter כבר אוכף. מסמכים מיושנים שמתארים לא נכון את ההתנהגות הנוכחית הופכים לממצאי CRIT.
 
-## When to use it
+## מתי להשתמש בו
 
-**Invoke when:**
+**הפעל כאשר:**
 
-- You are about to merge a branch and want a principled pre-merge review covering correctness, tests, security, and doc
-  compliance.
-- A change has landed that you want audited against the project's ADRs, coding standards, or general docs.
-- You want the exploit-path, coverage-gap, edge-case, structural, behavioral, clarity, and (when relevant) concurrency
-  dimensions covered _in parallel_ rather than one at a time.
-- You are working without a GitHub PR (local code, experimental branch, personal fork) and want the full review without
-  posting to a PR.
-- You want review findings on files you specify by name even when git is not available. The skill gracefully degrades to
-  file-based review.
+- אתה עומד למזג ענף ורוצה סקירה עקרונית לפני מיזוג שמכסה נכונות, בדיקות, אבטחה וציות לתיעוד.
+- שינוי נחת ואתה רוצה לבקר אותו מול ה-ADRs, תקני הקוד או המסמכים הכלליים של הפרויקט.
+- אתה רוצה שממדי מסלול הניצול, פערי הכיסוי, מקרי הקצה, המבנה, ההתנהגות, הבהירות, ו(כשרלוונטי) המקביליות יכוסו _במקביל_ ולא אחד-אחד.
+- אתה עובד בלי PR ב-GitHub (קוד מקומי, ענף ניסיוני, fork אישי) ורוצה את הסקירה המלאה בלי לפרסם ל-PR.
+- אתה רוצה ממצאי סקירה על קבצים שאתה נוקב בשמם גם כש-git לא זמין. הסקיל מתדרדר בחן לסקירה מבוססת-קבצים.
 
-**Do not invoke for:**
+**אל תפעיל עבור:**
 
-- **Posting the review to a GitHub PR.** Use [`/post-code-review-to-pr`](../../../han-github/docs/skills/post-code-review-to-pr.md). It
-  delegates to this skill and then posts the review as PR comments.
-- **Explaining a change or getting oriented before reviewing.** Use [`/code-overview`](./code-overview.md) for a written
-  overview, or [`/code-walkthrough`](./code-walkthrough.md) to be paced through the change one step at a time. Run
-  either to understand what a change does, then run this skill to judge whether it is any good.
-- **Architectural analysis.** Use [`/architectural-analysis`](./architectural-analysis.md) for coupling,
-  data flow, concurrency, and SOLID assessment across a module.
-- **Bug investigation.** Use [`/investigate`](./investigate.md) to find a root cause with evidence and adversarial
-  validation.
-- **Test planning in isolation.** Use [`/automated-test-planning`](./automated-test-planning.md) when you want a prioritized test plan
-  without a full correctness review, or [`/manual-test-planning`](./manual-test-planning.md) for a plain-language plan
-  a person runs by hand.
-- **Plan review.** Use [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md) for reviewing a work plan,
-  not code.
-- **Feedback on Han's own skills.** Use [`/han-feedback`](../../../han-feedback/docs/skills/han-feedback.md) to capture post-session
-  feedback on the Han skills you ran.
+- **פרסום הסקירה ל-PR ב-GitHub.** השתמש ב-[`/post-code-review-to-pr`](../../../han-github/docs/skills/post-code-review-to-pr.md). הוא מאציל לסקיל הזה ואז מפרסם את הסקירה כתגובות PR.
+- **הסבר של שינוי או התמצאות לפני סקירה.** השתמש ב-[`/code-overview`](./code-overview.md) לסקירת-על כתובה, או ב-[`/code-walkthrough`](./code-walkthrough.md) כדי לעבור על השינוי צעד אחר צעד. הרץ אחד מהם כדי להבין מה השינוי עושה, ואז הרץ את הסקיל הזה כדי לשפוט אם הוא טוב.
+- **ניתוח ארכיטקטוני.** השתמש ב-[`/architectural-analysis`](./architectural-analysis.md) להערכת צימוד, זרימת נתונים, מקביליות ו-SOLID לרוחב מודול.
+- **חקירת באג.** השתמש ב-[`/investigate`](./investigate.md) כדי למצוא שורש בעיה עם ראיות ואימות אדוורסרי.
+- **תכנון בדיקות בפני עצמו.** השתמש ב-[`/automated-test-planning`](./automated-test-planning.md) כשאתה רוצה תוכנית בדיקות מתועדפת בלי סקירת נכונות מלאה, או ב-[`/manual-test-planning`](./manual-test-planning.md) לתוכנית בשפה פשוטה שאדם מריץ ידנית.
+- **סקירת תוכנית.** השתמש ב-[`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md) לסקירת תוכנית עבודה, לא קוד.
+- **משוב על הסקילים של Han עצמם.** השתמש ב-[`/han-feedback`](../../../han-feedback/docs/skills/han-feedback.md) כדי ללכוד משוב אחרי סשן על הסקילים של Han שהרצת.
 
-## How to invoke it
+## איך להפעיל אותו
 
-Run `/code-review` in Claude Code. Pass an optional size override and/or context.
+הרץ `/code-review` ב-Claude Code. העבר עקיפת גודל אופציונלית ו/או הקשר.
 
-Give it:
+תן לו:
 
-1. **A size override, optional.** Pass `small`, `medium`, `large`, or `dynamic` as the first positional argument to override
-   auto-classification. Without an override, the skill defaults to small and escalates only when signals clearly require
-   it. See the [Sizing](#sizing) section.
-2. **A focus-area or context hint, optional.** _"Focus on the security implications of the new auth endpoints,"_ or
-   _"review with extra attention to the database migration."_ Focus hints bias the manual review toward the named area;
-   the parallel agents still run on their domain-scoped slice of files.
-3. **A branch (implied).** If you are on a feature branch, the skill reviews changed files against the default branch
-   (Mode A). If you are on the default branch with uncommitted work, Mode B kicks in. If there is no git, Mode C reviews
-   what you point it at.
-4. **Specific files or globs, optional.** In Mode C (or when you want to scope a git-mode review), pass file paths or
-   glob patterns.
+1. **עקיפת גודל, אופציונלי.** העבר `small`, `medium`, `large` או `dynamic` כארגומנט המיקומי הראשון כדי לעקוף את הסיווג האוטומטי. בלי עקיפה, ברירת המחדל של הסקיל היא קטן והוא מסלים רק כשאותות מחייבים זאת בבירור. ראה את סעיף [הגודל](#גודל).
+2. **רמז לאזור מיקוד או להקשר, אופציונלי.** _"התמקד בהשלכות האבטחה של נקודות הקצה החדשות של האימות"_, או _"תסקור עם תשומת לב מיוחדת למיגרציית מסד הנתונים"_. רמזי מיקוד מטים את הסקירה הידנית לכיוון האזור שנקבת בו; הסוכנים המקבילים עדיין רצים על הפרוסה של הקבצים המתוחמת לתחום שלהם.
+3. **ענף (משתמע).** אם אתה על ענף פיצ'ר, הסקיל סוקר קבצים שהשתנו מול ענף ברירת המחדל (מצב A). אם אתה על ענף ברירת המחדל עם עבודה שלא נכנסה לקומיט, מצב B נכנס לפעולה. אם אין git, מצב C סוקר את מה שאתה מפנה אותו אליו.
+4. **קבצים או globs ספציפיים, אופציונלי.** במצב C (או כשאתה רוצה לתחום סקירה במצב git), העבר נתיבי קבצים או תבניות glob.
 
-Example prompts:
+פרומפטים לדוגמה:
 
-- `/code-review`. Full review of the current branch's changes; auto-classifies size, defaulting to small.
-- `/code-review medium`. Override the size to medium.
-- `/code-review large "focus on the new auth endpoints"`. Override to large with a focus hint.
-- `/code-review`. _"Focus on the security implications of the new auth endpoints."_
-- `/code-review src/billing/`. Scope the review to the billing directory.
+- `/code-review`. סקירה מלאה של השינויים בענף הנוכחי; מסווג גודל אוטומטית, עם ברירת מחדל קטן.
+- `/code-review medium`. עקיפת הגודל לבינוני.
+- `/code-review large "focus on the new auth endpoints"`. עקיפה לגדול עם רמז מיקוד.
+- `/code-review`. _"התמקד בהשלכות האבטחה של נקודות הקצה החדשות של האימות."_
+- `/code-review src/billing/`. תיחום הסקירה לתיקיית החיוב.
 
-## What you get back
+## מה אתה מקבל בחזרה
 
-A structured review written to a file, named `code-review-{slug}.md` for the branch, ticket, or scope it covers. It
-lands under the `output-directory` in your `.han/config.md` when you have set one, and beside the specialists' own
-reports when you have not. A report already sitting at that name is replaced, and the run tells you which one it
-replaced. When the resolved destination cannot be written, the run falls back and names the destination it could not
-use, rather than throwing away a finished review.
+סקירה מובנית שנכתבת לקובץ, בשם `code-review-{slug}.md` לפי הענף, הכרטיס או ההיקף שהיא מכסה. היא נוחתת תחת ה-`output-directory` ב-`.han/config.md` שלך אם הגדרת כזה, ולצד הדוחות של המומחים עצמם אם לא. דוח שכבר יושב בשם הזה מוחלף, והריצה אומרת לך את מי היא החליפה. כשלא ניתן לכתוב ליעד שהתפענח, הריצה נופלת לאחור ונוקבת ביעד שלא הצליחה להשתמש בו, במקום לזרוק סקירה גמורה.
 
-Each finding's prose appears exactly once (its finding block, or its full security
-block; the summary-table row is an index, not a copy), and sections render only when they have content: a review of a
-small change produces a small document. The Review Summary table and the Review Recommendation are always present; every
-other section appears only when it has at least one item, and when several are present they keep a fixed order
-(Critical, Warnings, Suggestions, YAGNI, Security Vulnerabilities, Remediation, What's Good). The document can contain:
+הטקסט של כל ממצא מופיע בדיוק פעם אחת (בלוק הממצא שלו, או בלוק האבטחה המלא שלו; שורת טבלת הסיכום היא אינדקס, לא עותק), וסעיפים מרונדרים רק כשיש להם תוכן: סקירה של שינוי קטן מייצרת מסמך קטן. טבלת Review Summary וה-Review Recommendation תמיד נוכחות; כל סעיף אחר מופיע רק כשיש לו לפחות פריט אחד, וכשכמה מהם נוכחים הם שומרים על סדר קבוע (Critical, Warnings, Suggestions, YAGNI, Security Vulnerabilities, Remediation, What's Good). המסמך יכול להכיל:
 
-- **A Review Summary table** indexing every corrective finding and every security finding across categories (automated
-  checks, correctness, testing, security, ADR/standard/docs compliance, documentation freshness), ordered by severity. A
-  corrective finding's tier is carried by its task-ID prefix; a security finding shows its tier inline in the row (for
-  example, `SEC-001 (Critical)`) so the table stands alone as the complete severity index. Each row also carries the
-  finding's fix route, and a finding the review established may never fire says so in its row. Both cues are there so
-  you can triage a long list before opening any single finding. Row order, severities, and finding identifiers are
-  unchanged; the cues sit inside existing rows.
-- **Critical findings** (🔴). Each with task ID (`CRIT-001`, `CRIT-002`, …), `file_path:line_number`, the issue, and the
-  recommended fix. Each also opens with a plain-language explanation written for someone who will not open the file:
-  what they could observe going wrong, what has to be true for it to happen, and how likely that is, said outright when
-  the answer is that the finding may never fire. All three are answered, and an answer that is not in doubt takes a
-  clause rather than a sentence. The guidance for the person who will open the file follows it, unchanged. Each finding
-  then names how it gets fixed: test-first (`/tdd`) when a behavior is missing, restructure (`/refactor`) when the
-  behavior is right and the shape is wrong, or by hand when the edit is small. The route is named, never started. The
-  `[Category]` label is kept on a block only when it names content a standalone reader needs (an ADR violation naming
-  the record, a standards violation naming the standard, or a security finding) and dropped for generic categories the
-  table already carries.
-- **Warnings** (🟡). Same structure with task ID `WARN-NNN`.
-- **Suggestions** (🔵). Same structure with task ID `SUGG-NNN`.
-- **Agent findings.** Coverage gaps (`T#`), edge cases (`EC#`), security findings (`SEC-NNN`), structural findings
-  (`S#`), behavioral findings (`B#`), clarity findings (`JD#`), concurrency findings (`C#` when the concurrency analyst
-  was dispatched), data findings (`D#` when the data engineer was dispatched), devops findings (`DV#` when the devops
-  engineer was dispatched), and on-call resilience findings (`OCE#` when the on-call engineer was dispatched). Each is
-  classified into the main severity tiers using the classification rubric. Security findings are the exception: they are
-  not folded into a severity section (see below).
-- **YAGNI findings.** Listed in their own `### 🟡 YAGNI` section with task IDs `YAGNI-NNN`. The section opens with the
-  verbatim statement _"These findings will not be corrected unless explicitly requested. They are documented so the team
-  can decide consciously whether to keep, simplify, or defer the items."_ Each finding is one line naming the failing
-  evidence type, the matched anti-pattern, and a single reopen-trigger clause. YAGNI findings are advisory; they are not
-  counted under CRIT / WARN / SUGG, do not appear in the summary table, and do not block a clean review. They carry no
-  plain-language explanation either, because that reopen trigger already answers what the explanation would say.
-- **Security vulnerabilities** (🔐). One full `SEC-NNN` block per proven vulnerability (OWASP category, location,
-  evidence, `EXPLOIT:` path, and severity), followed by a single short **Remediation** note that references the
-  `SEC-NNN` IDs and states the actionable fix in one or two sentences. Security findings are not cross-referenced into
-  the Critical section; instead the Review Recommendation reflects their severity (a Critical-severity security finding
-  yields a do-not-merge recommendation). The whole section is omitted when no proven vulnerabilities exist.
-- **What's Good** (✅). Rendered only when there is a specific, substantive positive worth recording; omitted entirely
-  otherwise rather than filled with generic praise.
-- **Deferred tests note.** Test cases the `test-engineer` considered but excluded as brittle, listed for transparency
-  (not counted toward the finding cap).
-- **ADR / coding-standard / documentation compliance findings.** Violations of project-specific docs, tagged with the
-  source (for example, `[ADR: 0042]`, `[Standard: error-handling]`, `[Docs Update: payments.md]`).
+- **טבלת Review Summary** שמאנדקסת כל ממצא מתקן וכל ממצא אבטחה לרוחב הקטגוריות (בדיקות אוטומטיות, נכונות, בדיקות, אבטחה, ציות ל-ADR/תקן/מסמכים, טריות התיעוד), מסודרת לפי חומרה. הדרג של ממצא מתקן נישא על ידי הקידומת של מזהה המשימה שלו; ממצא אבטחה מציג את הדרג שלו בתוך השורה (לדוגמה, `SEC-001 (Critical)`), כך שהטבלה עומדת בפני עצמה כאינדקס החומרה המלא. כל שורה נושאת גם את מסלול התיקון של הממצא, וממצא שהסקירה קבעה שאולי לעולם לא ייורה אומר זאת בשורה שלו. שני הרמזים שם כדי שתוכל למיין רשימה ארוכה לפני שתפתח ממצא בודד.
+- **ממצאים קריטיים** (🔴). כל אחד עם מזהה משימה (`CRIT-001`, `CRIT-002`, …), `file_path:line_number`, הבעיה, והתיקון המומלץ. כל אחד גם פותח בהסבר בשפה פשוטה שנכתב עבור מי שלא יפתח את הקובץ: מה הוא יכול לצפות שישתבש, מה צריך להיות נכון כדי שזה יקרה, וכמה סביר שזה יקרה, נאמר בגלוי כשהתשובה היא שהממצא אולי לעולם לא ייורה. כל השלושה נענים, ותשובה שאין בה ספק מקבלת פסוקית ולא משפט. ההנחיה עבור מי שכן יפתח את הקובץ באה אחריה, ללא שינוי. כל ממצא אז נוקב באיך הוא מתוקן: test-first (`/tdd`) כשהתנהגות חסרה, שינוי מבנה (`/refactor`) כשההתנהגות נכונה והצורה שגויה, או ידנית כשהעריכה קטנה. המסלול נקוב בשם, לעולם לא מופעל. תווית ה-`[Category]` נשמרת על בלוק רק כשהיא נוקבת בתוכן שקורא עצמאי צריך (הפרת ADR שנוקבת ברשומה, הפרת תקן שנוקבת בתקן, או ממצא אבטחה) ונזרקת עבור קטגוריות גנריות שהטבלה כבר נושאת.
+- **אזהרות** (🟡). אותו מבנה עם מזהה משימה `WARN-NNN`.
+- **הצעות** (🔵). אותו מבנה עם מזהה משימה `SUGG-NNN`.
+- **ממצאי סוכנים.** פערי כיסוי (`T#`), מקרי קצה (`EC#`), ממצאי אבטחה (`SEC-NNN`), ממצאים מבניים (`S#`), ממצאים התנהגותיים (`B#`), ממצאי בהירות (`JD#`), ממצאי מקביליות (`C#` כשאנליסט המקביליות שוגר), ממצאי נתונים (`D#` כשמהנדס הנתונים שוגר), ממצאי devops (`DV#` כשמהנדס ה-devops שוגר), וממצאי חוסן כוננות (`OCE#` כשמהנדס הכוננות שוגר). כל אחד מסווג לדרגי החומרה הראשיים בעזרת רובריקת הסיווג. ממצאי אבטחה הם היוצא מן הכלל: הם לא מקופלים לתוך סעיף חומרה (ראה למטה).
+- **ממצאי YAGNI.** מפורטים בסעיף `### 🟡 YAGNI` משלהם עם מזהי משימה `YAGNI-NNN`. הסעיף נפתח באמירה המילולית _"These findings will not be corrected unless explicitly requested. They are documented so the team can decide consciously whether to keep, simplify, or defer the items."_ כל ממצא הוא שורה אחת שנוקבת בסוג הראיה שנכשל, באנטי-דפוס שהותאם, ובפסוקית טריגר-פתיחה-מחדש יחידה. ממצאי YAGNI ייעוציים; הם לא נספרים תחת CRIT / WARN / SUGG, לא מופיעים בטבלת הסיכום, ולא חוסמים סקירה נקייה. הם גם לא נושאים הסבר בשפה פשוטה, מפני שטריגר הפתיחה מחדש כבר אומר את מה שההסבר היה אומר.
+- **פרצות אבטחה** (🔐). בלוק `SEC-NNN` מלא אחד לכל פרצה מוכחת (קטגוריית OWASP, מיקום, ראיות, מסלול `EXPLOIT:` וחומרה), ואחריו הערת **Remediation** קצרה אחת שמפנה למזהי ה-`SEC-NNN` ומציינת את התיקון בר-הביצוע במשפט או שניים. ממצאי אבטחה לא מוצלבים לתוך הסעיף הקריטי; במקום זאת ה-Review Recommendation משקפת את החומרה שלהם (ממצא אבטחה בחומרת Critical מייצר המלצה של אל-תמזג). כל הסעיף מושמט כשאין פרצות מוכחות.
+- **What's Good** (✅). מרונדר רק כשיש חיוב ספציפי ומהותי שראוי לתעד; מושמט לגמרי אחרת ולא ממולא בשבחים גנריים.
+- **הערת בדיקות דחויות.** מקרי בדיקה ש-`test-engineer` שקל אך הוציא כשבירים, מפורטים לשקיפות (לא נספרים לתקרת הממצאים).
+- **ממצאי ציות ל-ADR / לתקן קוד / לתיעוד.** הפרות של מסמכים ספציפיים לפרויקט, מתויגות עם המקור (לדוגמה, `[ADR: 0042]`, `[Standard: error-handling]`, `[Docs Update: payments.md]`).
 
-Finding caps are 30 items each for the manual review pass and the agent pass; security findings are not capped. If a cap
-is exceeded, the skill says so and recommends another review after fixes land.
+תקרות הממצאים הן 30 פריטים לכל אחד ממעבר הסקירה הידני וממעבר הסוכנים; ממצאי אבטחה אינם מוגבלים. אם תקרה נחצית, הסקיל אומר זאת וממליץ על סקירה נוספת אחרי שהתיקונים ינחתו.
 
-## How to get the most out of it
+## איך להפיק ממנו את המרב
 
-- **Run `/project-discovery` first.** The skill reads CLAUDE.md and `project-discovery.md` to find the ADR,
-  coding-standards, and documentation directories. Without them, the compliance and freshness steps degrade to
-  best-effort discovery.
-- **Keep docs, ADRs, and standards up to date.** Every reference the skill finds sharpens the compliance check. Stale
-  docs that contradict current behavior become CRIT findings, which is the signal to update the doc, not to bypass the
-  skill.
-- **Use focus hints for high-stakes branches.** When a branch touches a load-bearing surface (auth, billing, data
-  migrations), name it in the prompt. The skill biases manual attention toward the area while the parallel agents still
-  cover the full scope.
-- **Pair with `/investigate` when findings reveal a bug.** If the review surfaces a CRIT finding whose root cause needs
-  deeper analysis, dispatch `/investigate` next. It produces a fix plan with adversarial validation.
-- **Pair with `/architectural-analysis` when findings reveal coupling or structural issues.** The review runs per-file;
-  the architectural analysis runs per-module. Use both when the branch touches boundaries.
-- **Re-run after fixes.** The skill is cheap to re-dispatch. Fix the findings, run again, confirm the count drops.
-- **Use `/post-code-review-to-pr` if you want it posted to the PR.** `/post-code-review-to-pr` invokes this skill
-  end-to-end, then posts the review to GitHub. If you already ran this one locally, you can run
-  `/post-code-review-to-pr` next to publish.
+- **הרץ `/project-discovery` קודם.** הסקיל קורא את CLAUDE.md ואת `project-discovery.md` כדי למצוא את תיקיות ה-ADR, תקני הקוד והתיעוד. בלעדיהן, צעדי הציות והטריות מתדרדרים לגילוי במאמץ סביר.
+- **שמור על מסמכים, ADRs ותקנים מעודכנים.** כל הפניה שהסקיל מוצא מחדדת את בדיקת הציות. מסמכים מיושנים שסותרים את ההתנהגות הנוכחית הופכים לממצאי CRIT, וזה האות לעדכן את המסמך ולא לעקוף את הסקיל.
+- **השתמש ברמזי מיקוד לענפים בעלי סיכון גבוה.** כשענף נוגע במשטח נושא-משקל (אימות, חיוב, מיגרציות נתונים), נקוב בו בפרומפט. הסקיל מטה את תשומת הלב הידנית לכיוון האזור בעוד שהסוכנים המקבילים עדיין מכסים את ההיקף המלא.
+- **צמד עם `/investigate` כשממצאים חושפים באג.** אם הסקירה מעלה ממצא CRIT ששורש הבעיה שלו דורש ניתוח עמוק יותר, שגר את `/investigate` אחריו. הוא מייצר תוכנית תיקון עם אימות אדוורסרי.
+- **צמד עם `/architectural-analysis` כשממצאים חושפים צימוד או בעיות מבניות.** הסקירה רצה לכל קובץ; הניתוח הארכיטקטוני רץ לכל מודול. השתמש בשניהם כשהענף נוגע בגבולות.
+- **הרץ מחדש אחרי תיקונים.** הסקיל זול לשיגור חוזר. תקן את הממצאים, הרץ שוב, אשר שהמספר יורד.
+- **השתמש ב-`/post-code-review-to-pr` אם אתה רוצה שזה יפורסם ל-PR.** `/post-code-review-to-pr` מפעיל את הסקיל הזה מקצה לקצה, ואז מפרסם את הסקירה ל-GitHub. אם כבר הרצת את זה מקומית, אתה יכול להריץ את `/post-code-review-to-pr` אחריו כדי לפרסם.
 
-## Sizing
+## גודל
 
-Size is the primary lever the skill uses to decide how aggressively to review the change. The skill defaults to small
-and only escalates when concrete signals require it.
+הגודל הוא הידית העיקרית שהסקיל משתמש בה כדי להחליט באיזו אגרסיביות לסקור את השינוי. ברירת המחדל של הסקיל היא קטן והוא מסלים רק כשאותות קונקרטיים מחייבים זאת.
 
-| Size                  | Files              | Other signals                                                                                                                                               | Roster (max)                                                                                                                                                                                                | Severity bands in scope                                                                                                                                                                                     |
-| --------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Small** _(default)_ | 1–3 files          | Single subsystem; no cross-cutting concerns; no new module boundaries; no schema, migration, or infra changes; no auth/PII surface added.                   | The two required agents (`junior-developer`, `adversarial-security-analyst`) plus any conditional agent whose signal clearly fires (for example, a new test boundary triggers `test-engineer`).             | Only Critical findings escalate. Raise Warnings only when the finding is directly introduced by the change. Suggestions are omitted. Same rule for manual findings (Steps 4–6) and agent findings (Step 7). |
-| **Medium**            | 3–10 files         | One or two adjacent subsystems; may touch a single cross-cutting concern (one API contract, one schema migration, one new permission check, one new index). | Required two plus the conditional agents whose signals fire. Typically `test-engineer`, `edge-case-explorer`, and one of `structural-analyst` / `behavioral-analyst` / `data-engineer` / `devops-engineer`. | Critical and Warning findings escalate. Raise Suggestions only when directly introduced by the change. Same rule for manual and agent findings.                                                             |
-| **Large**             | More than 10 files | Multiple subsystems, architectural changes, security or data implications, multi-service coordination, or you explicitly request full agent review.         | Required two plus all conditional agents whose signals fire.                                                                                                                                                | All severities are in scope. Same rule for manual and agent findings.                                                                                                                                       |
+| גודל                   | קבצים           | אותות אחרים                                                                                                                     | מערך (מקסימום)                                                                                                                                                                                     | רצועות חומרה בהיקף                                                                                                                                       |
+| ---------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **קטן** _(ברירת מחדל)_ | 1–3 קבצים       | תת-מערכת אחת; בלי סוגיות חוצות; בלי גבולות מודול חדשים; בלי שינויי סכמה, מיגרציה או תשתית; בלי הוספת משטח אימות/PII.            | שני הסוכנים הנדרשים (`junior-developer`, `adversarial-security-analyst`) בתוספת כל סוכן מותנה שהאות שלו נורה בבירור (לדוגמה, גבול בדיקות חדש מפעיל את `test-engineer`).                            | רק ממצאי Critical מסלימים. העלה אזהרות רק כשהממצא מוכנס ישירות על ידי השינוי. הצעות מושמטות. אותו כלל לממצאים ידניים (צעדים 4–6) ולממצאי סוכנים (צעד 7). |
+| **בינוני**             | 3–10 קבצים      | תת-מערכת סמוכה אחת או שתיים; עשוי לגעת בסוגיה חוצה אחת (חוזה API אחד, מיגרציית סכמה אחת, בדיקת הרשאה חדשה אחת, אינדקס חדש אחד). | השניים הנדרשים בתוספת הסוכנים המותנים שהאותות שלהם נורו. בדרך כלל `test-engineer`, `edge-case-explorer`, ואחד מ-`structural-analyst` / `behavioral-analyst` / `data-engineer` / `devops-engineer`. | ממצאי Critical ו-Warning מסלימים. העלה הצעות רק כשהן מוכנסות ישירות על ידי השינוי. אותו כלל לממצאים ידניים ולממצאי סוכנים.                               |
+| **גדול**               | יותר מ-10 קבצים | כמה תת-מערכות, שינויים ארכיטקטוניים, השלכות אבטחה או נתונים, תיאום רב-שירותי, או שאתה מבקש במפורש סקירת סוכנים מלאה.            | השניים הנדרשים בתוספת כל הסוכנים המותנים שהאותות שלהם נורו.                                                                                                                                        | כל רמות החומרה בהיקף. אותו כלל לממצאים ידניים ולממצאי סוכנים.                                                                                            |
 
-How the size is chosen:
+איך הגודל נבחר:
 
-- **Default to small.** Unless the file list and signals push the change into medium or large, the skill stays at small.
-- **Conditional roster.** Agents are dispatched only when their signal appears in the file list. `concurrency-analyst`
-  only when the files touch threads / async / shared state. `data-engineer` only when the files touch schemas,
-  migrations, queries, or ORM models. `devops-engineer` only when the files touch infra, CI/CD, or deployment. Larger
-  sizes do not force agents whose signals are absent.
-- **Calibration directive.** Every dispatched agent receives a directive scoped to the size. The smaller the size, the
-  narrower the severity bands the agent escalates, and the more aggressively benign-outcome concerns are dropped.
+- **ברירת מחדל לקטן.** אלא אם רשימת הקבצים והאותות דוחפים את השינוי לבינוני או לגדול, הסקיל נשאר בקטן.
+- **מערך מותנה.** סוכנים משוגרים רק כשהאות שלהם מופיע ברשימת הקבצים. `concurrency-analyst` רק כשהקבצים נוגעים בתהליכונים / אסינכרוני / מצב משותף. `data-engineer` רק כשהקבצים נוגעים בסכמות, מיגרציות, שאילתות או מודלי ORM. `devops-engineer` רק כשהקבצים נוגעים בתשתית, CI/CD או פריסה. גדלים גדולים יותר לא כופים סוכנים שהאותות שלהם נעדרים.
+- **הנחיית כיול.** כל סוכן משוגר מקבל הנחיה מתוחמת לגודל. ככל שהגודל קטן יותר, כך רצועות החומרה שהסוכן מסלים צרות יותר, וכך דאגות עם תוצאה שפירה נזרקות באגרסיביות רבה יותר.
 
-How to override the size:
+איך לעקוף את הגודל:
 
-- Pass `small`, `medium`, `large`, or `dynamic` as the first positional argument: `/code-review medium`,
-  `/code-review large "focus on the new auth endpoints"`.
-- When the size is overridden via `$size`, the skill announces the override (`Medium: passed via $size`) and uses the
-  chosen band for the roster cap and the calibration directive.
-- Pass `dynamic` when a project or personal `.han/config.md` sets a default band and you want this one run sized from
-  the change's own signals instead.
-- Conversational overrides (_"treat this as a large review"_) work as well and are equivalent.
+- העבר `small`, `medium`, `large` או `dynamic` כארגומנט המיקומי הראשון: `/code-review medium`, `/code-review large "focus on the new auth endpoints"`.
+- כשהגודל נעקף דרך `$size`, הסקיל מכריז על העקיפה (`Medium: passed via $size`) ומשתמש ברצועה שנבחרה עבור תקרת המערך ועבור הנחיית הכיול.
+- העבר `dynamic` כשקונפיגורציית פרויקט או אישית ב-`.han/config.md` קובעת רצועת ברירת מחדל ואתה רוצה שהריצה הזו תקבל גודל מהאותות של השינוי עצמו.
+- עקיפות בשיחה (_"תתייחס לזה כסקירה גדולה"_) עובדות גם הן ושקולות.
 
-For the cross-skill sizing model and design principles, see [Sizing](../../../docs/sizing.md).
+למודל הגודל החוצה-סקילים ולעקרונות העיצוב, ראה [Sizing](../../../docs/sizing.md).
 
-## Cost and latency
+## עלות וזמן תגובה
 
-Cost scales with the chosen size. The two required agents (`junior-developer`, `adversarial-security-analyst`) always
-run; the rest of the roster is dispatched conditionally and capped by size. Automated checks (lint/build/tests from the
-project config), a file-by-file manual review, a documentation compliance pass, and a freshness pass run alongside.
+העלות גדלה עם הגודל שנבחר. שני הסוכנים הנדרשים (`junior-developer`, `adversarial-security-analyst`) תמיד רצים; יתר המערך משוגר באופן מותנה ומוגבל על ידי הגודל. בדיקות אוטומטיות (lint/build/tests מקונפיגורציית הפרויקט), סקירה ידנית קובץ-אחר-קובץ, מעבר ציות לתיעוד, ומעבר טריות רצים לצידם.
 
-- **Small change.** Typically 2–4 agents in parallel plus the manual pass. Minutes for the agents; manual pass scales
-  with file count.
-- **Medium change.** Typically 4–6 agents plus the manual pass.
-- **Large change.** Typically 6–9 agents plus the manual pass.
+- **שינוי קטן.** בדרך כלל 2–4 סוכנים במקביל בתוספת המעבר הידני. דקות עבור הסוכנים; המעבר הידני גדל עם מספר הקבצים.
+- **שינוי בינוני.** בדרך כלל 4–6 סוכנים בתוספת המעבר הידני.
+- **שינוי גדול.** בדרך כלל 6–9 סוכנים בתוספת המעבר הידני.
 
-When the review produces at least one corrective finding, one additional `adversarial-validator` runs after the roster
-to validate the finding list (Step 7.4); a clean review skips it. One `han-communication:readability-editor` then
-rewrites the assembled review's prose against the shared readability standard (Step 8.5), leaving every task ID,
-severity, `file_path:line_number` reference, and code snippet unchanged.
+כשהסקירה מייצרת לפחות ממצא מתקן אחד, `adversarial-validator` נוסף אחד רץ אחרי המערך כדי לאמת את רשימת הממצאים (צעד 7.4); סקירה נקייה מדלגת עליו. אחר כך `han-communication:readability-editor` אחד משכתב את הטקסט של הסקירה המורכבת מול תקן הקריאוּת המשותף (צעד 8.5), ומשאיר כל מזהה משימה, חומרה, הפניית `file_path:line_number` וקטע קוד ללא שינוי.
 
-Agents run on their default models. Finding caps of 30 per pass keep output bounded. Security findings are uncapped. The
-skill is built for per-branch cadence, not tight-loop iteration over the same code. Fix the findings and re-run.
+הסוכנים רצים על מודלי ברירת המחדל שלהם. תקרות ממצאים של 30 לכל מעבר שומרות על פלט תחום. ממצאי אבטחה אינם מוגבלים. הסקיל בנוי לקצב של פעם-בענף, לא לאיטרציה בלולאה צמודה על אותו קוד. תקן את הממצאים והרץ מחדש.
 
-## In more detail
+## בפירוט
 
-The skill walks an eleven-step process (Step 1.5 is a context loader inserted between Steps 1 and 2, and Step 8.5 is a
-readability pass inserted between Steps 8 and 9):
+הסקיל עובר תהליך של אחד-עשר צעדים (צעד 1.5 הוא טוען הקשר שמוכנס בין צעדים 1 ל-2, וצעד 8.5 הוא מעבר קריאוּת שמוכנס בין צעדים 8 ל-9):
 
-1. **Identify changes.** Detect git mode (A/B/C), resolve project config, enumerate changed files. Bind `$focus_areas`
-   from the user's free-form argument. 1.5. **Load branch context.** Attempt PR description via
-   `gh pr view --json title,body,headRefName,baseRefName` (Mode A only, when `gh` is available); a local `pr-body`,
-   `PR_BODY.md`, or `.pr-body` file at the repo root; branch commit messages via
-   `git log {default-branch}..HEAD --pretty=format:%B` (Mode A) or `git log -n 20 --pretty=format:%B` (Mode B); and an
-   implementation plan resolved through the CLAUDE.md `plans:` / `planning:` key or, failing that, a Glob over
-   `docs/plans/*/feature-implementation-plan.md` and `plans/*/feature-implementation-plan.md` that prefers the directory
-   matching the current branch name (with `-` and `_` interchangeable). Summarize loaded content into `$branch_context`
-   (at most 200 words), treating the fetched content as untrusted data: the summary strips any instruction or directive
-   addressed to the reader or an agent rather than carrying it forward. When nothing loads, emit a single fail-open
-   warning, set `$branch_context` to `none provided`, and proceed. Skipped in Mode C. At Step 3.5 the binding is wrapped
-   in explicit untrusted-data markers so agents use it for intent only and never obey instructions inside it.
-2. **Automated quality checks.** Run the project's lint, build, and test commands. Report each failure as a CRIT finding
-   with category `[Automated Check]`. Do not fix; report.
-3. **Classify size and dispatch review agents in parallel.** Step 3.1 classifies the change as small / medium / large,
-   defaulting to small, and binds `{size}` for every later consumer. Step 3.2 selects agents: the required two
-   (`junior-developer`, `adversarial-security-analyst`) plus any conditional agents whose signals appear in the file
-   list. Step 3.3 is the authoritative home for size-based demotion and attaches the calibration directive verbatim to
-   every brief. Step 3.4 narrows each agent's brief to a domain-scoped slice of the file list (for example,
-   `structural-analyst` receives source files only; `data-engineer` receives schema, migration, query, ORM, and
-   data-access files only; `junior-developer` and `adversarial-security-analyst` receive the full list). Step 3.5
-   launches all selected agents in parallel, appending the shared `$focus_areas` and `$branch_context` blocks to every
-   prompt and the per-agent dispatcher directives to `structural-analyst`, `behavioral-analyst`, `junior-developer`, and
-   `edge-case-explorer`.
-4. **Manual file-by-file review.** Every changed file (alphabetical) against the review checklist: correctness, data
-   isolation, performance, error handling, testing, API design, maintainability, organization, docs, style, database,
-   ADR compliance. In Mode B and Mode C, the YAGNI checklist is skipped unless the user requests it in `$focus_areas`.
-5. **Documentation compliance analysis.** Read only the ADRs, coding standards, and docs whose subject matter the change
-   touches, not the whole directory, and weight correctness-bearing rules over style minutiae the linter already covers.
-   Verify each standard's premise applies by reading at least one architectural file in this codebase before raising a
-   "violates standard X" finding; omit findings whose premise is not verified.
-6. **Documentation freshness review.** Check whether docs describing the changed code are now stale.
-7. **Collect, classify, and validate findings in four sub-steps.** 7.1 reads each dispatched agent's output file. 7.2
-   applies the reachability phrase-match demotion gate (CRIT → WARN → SUGG → omitted) when a finding's rationale
-   contains a documented reachability phrase; security findings are exempt. 7.3 classifies the surviving findings using
-   the size-aware rubric in `agent-finding-classification.md`, governed by Step 3.3's size rules. Junior-developer
-   findings that overlap with a specialist's finding reference the specialist instead of duplicating. 7.4 dispatches one
-   `adversarial-validator` over the consolidated corrective finding list to confirm, demote, or (with concrete
-   counter-evidence) drop each finding; it runs whenever any corrective finding exists, even when no agents were
-   dispatched, and skips when the review is clean.
-8. **Generate review output.** Assemble the final review using the review template, rendering each section only when it
-   has content and keeping the fixed section order.
-   8.5. **Rewrite the finding prose for readability.** Dispatch `readability-editor` over the assembled review so its prose
-   meets the shared readability standard, with every task ID, severity, `file_path:line_number` reference, and code excerpt
-   preserved.
-   8.6. **Write the report file.** Resolve the directory (a configured `output-directory`, else the specialists' report
-   directory) and the file name (the branch, the ticket, or what was reviewed), then write it. A report already at that
-   name is replaced and recorded; an unwritable destination falls back and is recorded.
-9. **Verify.** Step 9.0 runs the self-consistency check (extract
-   `{task-id, file-path, line-range, recommended-action-summary}` tuples, then compare overlapping pairs and demote
-   contradictory recommendations with a `Tension with {other-task-id}:` note). Step 9.1 then verifies task IDs are
-   sequential, `file_path:line_number` references are valid, exploit fields are populated for security findings, the
-   summary table indexes every corrective and security finding (with security tiers shown inline) and matches the
-   sections present, no section is rendered empty, security findings carry no Critical cross-reference while the
-   recommendation still reflects their severity, and the YAGNI section's verbatim opening is preserved. The same step
-   confirms the newer content arrived: every finding you are expected to act on carries its plain-language explanation,
-   every corrective one names a fix route, and a finding that may never fire says so both in its own explanation and in
-   its summary row. Anything missing is fixed before the review reaches you, not reported to you as a caveat.
-10. **Present.** A short message that leads with the recommendation and the counts by severity, then the path, then the
-    run's own facts. The review is never pasted into the conversation.
+1. **זיהוי שינויים.** זיהוי מצב git (A/B/C), פענוח קונפיגורציית הפרויקט, מניית הקבצים שהשתנו. קישור `$focus_areas` מהארגומנט החופשי של המשתמש. 1.5. **טעינת הקשר הענף.** ניסיון לקבל תיאור PR דרך `gh pr view --json title,body,headRefName,baseRefName` (מצב A בלבד, כש-`gh` זמין); קובץ מקומי `pr-body`, `PR_BODY.md` או `.pr-body` בשורש הריפו; הודעות קומיט של הענף דרך `git log {default-branch}..HEAD --pretty=format:%B` (מצב A) או `git log -n 20 --pretty=format:%B` (מצב B); ותוכנית מימוש שמתפענחת דרך המפתח `plans:` / `planning:` ב-CLAUDE.md או, אם זה נכשל, דרך Glob על `docs/plans/*/feature-implementation-plan.md` ועל `plans/*/feature-implementation-plan.md` שמעדיף את התיקייה שתואמת לשם הענף הנוכחי (כש-`-` ו-`_` ניתנים להחלפה). סיכום התוכן שנטען ל-`$branch_context` (עד 200 מילים), תוך התייחסות לתוכן שנשלף כנתונים לא מהימנים: הסיכום מסיר כל הוראה או הנחיה שמופנית לקורא או לסוכן במקום לשאת אותה הלאה. כששום דבר לא נטען, פליטת אזהרת fail-open אחת, הגדרת `$branch_context` ל-`none provided`, והמשך. מדולג במצב C. בצעד 3.5 הקישור נעטף בסימוני נתונים-לא-מהימנים מפורשים כדי שסוכנים ישתמשו בו לכוונה בלבד ולעולם לא יצייתו להוראות שבתוכו.
+2. **בדיקות איכות אוטומטיות.** הרצת פקודות ה-lint, ה-build וה-test של הפרויקט. דיווח על כל כשל כממצא CRIT עם קטגוריה `[Automated Check]`. לא לתקן; לדווח.
+3. **סיווג גודל ושיגור סוכני סקירה במקביל.** צעד 3.1 מסווג את השינוי כקטן / בינוני / גדול, עם ברירת מחדל קטן, ומקשר את `{size}` לכל צרכן מאוחר יותר. צעד 3.2 בוחר סוכנים: השניים הנדרשים (`junior-developer`, `adversarial-security-analyst`) בתוספת כל סוכן מותנה שהאותות שלו מופיעים ברשימת הקבצים. צעד 3.3 הוא הבית המוסמך להורדת דרגה לפי גודל ומצרף את הנחיית הכיול מילולית לכל תדריך. צעד 3.4 מצמצם את התדריך של כל סוכן לפרוסה של רשימת הקבצים המתוחמת לתחום שלו (לדוגמה, `structural-analyst` מקבל קובצי מקור בלבד; `data-engineer` מקבל קובצי סכמה, מיגרציה, שאילתה, ORM וגישה לנתונים בלבד; `junior-developer` ו-`adversarial-security-analyst` מקבלים את הרשימה המלאה). צעד 3.5 משגר את כל הסוכנים שנבחרו במקביל, ומצרף את הבלוקים המשותפים `$focus_areas` ו-`$branch_context` לכל פרומפט, ואת הנחיות המשגר לכל סוכן ל-`structural-analyst`, `behavioral-analyst`, `junior-developer` ו-`edge-case-explorer`.
+4. **סקירה ידנית קובץ-אחר-קובץ.** כל קובץ שהשתנה (לפי סדר אלפביתי) מול צ'ק-ליסט הסקירה: נכונות, בידוד נתונים, ביצועים, טיפול בשגיאות, בדיקות, עיצוב API, תחזוקתיות, ארגון, מסמכים, סגנון, מסד נתונים, ציות ל-ADR. במצב B ובמצב C, צ'ק-ליסט ה-YAGNI מדולג אלא אם המשתמש מבקש אותו ב-`$focus_areas`.
+5. **ניתוח ציות לתיעוד.** קריאה של ה-ADRs, תקני הקוד והמסמכים שהשינוי נוגע בנושא שלהם בלבד, ולא של כל התיקייה, ומתן משקל לכללים שנושאים נכונות על פני זוטות סגנון שה-linter כבר מכסה. אימות שההנחה של כל תקן חלה, על ידי קריאת לפחות קובץ ארכיטקטוני אחד בבסיס הקוד הזה לפני העלאת ממצא "מפר את תקן X"; השמטת ממצאים שההנחה שלהם לא אומתה.
+6. **סקירת טריות התיעוד.** בדיקה אם מסמכים שמתארים את הקוד שהשתנה הם כעת מיושנים.
+7. **איסוף, סיווג ואימות ממצאים בארבעה תת-צעדים.** 7.1 קורא את קובץ הפלט של כל סוכן משוגר. 7.2 מחיל את שער הורדת הדרגה של התאמת ביטויי הנגישות (CRIT ← WARN ← SUGG ← מושמט) כשהנימוק של ממצא מכיל ביטוי נגישות מתועד; ממצאי אבטחה פטורים. 7.3 מסווג את הממצאים ששרדו בעזרת הרובריקה מודעת-הגודל ב-`agent-finding-classification.md`, בשליטת כללי הגודל של צעד 3.3. ממצאים של junior-developer שחופפים לממצא של מומחה מפנים למומחה במקום לשכפל. 7.4 משגר `adversarial-validator` אחד על רשימת הממצאים המתקנים המאוחדת כדי לאשר, להוריד דרגה, או (עם ראיות-נגד קונקרטיות) לזרוק כל ממצא; הוא רץ בכל פעם שקיים ממצא מתקן כלשהו, גם כששום סוכן לא שוגר, ומדלג כשהסקירה נקייה.
+8. **ייצור פלט הסקירה.** הרכבת הסקירה הסופית בעזרת תבנית הסקירה, כשכל סעיף מרונדר רק אם יש לו תוכן ותוך שמירה על סדר הסעיפים הקבוע.
+   8.5. **שכתוב הטקסט של הממצאים לקריאוּת.** שיגור `readability-editor` על הסקירה המורכבת כך שהטקסט שלה יעמוד בתקן הקריאוּת המשותף, כשכל מזהה משימה, חומרה, הפניית `file_path:line_number` וקטע קוד נשמרים.
+   8.6. **כתיבת קובץ הדוח.** פענוח התיקייה (`output-directory` מוגדר, אחרת תיקיית הדוחות של המומחים) ושם הקובץ (הענף, הכרטיס, או מה שנסקר), ואז כתיבה. דוח שכבר בשם הזה מוחלף ומתועד; יעד שלא ניתן לכתיבה נופל לאחור ומתועד.
+9. **אימות.** צעד 9.0 מריץ את בדיקת העקביות העצמית (חילוץ שלשות `{task-id, file-path, line-range, recommended-action-summary}`, ואז השוואת זוגות חופפים והורדת דרגה של המלצות סותרות עם הערת `Tension with {other-task-id}:`). צעד 9.1 אז מוודא שמזהי המשימות עוקבים, שהפניות `file_path:line_number` תקפות, ששדות הניצול מאוכלסים עבור ממצאי אבטחה, שטבלת הסיכום מאנדקסת כל ממצא מתקן ואבטחה (עם דרגי אבטחה מוצגים בתוך השורה) ותואמת לסעיפים הנוכחים, שאף סעיף לא מרונדר ריק, שממצאי אבטחה לא נושאים הצלבה קריטית בעוד שההמלצה עדיין משקפת את החומרה שלהם, ושהפתיחה המילולית של סעיף ה-YAGNI נשמרה. אותו צעד מאשר שהתוכן החדש יותר הגיע: שכל ממצא שאתה אמור לפעול לפיו נושא את ההסבר בשפה פשוטה שלו, שכל ממצא מתקן נוקב במסלול תיקון, ושממצא שאולי לעולם לא ייורה אומר זאת גם בהסבר שלו וגם בשורת הסיכום שלו. כל מה שחסר מתוקן לפני שהסקירה מגיעה אליך, ולא מדווח לך כהסתייגות.
+10. **הצגה.** הודעה קצרה שפותחת בהמלצה ובמספרים לפי חומרה, אחר כך הנתיב, ואחר כך העובדות של הריצה עצמה. הסקירה לעולם לא מודבקת לתוך השיחה.
 
-## What the run says when it finishes
+## מה הריצה אומרת כשהיא מסיימת
 
-A short message, in a fixed order, so the answer is the first thing you read:
+הודעה קצרה, בסדר קבוע, כך שהתשובה היא הדבר הראשון שאתה קורא:
 
-1. The recommendation, in the report's own words.
-2. The counts by severity, with any advisory count named separately rather than folded into the total.
-3. The path to the report, plus any report it replaced and any destination it could not write to.
-4. The run's own facts last: the size band and why, and the validator reconciliation.
+1. ההמלצה, במילים של הדוח עצמו.
+2. המספרים לפי חומרה, כשכל מספר ייעוצי נקוב בנפרד ולא מקופל לתוך הסך הכול.
+3. הנתיב לדוח, בתוספת כל דוח שהוא החליף וכל יעד שלא הצליח לכתוב אליו.
+4. העובדות של הריצה עצמה בסוף: רצועת הגודל ולמה, והיישוב של המאמת.
 
-A clean review says the code can be approved and gives you the path. A review whose only findings are advisory still
-recommends approval, says the count needing action is zero, and names the advisory count beside it, so you are never
-told "no findings" about a report whose body lists items.
+סקירה נקייה אומרת שאפשר לאשר את הקוד ונותנת לך את הנתיב. סקירה שכל הממצאים שלה ייעוציים עדיין ממליצה על אישור, אומרת שהמספר שדורש פעולה הוא אפס, ונוקבת במספר הייעוצי לצידו, כך שלעולם לא ייאמר לך "אין ממצאים" על דוח שהגוף שלו מפרט פריטים.
 
 ## YAGNI
 
-YAGNI in `/code-review` is **advisory-only** and runs as a two-pass procedure. **Pass 1, evidence test:** for every
-speculative addition (defensive code, single-implementation interfaces, configuration knobs no caller sets,
-instrumentation for non-flowing telemetry), check whether the diff contains evidence of need from one of the acceptable
-evidence types in [`yagni-rule.md`](../../references/yagni-rule.md). When evidence is present, do not
-flag. **Pass 2, anti-pattern check:** only items that fail Pass 1 are matched against the named anti-patterns; matches
-become `YAGNI-###` findings whose body names the failing evidence type, the matched anti-pattern, and the simpler form
-considered.
+YAGNI ב-`/code-review` הוא **ייעוצי בלבד** ורץ כהליך דו-מעברי. **מעבר 1, מבחן ראיות:** עבור כל תוספת ספקולטיבית (קוד הגנתי, ממשקים עם מימוש יחיד, כפתורי קונפיגורציה שאף קורא לא קובע, אינסטרומנטציה לטלמטריה שלא זורמת), בדוק אם ה-diff מכיל ראיה לצורך מאחד מסוגי הראיות הקבילים ב-[`yagni-rule.md`](../../references/yagni-rule.md). כשראיה נוכחת, אל תסמן. **מעבר 2, בדיקת אנטי-דפוס:** רק פריטים שנכשלו במעבר 1 מותאמים מול האנטי-דפוסים הנקובים בשם; התאמות הופכות לממצאי `YAGNI-###` שהגוף שלהם נוקב בסוג הראיה שנכשל, באנטי-דפוס שהותאם, ובצורה הפשוטה יותר שנשקלה.
 
-A YAGNI finding alone does not block a clean review; the posture is _make the cost of inclusion visible_, not _reject
-the change_. Critical-path correctness, security, and data-integrity findings are unaffected by this advisory posture
-and follow the standard severity rules. In Mode B and Mode C, the YAGNI checklist is skipped unless the user explicitly
-requests it, since the diff signal that distinguishes introduced code from pre-existing code is absent.
+ממצא YAGNI לבדו לא חוסם סקירה נקייה; העמדה היא _להפוך את עלות ההכללה לגלויה_, לא _לדחות את השינוי_. ממצאי נכונות במסלול הקריטי, אבטחה ושלמות נתונים לא מושפעים מהעמדה הייעוצית הזו והולכים לפי כללי החומרה הרגילים. במצב B ובמצב C, צ'ק-ליסט ה-YAGNI מדולג אלא אם המשתמש מבקש אותו במפורש, מפני שאות ה-diff שמבחין בין קוד שהוכנס לקוד שהיה קיים נעדר.
 
-See [YAGNI](../../../docs/yagni.md) for the two gates, the acceptable-evidence list, the named anti-patterns, and why review
-skills make the cost of inclusion visible rather than enforce inclusion bans.
+ראה [YAGNI](../../../docs/yagni.md) לשני השערים, לרשימת הראיות הקבילות, לאנטי-דפוסים הנקובים בשם, ולמה סקילי סקירה הופכים את עלות ההכללה לגלויה במקום לאכוף איסורי הכללה.
 
-## Sources
+## מקורות
 
-The skill's protocols are grounded in established practice for pre-merge code review, parallel adversarial specialist
-review, and documentation-compliance checking.
+הפרוטוקולים של הסקיל מעוגנים בפרקטיקה מבוססת לסקירת קוד לפני מיזוג, לסקירת מומחים אדוורסרית מקבילה, ולבדיקת ציות לתיעוד.
 
 ### Karl E. Wiegers: Peer Reviews in Software
 
-Wiegers's _Peer Reviews in Software_ (2001) formalized inspection-style peer review as a distinct engineering
-discipline: a structured, checklist-driven pass that finds defects earlier and cheaper than testing alone. The skill's
-manual review step uses a structured checklist for exactly this reason.
+_Peer Reviews in Software_ של Wiegers (2001) עיגן סקירת עמיתים בסגנון אינספקציה כדיסציפלינה הנדסית נפרדת: מעבר מובנה ומונחה-צ'ק-ליסט שמוצא פגמים מוקדם יותר וזול יותר מבדיקות לבדן. צעד הסקירה הידנית של הסקיל משתמש בצ'ק-ליסט מובנה בדיוק מהסיבה הזו.
 
 URL: https://www.processimpact.com/books/PeerReviews.html
 
 ### Smartbear: State of Code Review
 
-Smartbear's annual surveys of code-review practice document the measurable effect of structured reviews on defect
-density and time-to-fix. The skill's severity scheme (CRIT/WARN/SUGG) and its finding cap reflect the consistently
-measured finding that reviews of more than ~400 LoC per hour lose effectiveness. Caps prevent flood and prioritization
-drift.
+הסקרים השנתיים של Smartbear על פרקטיקת סקירת קוד מתעדים את ההשפעה הנמדדת של סקירות מובנות על צפיפות פגמים ועל זמן-לתיקון. סכמת החומרה של הסקיל (CRIT/WARN/SUGG) ותקרת הממצאים שלו משקפות את הממצא הנמדד בעקביות שסקירות של יותר מכ-400 שורות קוד לשעה מאבדות אפקטיביות. תקרות מונעות הצפה וסחף בתעדוף.
 
 URL: https://smartbear.com/resources/ebooks/the-state-of-code-review/
 
 ### Gene Kim, Jez Humble, et al.: Accelerate
 
-_Accelerate_ documents DORA research showing that high-performing teams rely on fast, automated, continuous review
-practices as part of their delivery flow. The skill's parallel agent dispatch during the manual review reflects this.
-Specialists and the reviewer work concurrently rather than in sequence.
+_Accelerate_ מתעד מחקר של DORA שמראה שצוותים בעלי ביצועים גבוהים נשענים על פרקטיקות סקירה מהירות, אוטומטיות ורציפות כחלק מזרימת המסירה שלהם. השיגור המקבילי של הסוכנים תוך כדי הסקירה הידנית משקף זאת. המומחים והסוקר עובדים במקביל ולא ברצף.
 
 URL: https://itrevolution.com/product/accelerate/
 
-## Related documentation
+## תיעוד קשור
 
-- [Plugin README](../../README.md). The plugin's front door: its skills, agents, and how they fit together.
-- [Repo root README](../../../README.md). The Han suite landing page. Start here if you arrived from outside the docs tree.
-- [YAGNI](../../../docs/yagni.md). The evidence-based "You Aren't Gonna Need It" rule this skill applies before committing
-  items. The two gates, the acceptable-evidence list, the named anti-patterns, and the deferral format.
-- [Skills Index](../../../docs/skills/README.md). All skills, grouped by purpose.
-- [`/post-code-review-to-pr`](../../../han-github/docs/skills/post-code-review-to-pr.md). Wraps this skill and posts the review to a
-  GitHub PR.
-- [`/code-overview`](./code-overview.md). The orientation counterpart: run it to understand a change before this skill
-  judges its quality.
-- [`/code-walkthrough`](./code-walkthrough.md). The paced counterpart to `/code-overview`: run it when you want to be
-  taught the change step by step before this skill judges it.
-- [`/investigate`](./investigate.md). Next step when a CRIT finding hides a bug whose root cause needs deeper analysis.
-- [`/architectural-analysis`](./architectural-analysis.md). Run alongside when the change touches module
-  boundaries.
-- [Sizing](../../../docs/sizing.md). The cross-skill sizing model. Explains the small / medium / large bands, the
-  default-to-small rule, and the `$size` override.
-- [`junior-developer`](../../../han-core/docs/agents/junior-developer.md),
-  [`adversarial-security-analyst`](../../../han-core/docs/agents/adversarial-security-analyst.md). The two agents this skill
-  always dispatches.
-- [`test-engineer`](../../../han-core/docs/agents/test-engineer.md),
-  [`edge-case-explorer`](../../../han-core/docs/agents/edge-case-explorer.md),
-  [`structural-analyst`](../../../han-core/docs/agents/structural-analyst.md),
-  [`behavioral-analyst`](../../../han-core/docs/agents/behavioral-analyst.md),
-  [`concurrency-analyst`](../../../han-core/docs/agents/concurrency-analyst.md). Conditional dispatches that join the roster
-  when their signal appears in the file list.
-- [`data-engineer`](../../../han-core/docs/agents/data-engineer.md),
-  [`devops-engineer`](../../../han-core/docs/agents/devops-engineer.md). Conditional dispatches for changes touching
-  schemas/migrations/queries (data) or infra/CI/observability (devops).
-- [`on-call-engineer`](../../../han-core/docs/agents/on-call-engineer.md). Conditional dispatch when the change adds or modifies
-  application source with runtime resilience surface (outbound calls, retry logic, queue/buffer handling, async/await
-  code, error-handling on failure paths, idempotency, schema migrations co-deployed with dependent code, new production
-  code paths). Hard boundary against `devops-engineer`: this agent reads application source only.
-- [`adversarial-validator`](../../../han-core/docs/agents/adversarial-validator.md). Dispatched once at Step 7.4 to re-attack
-  the consolidated finding list against the code and confirm, demote, or drop each finding. Runs whenever the review
-  produced at least one corrective finding.
-- [`readability-editor`](../../../han-communication/docs/agents/readability-editor.md). Dispatched at Step 8.5 to rewrite the
-  review's prose against the shared readability standard for the change's author and reviewers, leaving task IDs,
-  severities, `file_path:line_number` references, and code snippets unchanged.
-- [`SKILL.md` for /code-review](../../skills/code-review/SKILL.md). The internal process definition.
+- [README של הפלאגין](../../README.md). הדלת הקדמית של הפלאגין: הסקילים שלו, הסוכנים, ואיך הם משתלבים.
+- [README של שורש הריפו](../../../README.md). דף הנחיתה של חבילת Han. התחל כאן אם הגעת מחוץ לעץ התיעוד.
+- [YAGNI](../../../docs/yagni.md). כלל ה-"You Aren't Gonna Need It" מבוסס-הראיות שהסקיל הזה מחיל לפני שהוא מתחייב לפריטים. שני השערים, רשימת הראיות הקבילות, האנטי-דפוסים הנקובים בשם, ופורמט הדחייה.
+- [אינדקס הסקילים](../../../docs/skills/README.md). כל הסקילים, מקובצים לפי מטרה.
+- [`/post-code-review-to-pr`](../../../han-github/docs/skills/post-code-review-to-pr.md). עוטף את הסקיל הזה ומפרסם את הסקירה ל-PR ב-GitHub.
+- [`/code-overview`](./code-overview.md). המקביל להתמצאות: הרץ אותו כדי להבין שינוי לפני שהסקיל הזה שופט את האיכות שלו.
+- [`/code-walkthrough`](./code-walkthrough.md). המקביל המקוצב של `/code-overview`: הרץ אותו כשאתה רוצה שילמדו אותך את השינוי צעד אחר צעד לפני שהסקיל הזה שופט אותו.
+- [`/investigate`](./investigate.md). הצעד הבא כשממצא CRIT מסתיר באג ששורש הבעיה שלו דורש ניתוח עמוק יותר.
+- [`/architectural-analysis`](./architectural-analysis.md). הרץ לצידו כשהשינוי נוגע בגבולות מודולים.
+- [Sizing](../../../docs/sizing.md). מודל הגודל החוצה-סקילים. מסביר את הרצועות קטן / בינוני / גדול, את כלל ברירת-המחדל-לקטן, ואת העקיפה `$size`.
+- [`junior-developer`](../../../han-core/docs/agents/junior-developer.md), [`adversarial-security-analyst`](../../../han-core/docs/agents/adversarial-security-analyst.md). שני הסוכנים שהסקיל הזה תמיד משגר.
+- [`test-engineer`](../../../han-core/docs/agents/test-engineer.md), [`edge-case-explorer`](../../../han-core/docs/agents/edge-case-explorer.md), [`structural-analyst`](../../../han-core/docs/agents/structural-analyst.md), [`behavioral-analyst`](../../../han-core/docs/agents/behavioral-analyst.md), [`concurrency-analyst`](../../../han-core/docs/agents/concurrency-analyst.md). שיגורים מותנים שמצטרפים למערך כשהאות שלהם מופיע ברשימת הקבצים.
+- [`data-engineer`](../../../han-core/docs/agents/data-engineer.md), [`devops-engineer`](../../../han-core/docs/agents/devops-engineer.md). שיגורים מותנים לשינויים שנוגעים בסכמות/מיגרציות/שאילתות (נתונים) או בתשתית/CI/תצפיתיות (devops).
+- [`on-call-engineer`](../../../han-core/docs/agents/on-call-engineer.md). שיגור מותנה כשהשינוי מוסיף או משנה קוד מקור של אפליקציה עם משטח חוסן בזמן ריצה (קריאות יוצאות, לוגיקת retry, טיפול בתורים/חוצצים, קוד async/await, טיפול בשגיאות במסלולי כשל, אידמפוטנטיות, מיגרציות סכמה שנפרסות יחד עם קוד תלוי, מסלולי קוד חדשים בפרודקשן). גבול חד מול `devops-engineer`: הסוכן הזה קורא קוד מקור של אפליקציה בלבד.
+- [`adversarial-validator`](../../../han-core/docs/agents/adversarial-validator.md). משוגר פעם אחת בצעד 7.4 כדי לתקוף מחדש את רשימת הממצאים המאוחדת מול הקוד ולאשר, להוריד דרגה או לזרוק כל ממצא. רץ בכל פעם שהסקירה ייצרה לפחות ממצא מתקן אחד.
+- [`readability-editor`](../../../han-communication/docs/agents/readability-editor.md). משוגר בצעד 8.5 כדי לשכתב את הטקסט של הסקירה מול תקן הקריאוּת המשותף עבור הכותב והסוקרים של השינוי, כשמזהי המשימות, החומרות, הפניות ה-`file_path:line_number` וקטעי הקוד נשארים ללא שינוי.
+- [`SKILL.md` של /code-review](../../skills/code-review/SKILL.md). הגדרת התהליך הפנימי.

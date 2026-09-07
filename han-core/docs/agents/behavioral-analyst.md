@@ -1,142 +1,103 @@
 # behavioral-analyst
 
-Operator documentation for the `behavioral-analyst` agent in the han plugin. This document helps you decide _when_ and
-_how_ to dispatch the agent. For what the agent does internally, read the agent definition at
-[`han-core/agents/behavioral-analyst.md`](../../agents/behavioral-analyst.md).
+תיעוד מפעיל לסוכן `behavioral-analyst` בפלאגין. המסמך הזה עוזר לך להחליט _מתי_ ו*איך* לשגר את הסוכן. למה שהסוכן עושה בפנים, קרא את הגדרת הסוכן ב-[`han-core/agents/behavioral-analyst.md`](../../agents/behavioral-analyst.md).
 
-> See also: [Plugin README](../../README.md) · [Repo root](../../../README.md) · [All agents](../../../docs/agents/README.md) ·
-> [All skills](../../../docs/skills/README.md)
+> ראה גם: [README של הפלאגין](../../README.md) · [שורש הריפו](../../../README.md) · [כל הסוכנים](../../../docs/agents/README.md) · [כל הסקילים](../../../docs/skills/README.md)
 
 ## TL;DR
 
-- **What it does.** Analyzes the runtime behavior of a specified codebase focus area: data flow, error propagation,
-  state management, and integration boundaries. Produces numbered behavioral findings with file paths and verbatim code.
-- **When to dispatch it.** You want a principled runtime-behavior pass on a module or focus area, independent of static
-  structure or concurrency. Always dispatched by `/architectural-analysis`. Conditionally dispatched by `/code-review`.
-  Dispatched by `/investigate` when the symptom matches a data-flow or error-propagation bug. Dispatched by
-  `/plan-implementation` by signal when plan sections describe runtime behavior, data flow, error propagation, or state.
-  Conditionally dispatched by `/iterative-plan-review` when the review covers runtime behavior, data flow, error
-  propagation, or state. Dispatched by `/plan-a-feature` only when you ask for it by name: the mechanic-focused
-  specialists are excluded from its default spec-stage roster, and their findings defer to `/plan-implementation`.
-- **What you get back.** Numbered `B#` findings, each tied to a behavioral dimension (Data Flow / Error Propagation /
-  State Management / Integration Boundaries), file paths, verbatim code, and an impact statement.
+- **מה הוא עושה.** מנתח את ההתנהגות בזמן ריצה של אזור מיקוד נתון בבסיס הקוד: זרימת נתונים, התפשטות שגיאות, ניהול מצב וגבולות אינטגרציה. מייצר ממצאים התנהגותיים ממוספרים עם נתיבי קבצים וקוד מילה במילה.
+- **מתי לשגר אותו.** אתה רוצה מעבר עקרוני על התנהגות בזמן ריצה של מודול או אזור מיקוד, בנפרד ממבנה סטטי או ממקביליות. תמיד משוגר על ידי `/architectural-analysis`. משוגר באופן מותנה על ידי `/code-review`. משוגר על ידי `/investigate` כשהסימפטום מתאים לבאג של זרימת נתונים או של התפשטות שגיאות. משוגר על ידי `/plan-implementation` לפי אות כשסעיפי התוכנית מתארים התנהגות בזמן ריצה, זרימת נתונים, התפשטות שגיאות או מצב. משוגר באופן מותנה על ידי `/iterative-plan-review` כשהסקירה מכסה התנהגות בזמן ריצה, זרימת נתונים, התפשטות שגיאות או מצב. משוגר על ידי `/plan-a-feature` רק כשאתה מבקש אותו בשמו: המומחים ממוקדי-המכניקה מוחרגים מרשימת ברירת המחדל של שלב המפרט, והממצאים שלהם נדחים ל-`/plan-implementation`.
+- **מה אתה מקבל בחזרה.** ממצאי `B#` ממוספרים, כל אחד קשור לממד התנהגותי (זרימת נתונים / התפשטות שגיאות / ניהול מצב / גבולות אינטגרציה), נתיבי קבצים, קוד מילה במילה, ומשפט השפעה.
 
-## Key concepts
+## מושגי מפתח
 
-- **Runtime, not static.** The agent traces what the code does when it runs. Static structure (imports, file
-  organization, coupling) is deferred to `structural-analyst`. Concurrency hazards are deferred to
-  `concurrency-analyst`.
-- **Four dimensions, all required.** Data Flow, Error Propagation, State Management, Integration Boundaries. Skipping a
-  dimension makes the analysis incomplete.
-- **Error paths are not optional.** The agent walks try/catch blocks, error returns, and failure paths explicitly.
-  Happy-path-only analysis is an anti-pattern.
-- **Implicit state counts.** Closures, module-level singletons, memoization caches, and thread-local state are flagged
-  alongside explicit variables and databases.
-- **Discovers findings, does not synthesize.** Recommendations belong to `software-architect`. Risk assessment belongs
-  to `risk-analyst`. Bug investigation belongs to `evidence-based-investigator`.
-- **`/code-review` adds a default-SUGG dispatcher directive at Step 3.5.** When dispatched from `/code-review`, the
-  skill appends an instruction to default the severity of every finding to SUGG. It escalates to WARN or CRIT only when
-  the change actively introduces or worsens the issue. This is `/code-review`'s tailoring; the agent's general behavior
-  outside `/code-review` is unchanged. Other callers (`/architectural-analysis`, `/investigate`) receive the agent's
-  default skeptical posture.
+- **זמן ריצה, לא סטטי.** הסוכן עוקב אחרי מה שהקוד עושה כשהוא רץ. מבנה סטטי (ייבואים, ארגון קבצים, צימוד) נדחה ל-`structural-analyst`. סכנות מקביליות נדחות ל-`concurrency-analyst`.
+- **ארבעה ממדים, כולם נדרשים.** זרימת נתונים, התפשטות שגיאות, ניהול מצב, גבולות אינטגרציה. דילוג על ממד הופך את הניתוח לחלקי.
+- **מסלולי שגיאה אינם אופציונליים.** הסוכן עובר על בלוקי try/catch, על החזרות שגיאה ועל מסלולי כשל במפורש. ניתוח של המסלול המוצלח בלבד הוא אנטי-דפוס.
+- **מצב מרומז נספר.** קלוז'רים, סינגלטונים ברמת המודול, מטמוני מֶמואיזציה ומצב מקומי-לתהליכון מסומנים לצד משתנים מפורשים ומסדי נתונים.
+- **מגלה ממצאים, לא מסנתז.** ההמלצות שייכות ל-`software-architect`. הערכת הסיכונים שייכת ל-`risk-analyst`. חקירת באגים שייכת ל-`evidence-based-investigator`.
+- **`/code-review` מוסיף הנחיית משגר של ברירת-מחדל-SUGG בשלב 3.5.** כשהוא משוגר מ-`/code-review`, הסקיל מצרף הנחיה לקבוע את חומרת ברירת המחדל של כל ממצא ל-SUGG. הוא מסלים ל-WARN או ל-CRIT רק כשהשינוי מכניס או מחמיר את הבעיה באופן פעיל. זו ההתאמה של `/code-review`; ההתנהגות הכללית של הסוכן מחוץ ל-`/code-review` אינה משתנה. קוראים אחרים (`/architectural-analysis`, `/investigate`) מקבלים את עמדת הספקנות שהיא ברירת המחדל של הסוכן.
 
-## When to use it
+## מתי להשתמש בו
 
-**Dispatch when:**
+**שגר כאשר:**
 
-- `/architectural-analysis` is running. The agent is one of the three parallel analysts the skill always dispatches.
-- `/code-review` flags data-flow or error-handling concerns in the file list.
-- `/investigate` matches the symptom to a data-flow or error-propagation bug. The skill dispatches this agent alongside
-  the investigators.
-- You suspect an error is being swallowed silently somewhere in a module and want a structured pass to find it.
-- You are about to refactor a state-heavy module and want a behavioral baseline first.
+- `/architectural-analysis` רץ. הסוכן הוא אחד משלושת האנליסטים המקבילים שהסקיל תמיד משגר.
+- `/code-review` מסמן חששות של זרימת נתונים או של טיפול בשגיאות ברשימת הקבצים.
+- `/investigate` מתאים את הסימפטום לבאג של זרימת נתונים או של התפשטות שגיאות. הסקיל משגר את הסוכן הזה לצד החוקרים.
+- אתה חושד ששגיאה נבלעת בשקט איפשהו במודול ורוצה מעבר מובנה כדי למצוא אותה.
+- אתה עומד לעשות ריפקטור למודול עתיר-מצב ורוצה קודם בסיס-השוואה התנהגותי.
 
-**Do not dispatch for:**
+**אל תשגר עבור:**
 
-- Static structure, coupling, module boundaries. Use `structural-analyst`.
-- Concurrency hazards. Use `concurrency-analyst`.
-- Specific bug root cause. Use `evidence-based-investigator` or `/investigate`.
-- Risk prioritization. Use `risk-analyst` (which consumes this agent's findings).
-- Architectural recommendations. Use `software-architect`.
-- Cross-service or bounded-context changes. Use `system-architect`.
+- מבנה סטטי, צימוד, גבולות מודולים. השתמש ב-`structural-analyst`.
+- סכנות מקביליות. השתמש ב-`concurrency-analyst`.
+- שורש ספציפי של באג. השתמש ב-`evidence-based-investigator` או ב-`/investigate`.
+- תיעדוף סיכונים. השתמש ב-`risk-analyst` (שצורך את הממצאים של הסוכן הזה).
+- המלצות ארכיטקטוניות. השתמש ב-`software-architect`.
+- שינויים חוצי-שירותים או של הקשר תחום. השתמש ב-`system-architect`.
 
-## How to invoke it
+## איך להפעיל אותו
 
-Dispatch via the `Agent` tool with `subagent_type: han-core:behavioral-analyst`. Give it a focus area (module,
-directory, or set of files). The agent traces runtime behavior plus one layer outward in each direction.
+שגר דרך כלי ה-`Agent` עם `subagent_type: han-core:behavioral-analyst`. תן לו אזור מיקוד (מודול, תיקייה או קבוצת קבצים). הסוכן עוקב אחרי ההתנהגות בזמן ריצה ובנוסף שכבה אחת החוצה בכל כיוון.
 
-Example prompts:
+פרומפטים לדוגמה:
 
-- _"Trace data flow and error propagation through `src/orders/`. We've seen recent reports of orders silently failing to
-  update inventory."_
-- _"Examine `packages/payments/` for state management and integration boundaries. The team suspects implicit state is
-  causing test flakiness."_
+- _"תעקוב אחרי זרימת הנתונים והתפשטות השגיאות דרך `src/orders/`. ראינו לאחרונה דיווחים על הזמנות שנכשלות בשקט בעדכון המלאי."_
+- _"תבחן את `packages/payments/` לניהול מצב ולגבולות אינטגרציה. הצוות חושד שמצב מרומז גורם לחוסר יציבות בבדיקות."_
 
-## What you get back
+## מה אתה מקבל בחזרה
 
-- Numbered `B#` findings, each with: dimension (Data Flow / Error Propagation / State Management / Integration
-  Boundaries), relevant file paths, verbatim code in fenced blocks, and an impact statement.
-- A **Behavioral Summary** with the focus area analyzed, the 2-3 key concerns, any well-handled areas, and any
-  dimensions that could not be fully assessed.
+- ממצאי `B#` ממוספרים, כל אחד עם: ממד (זרימת נתונים / התפשטות שגיאות / ניהול מצב / גבולות אינטגרציה), נתיבי קבצים רלוונטיים, קוד מילה במילה בבלוקים מגודרים, ומשפט השפעה.
+- **Behavioral Summary** עם אזור המיקוד שנותח, 2-3 החששות המרכזיים, כל אזור שמטופל היטב, וכל ממד שלא ניתן היה להעריך במלואו.
 
-## How to get the most out of it
+## איך להפיק ממנו את המרב
 
-- **Name the suspected concern.** _"Error propagation around the retry queue"_ or _"state management in the session
-  handler"_ focuses the agent's attention while keeping all four dimensions in scope.
-- **Provide entry points.** If you know where user input or external events enter the module, name them. The data-flow
-  trace starts there.
-- **Pair with `structural-analyst` and `concurrency-analyst`.** The three analysts together cover the full architectural
-  picture. `/architectural-analysis` dispatches all three.
-- **Read the negative results.** The agent reports areas where behavior is sound. That signal helps prioritize the
-  remaining concerns.
+- **נקוב בחשש שאתה חושד בו.** _"התפשטות שגיאות סביב תור הניסיונות החוזרים"_ או _"ניהול מצב במטפל הסשן"_ ממקד את תשומת הלב של הסוכן תוך שמירת כל ארבעת הממדים בהיקף.
+- **ספק נקודות כניסה.** אם אתה יודע איפה קלט משתמש או אירועים חיצוניים נכנסים למודול, נקוב בהן. מעקב זרימת הנתונים מתחיל שם.
+- **צמד עם `structural-analyst` ועם `concurrency-analyst`.** שלושת האנליסטים יחד מכסים את התמונה הארכיטקטונית המלאה. `/architectural-analysis` משגר את שלושתם.
+- **קרא את התוצאות השליליות.** הסוכן מדווח על אזורים שבהם ההתנהגות תקינה. האות הזה עוזר לתעדף את החששות הנותרים.
 
-## Cost and latency
+## עלות וזמן תגובה
 
-The agent runs on `sonnet`. A focused-scope analysis runs in a couple of minutes. Built for per-module cadence.
+הסוכן רץ על `sonnet`. ניתוח בהיקף ממוקד רץ בכמה דקות. בנוי לקצב של מודול-אחר-מודול.
 
-## Sources
+## מקורות
 
-The agent's vocabulary and dimensions are grounded in established behavioral-analysis practice.
+אוצר המילים והממדים של הסוכן מעוגנים בפרקטיקה מבוססת של ניתוח התנהגותי.
 
 ### Gregor Hohpe: Enterprise Integration Patterns
 
-Hohpe and Woolf's pattern catalog frames the agent's integration-boundary findings (Message Channel, Translator,
-Endpoint, Dead Letter, Circuit Breaker).
+קטלוג הדפוסים של Hohpe ושל Woolf ממסגר את ממצאי גבולות האינטגרציה של הסוכן (Message Channel, Translator, Endpoint, Dead Letter, Circuit Breaker).
 
 URL: https://www.enterpriseintegrationpatterns.com/
 
 ### Michael Nygard: Release It!
 
-Nygard's stability patterns (circuit breaker, bulkhead, timeout, fail-fast) underpin the agent's analysis of failure
-handling at integration boundaries.
+דפוסי היציבות של Nygard (circuit breaker, bulkhead, timeout, fail-fast) עומדים בבסיס הניתוח של הסוכן לטיפול בכשלים בגבולות אינטגרציה.
 
 URL: https://pragprog.com/titles/mnee2/release-it-second-edition/
 
 ### Martin Fowler: Two Hard Things (caching, naming, off-by-one)
 
-Fowler's catalog of subtle behavioral pitfalls informs the agent's State Management and Error Propagation dimensions.
+הקטלוג של Fowler למלכודות התנהגותיות עדינות מיידע את ממדי ניהול המצב והתפשטות השגיאות של הסוכן.
 
 URL: https://martinfowler.com/bliki/TwoHardThings.html
 
-## Related documentation
+## תיעוד קשור
 
-- [Plugin README](../../README.md). The plugin's front door: its skills, agents, and how they fit together.
-- [Repo root README](../../../README.md). The Han suite landing page. Start here if you arrived from outside the docs tree.
-- [Agents Index](../../../docs/agents/README.md). All agents, grouped by role.
-- [`structural-analyst`](./structural-analyst.md). Sibling analyst for static structure.
-- [`concurrency-analyst`](./concurrency-analyst.md). Sibling analyst for concurrency hazards.
-- [`risk-analyst`](./risk-analyst.md). Consumes this agent's findings.
-- [`software-architect`](./software-architect.md). Synthesizes findings into recommendations.
-- [`/architectural-analysis`](../../../han-coding/docs/skills/architectural-analysis.md). Always dispatches this agent.
-- [`/investigate`](../../../han-coding/docs/skills/investigate.md). Dispatches this agent for data-flow and error-propagation
-  bugs.
-- [`/code-review`](../../../han-coding/docs/skills/code-review.md). Conditionally dispatches this agent.
-- [`/plan-implementation`](../../../han-planning/docs/skills/plan-implementation.md). Dispatches this agent by signal when plan
-  sections describe runtime behavior, data flow, error propagation, or state.
-- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). Conditionally dispatches this agent
-  when the review covers runtime behavior, data flow, error propagation, or state.
-- [`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md). Dispatches this agent only when the user asks for
-  it by name; the mechanic-focused specialists are excluded from the default spec-stage roster, and implementation-level
-  findings defer to `/plan-implementation`.
-- [`/design-an-api`](../../../han-coding/docs/skills/design-an-api.md). Adds this agent to the discovery wave on a
-  boundary-data signal, at the medium band and above.
+- [README של הפלאגין](../../README.md). הדלת הקדמית של הפלאגין: הסקילים שלו, הסוכנים, ואיך הם משתלבים.
+- [README של שורש הריפו](../../../README.md). דף הנחיתה של חבילת Han. התחל כאן אם הגעת מחוץ לעץ התיעוד.
+- [אינדקס הסוכנים](../../../docs/agents/README.md). כל הסוכנים, מקובצים לפי תפקיד.
+- [`structural-analyst`](./structural-analyst.md). אנליסט אח למבנה סטטי.
+- [`concurrency-analyst`](./concurrency-analyst.md). אנליסט אח לסכנות מקביליות.
+- [`risk-analyst`](./risk-analyst.md). צורך את הממצאים של הסוכן הזה.
+- [`software-architect`](./software-architect.md). מסנתז ממצאים להמלצות.
+- [`/architectural-analysis`](../../../han-coding/docs/skills/architectural-analysis.md). תמיד משגר את הסוכן הזה.
+- [`/investigate`](../../../han-coding/docs/skills/investigate.md). משגר את הסוכן הזה לבאגים של זרימת נתונים ושל התפשטות שגיאות.
+- [`/code-review`](../../../han-coding/docs/skills/code-review.md). משגר את הסוכן הזה באופן מותנה.
+- [`/plan-implementation`](../../../han-planning/docs/skills/plan-implementation.md). משגר את הסוכן הזה לפי אות כשסעיפי התוכנית מתארים התנהגות בזמן ריצה, זרימת נתונים, התפשטות שגיאות או מצב.
+- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). משגר את הסוכן הזה באופן מותנה כשהסקירה מכסה התנהגות בזמן ריצה, זרימת נתונים, התפשטות שגיאות או מצב.
+- [`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md). משגר את הסוכן הזה רק כשהמשתמש מבקש אותו בשמו; המומחים ממוקדי-המכניקה מוחרגים מרשימת ברירת המחדל של שלב המפרט, וממצאים ברמת המימוש נדחים ל-`/plan-implementation`.
+- [`/design-an-api`](../../../han-coding/docs/skills/design-an-api.md). מוסיף את הסוכן הזה לגל הגילוי על אות של נתוני גבול, ברצועה הבינונית ומעלה.

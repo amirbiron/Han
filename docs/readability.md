@@ -1,224 +1,132 @@
 # Readability
 
-Readability is the output-quality standard of the han plugin. Every reader-facing skill applies one shared readability
-rule while it writes. That keeps every deliverable consistent: each one leads with the main point, uses plain language,
-and reveals detail in layers, instead of each skill restating the rule on its own.
+קריאוּת היא תקן איכות הפלט של הפלאגין. כל סקיל שפונה לקורא מחיל כלל קריאוּת משותף אחד תוך כדי הכתיבה. זה שומר על עקביות כל תוצר: כל אחד מהם פותח בעיקר, משתמש בשפה פשוטה, וחושף פרטים בשכבות, במקום שכל סקיל ינסח מחדש את הכלל בעצמו.
 
-> See also: [Plugin landing page](../README.md) · [Concepts](./concepts.md) · [YAGNI](./yagni.md) ·
-> [Evidence](./evidence.md) · [All skills](./skills/README.md) · [All agents](./agents/README.md)
+> ראה גם: [דף הנחיתה של הפלאגין](../README.md) · [מושגי יסוד](./concepts.md) · [YAGNI](./yagni.md) · [Evidence](./evidence.md) · [כל הסקילים](./skills/README.md) · [כל הסוכנים](./agents/README.md)
 
 ## TL;DR
 
-- **One shared rule, applied as skills write.** Reader-facing skills source the readability standard by invoking
-  `han-communication:readability-guidance`, which surfaces the rule into the calling skill's own context as it writes.
-  Output stays consistent because the rule lives in one place, not because each skill restates it.
-- **A different kind of standard.** Sizing, YAGNI, and evidence are near-universal decision mechanics. Readability is an
-  output standard scoped to the skills whose deliverable is prose a non-author reads. It is its own category, not a
-  fourth universal mechanic. It also has a sibling: the
-  [explanation standard](../han-communication/references/explanation-rule.md) governs what a run says to a person in a
-  turn, where readability governs the shape of a written deliverable. A skill that drafts a document and also stops to
-  ask a question sources both, at different moments.
-- **Applied in stages, never as one block.** The rule's structural rules shape each skill's output template; its
-  testable criteria run as a discrete self-check after the draft exists. Stacking it all as one instruction would
-  reproduce the failure it exists to dodge.
-- **Synthesis skills rewrite; the rest self-check.** A skill with a synthesis or editor step dispatches the
-  [`readability-editor`](../han-communication/docs/agents/readability-editor.md) to rewrite the draft, preserving every fact.
-  Every in-scope skill runs the standardized self-check.
-- **Fidelity wins, unless the reader asked for less.** Every claim, quantity, named entity, and stated condition
-  survives with its precision intact. A reader who asked for less can lose a fact, unless losing it would change
-  what they do next.
-- **Session-wide is opt-in.** Selecting the `Han Readability` output style holds the standard across every turn, not
-  only inside a reader-facing skill. It reaches the main conversation, never a dispatched subagent.
-- **The canonical rule lives in
-  [`han-communication/references/readability-rule.md`](../han-communication/references/readability-rule.md).** Every
-  reader-facing skill sources it cross-plugin by invoking `han-communication:readability-guidance`. This page is the
-  operator-facing summary.
+- **כלל משותף אחד, מוחל תוך כדי כתיבת הסקילים.** סקילים שפונים לקורא שואבים את תקן הקריאוּת בהפעלת `han-communication:readability-guidance`, שמעלה את הכלל לתוך ההקשר של הסקיל הקורא תוך כדי שהוא כותב. הפלט נשאר עקבי מפני שהכלל חי במקום אחד, לא מפני שכל סקיל מנסח אותו מחדש.
+- **תקן מסוג אחר.** גודל, YAGNI וראיות הם מנגנוני החלטה כמעט-אוניברסליים. קריאוּת היא תקן פלט שמוגבל לסקילים שהתוצר שלהם הוא טקסט שקורא שאינו הכותב קורא. היא קטגוריה בפני עצמה, לא מנגנון אוניברסלי רביעי. יש לה גם אח: [תקן ההסבר](../han-communication/references/explanation-rule.md) שולט במה שריצה אומרת לאדם בתוך תור, בעוד שקריאוּת שולטת בצורה של תוצר כתוב. סקיל שמנסח מסמך וגם עוצר לשאול שאלה שואב את שניהם, ברגעים שונים.
+- **מוחל בשלבים, לעולם לא כבלוק אחד.** הכללים המבניים של הכלל מעצבים את תבנית הפלט של כל סקיל; הקריטריונים הניתנים לבדיקה רצים כבדיקה עצמית נפרדת אחרי שהטיוטה קיימת. לערום את הכול כהוראה אחת היה משחזר בדיוק את הכישלון שהוא נועד לחמוק ממנו.
+- **סקילי סינתזה משכתבים; היתר מבצעים בדיקה עצמית.** סקיל עם שלב סינתזה או עריכה משגר את [`readability-editor`](../han-communication/docs/agents/readability-editor.md) כדי לשכתב את הטיוטה, תוך שמירה על כל עובדה. כל סקיל בהיקף מריץ את הבדיקה העצמית הסטנדרטית.
+- **נאמנות מנצחת, אלא אם הקורא ביקש פחות.** כל טענה, כמות, ישות נקובה בשם ותנאי מוצהר שורדים עם הדיוק שלהם שלם. קורא שביקש פחות יכול לאבד עובדה, אלא אם איבודה היה משנה את מה שהוא עושה אחר כך.
+- **פריסה על סשן שלם היא בחירה שלך.** בחירה בסגנון הפלט `Han Readability` מחזיקה את התקן לאורך כל תור, ולא רק בתוך סקיל שפונה לקורא. היא מגיעה לשיחה הראשית, לעולם לא לסאב-סוכן משוגר.
+- **הכלל הקנוני יושב ב-[`han-communication/references/readability-rule.md`](../han-communication/references/readability-rule.md).** כל סקיל שפונה לקורא שואב אותו בין-פלאגינית בהפעלת `han-communication:readability-guidance`. הדף הזה הוא הסיכום שפונה למפעיל.
 
-## Why readability matters
+## למה קריאוּת חשובה
 
-A skill's output is only useful if the person who did not do the work can find, understand, and use it. An investigation
-can bury its root cause under three paragraphs of context. A stakeholder summary can open with methodology instead of
-the decision. A code overview's headings can all read "Analysis." Each of these makes the reader redo the author's work.
-Without a shared standard:
+הפלט של סקיל שימושי רק אם האדם שלא עשה את העבודה יכול למצוא אותו, להבין אותו ולהשתמש בו. חקירה יכולה לקבור את שורש הבעיה מתחת לשלוש פסקאות של הקשר. סיכום לבעלי עניין יכול לפתוח במתודולוגיה במקום בהחלטה. כל הכותרות בסקירת-על של קוד יכולות לקרוא "ניתוח". כל אחד מאלה מאלץ את הקורא לעשות מחדש את עבודת הכותב. בלי תקן משותף:
 
-- Each skill re-derives its own plain-language guidance, and the output reads differently from one skill to the next.
-- The main point lands wherever the drafting happened to leave it, not at the top.
-- Dense, technical deliverables get either unreadable or, worse, simplified until a load-bearing fact is lost.
+- כל סקיל גוזר מחדש הנחיות שפה פשוטה משלו, והפלט נקרא אחרת מסקיל לסקיל.
+- העיקר נוחת במקום שבו הניסוח במקרה השאיר אותו, ולא בראש.
+- תוצרים צפופים וטכניים יוצאים או בלתי קריאים או, גרוע מכך, מפושטים עד שעובדה נושאת-משקל אובדת.
 
-The standard fixes the first two by naming the output properties once and applying them everywhere. It guards against
-the third by making fidelity outrank every readability move the reader did not ask for.
+התקן מתקן את שני הראשונים בכך שהוא נוקב בתכונות הפלט פעם אחת ומחיל אותן בכל מקום. הוא מגן מפני השלישי בכך שהוא הופך את הנאמנות לגוברת על כל מהלך קריאוּת שהקורא לא ביקש.
 
-## What the standard requires
+## מה התקן דורש
 
-The rule names the output properties, and they shape each skill's template so the draft is born with them:
+הכלל נוקב בתכונות הפלט, והן מעצבות את התבנית של כל סקיל כך שהטיוטה נולדת איתן:
 
-- **Main point first.** The opening line states the main point. A reader who stops after one sentence still gets the
-  answer.
-- **One idea per paragraph.** Each paragraph carries one idea, and its first sentence carries the weight.
-- **Descriptive headings.** Each heading names its content ("Why the request times out"), not a generic label
-  ("Analysis").
-- **Short, active sentences.** Roughly fifteen to twenty words on average, active by default. The self-check flags any
-  sentence past about thirty words as a candidate to split. That is a review trigger, not a hard cap.
-- **Common words, and a half-sentence explanation for a term the reader cannot look up.** Prefer the common word over
-  the technical synonym. Where a term cannot be replaced, explain it in half a sentence at first use. Three kinds always
-  need it, because the reader has nowhere to resolve them from the material the document describes: outside
-  technologies and language runtimes, named statistical or numerical methods, and compound nouns the document coins for
-  its own convenience. The coined ones matter most, since a reader can search for the other two and find an answer.
-- **No blocklisted words.** The existing writing-voice blocklist is reused for word-level rules.
-- **Numbered lists for steps, bullets for the rest.**
-- **Progressive disclosure.** Reveal the core first and detail in layers.
-- **Technical detail follows the prose.** Separate it by default. The readable sentences say what happens, and the
-  implementation and technical references (symbol names, file paths, flags, exact code) come after them, in a code fence
-  or a trailing line the prose has already explained. Inline is the exception, for the one reference a sentence is
-  genuinely about.
+- **העיקר קודם.** שורת הפתיחה מציינת את העיקר. קורא שעוצר אחרי משפט אחד עדיין מקבל את התשובה.
+- **רעיון אחד לפסקה.** כל פסקה נושאת רעיון אחד, והמשפט הראשון שלה נושא את המשקל.
+- **כותרות מתארות.** כל כותרת נוקבת בתוכן שלה ("למה הבקשה חורגת מהזמן"), לא בתווית גנרית ("ניתוח").
+- **משפטים קצרים ופעילים.** בערך חמש-עשרה עד עשרים מילים בממוצע, פעילים כברירת מחדל. הבדיקה העצמית מסמנת כל משפט שעובר בערך שלושים מילים כמועמד לפיצול. זה טריגר לסקירה, לא תקרה קשיחה.
+- **מילים נפוצות, והסבר של חצי משפט למונח שהקורא לא יכול לחפש.** העדף את המילה הנפוצה על פני המילה הנרדפת הטכנית. במקום שבו מונח לא ניתן להחלפה, הסבר אותו בחצי משפט בשימוש הראשון. שלושה סוגים תמיד צריכים את זה, מפני שלקורא אין מאיפה לפענח אותם מהחומר שהמסמך מתאר: טכנולוגיות חיצוניות וסביבות ריצה של שפות, שיטות סטטיסטיות או נומריות נקובות בשם, ושמות עצם מורכבים שהמסמך טובע לנוחות עצמו. הטבועים הם החשובים ביותר, מפני שקורא יכול לחפש את שני האחרים ולמצוא תשובה.
+- **בלי מילים ברשימת החסימה.** רשימת החסימה הקיימת של קול הכתיבה מנוצלת מחדש לכללים ברמת המילה.
+- **רשימות ממוספרות לשלבים, תבליטים ליתר.**
+- **חשיפה הדרגתית.** חשוף את הליבה קודם ואת הפרטים בשכבות.
+- **פרטים טכניים באים אחרי הטקסט.** הפרד אותם כברירת מחדל. המשפטים הקריאים אומרים מה קורה, והמימוש והייחוסים הטכניים (שמות סמלים, נתיבי קבצים, דגלים, קוד מדויק) באים אחריהם, בבלוק קוד או בשורה נגררת שהטקסט כבר הסביר. שילוב בתוך השורה הוא היוצא מן הכלל, עבור הייחוס האחד שמשפט באמת עוסק בו.
 
-The applied set is kept deliberately tight. Structural rules that fit only a minority of deliverables are left out on
-purpose. That keeps the set small enough to apply without the compliance decay that comes from stacking instructions.
+הסט המוחל נשמר צר בכוונה. כללים מבניים שמתאימים רק למיעוט של תוצרים הושמטו במתכוון. זה שומר על הסט קטן מספיק כדי להחיל אותו בלי דעיכת הציות שנובעת מערימת הוראות.
 
-## How the standard is applied
+## איך התקן מוחל
 
-Each skill sources the standard by invoking `han-communication:readability-guidance` at its drafting point (the
-guidance skill surfaces the rule and writing-voice profile into the skill's own context), then applies it in stages, one
-at a time:
+כל סקיל שואב את התקן בהפעלת `han-communication:readability-guidance` בנקודת הניסוח שלו (סקיל ההנחיות מעלה את הכלל ואת פרופיל קול הכתיבה לתוך ההקשר של הסקיל), ואז מחיל אותו בשלבים, אחד בכל פעם:
 
-1. **Template.** The skill's output template carries the structural rules, so the draft is structured from the start.
-2. **Audience frame.** While drafting, the skill writes for a capable reader who did not do the work and lacks the
-   author's context. Five engineer-facing skills name a more specific reader instead (see the table below).
-3. **Rewrite pass (synthesis skills only).** A skill with a synthesis or editor step dispatches the
-   [`readability-editor`](../han-communication/docs/agents/readability-editor.md) to audit and rewrite the draft against the
-   rule, preserving every fact.
-4. **Self-check.** A discrete pass over the prose regions evaluates behaviorally-anchored yes/no criteria: main
-   point first, descriptive headings, one idea per paragraph, sentence length, common words with no blocklisted word
-   and an explanation for every term the reader cannot look up, technical detail separated from the sentences, every
-   fact preserved, and the shape the reader asked for in count, format, and register. Anything it fails is corrected before the deliverable is presented. The last
-   criterion wins a real collision with the others, except where a dropped fact would change what the reader does
-   next, or where a skill requires a section.
+1. **תבנית.** תבנית הפלט של הסקיל נושאת את הכללים המבניים, כך שהטיוטה מובנית מההתחלה.
+2. **מסגור קהל.** תוך כדי הניסוח, הסקיל כותב עבור קורא מוכשר שלא עשה את העבודה וחסר את ההקשר של הכותב. חמישה סקילים שפונים למהנדסים נוקבים בקורא ספציפי יותר במקום זאת (ראה את הטבלה למטה).
+3. **מעבר שכתוב (סקילי סינתזה בלבד).** סקיל עם שלב סינתזה או עריכה משגר את [`readability-editor`](../han-communication/docs/agents/readability-editor.md) כדי לבקר ולשכתב את הטיוטה מול הכלל, תוך שמירה על כל עובדה.
+4. **בדיקה עצמית.** מעבר נפרד על אזורי הטקסט מעריך קריטריוני כן/לא מעוגנים בהתנהגות: העיקר קודם, כותרות מתארות, רעיון אחד לפסקה, אורך משפט, מילים נפוצות בלי מילה מרשימת החסימה ועם הסבר לכל מונח שהקורא לא יכול לחפש, פרטים טכניים מופרדים מהמשפטים, כל עובדה נשמרה, והצורה שהקורא ביקש במספר, בפורמט וברגיסטר. כל מה שנכשל מתוקן לפני שהתוצר מוצג. הקריטריון האחרון מנצח בהתנגשות אמיתית עם האחרים, חוץ מכשעובדה שנזרקה הייתה משנה את מה שהקורא עושה אחר כך, או כשסקיל דורש סעיף.
 
-The self-check and any rewrite operate on **prose regions only**. Code fences, diagram bodies, rendered markup, and
-inline citation identifiers are neither evaluated nor altered, so they still compile, render, and resolve.
+הבדיקה העצמית וכל שכתוב פועלים על **אזורי טקסט בלבד**. בלוקי קוד, גופי דיאגרמות, מארקאפ מרונדר ומזהי ציטוט בתוך השורה לא מוערכים ולא משתנים, כך שהם עדיין מתקמפלים, מתרנדרים ומתפענחים.
 
-## Applying the standard to a whole session
+## החלת התקן על סשן שלם
 
-The path above covers a skill's deliverable. To hold the standard across every turn instead, including the conversation
-around a skill and the work no skill covers, select one of the two output styles `han-communication` ships. Choose it
-under **Output style** in `/config`. It takes effect on your next session or after `/clear`, because Claude Code reads
-the output style once at session start.
+המסלול למעלה מכסה את התוצר של סקיל. כדי להחזיק את התקן לאורך כל תור במקום זאת, כולל השיחה סביב סקיל והעבודה שאף סקיל לא מכסה, בחר באחד משני סגנונות הפלט ש-`han-communication` מספק. בחר אותו תחת **Output style** ב-`/config`. הוא נכנס לתוקף בסשן הבא שלך או אחרי `/clear`, מפני ש-Claude Code קורא את סגנון הפלט פעם אחת בתחילת הסשן.
 
-[`Han Readability`](../han-communication/output-styles/han-readability.md) distills the rule's audience frame, output
-properties, fidelity guard, and self-check together with the writing-voice blocklist. Pick it when the session's output
-is prose someone reads cold.
+[`Han Readability`](../han-communication/output-styles/han-readability.md) מזקק את מסגור הקהל של הכלל, את תכונות הפלט, את שמירת הנאמנות ואת הבדיקה העצמית, יחד עם רשימת החסימה של קול הכתיבה. בחר בו כשהפלט של הסשן הוא טקסט שמישהו קורא מאפס.
 
-[`Han Concise`](../han-communication/output-styles/han-concise.md) carries the same properties and departs from the rule
-twice. A turn drops preamble and recap and spends no sentence that carries neither a fact nor a needed transition. And in place of `Fidelity wins`, it assumes
-you want less than the source carries, so supporting detail rolls up into the statement it supports rather than waiting
-for you to ask; a roll-up has to be true of everything it covers, and three things stay at full precision: a fact whose
-loss would change what you do next, a number you will act on, and a stated condition that bounds when a claim holds.
-Pick it for a working session you read in the terminal.
+[`Han Concise`](../han-communication/output-styles/han-concise.md) נושא את אותן תכונות וסוטה מהכלל פעמיים. תור מוותר על הקדמה ועל סיכום חוזר, ולא מוציא משפט שלא נושא עובדה או מעבר נחוץ. ובמקום `Fidelity wins`, הוא מניח שאתה רוצה פחות ממה שהמקור נושא, ולכן פרטים תומכים מתגלגלים לתוך הטענה שהם תומכים בה במקום להמתין שתשאל; גלגול חייב להיות נכון לגבי כל מה שהוא מכסה, ושלושה דברים נשארים בדיוק מלא: עובדה שאיבודה היה משנה את מה שאתה עושה אחר כך, מספר שתפעל לפיו, ותנאי מוצהר שתוחם מתי טענה מתקיימת. בחר בו לסשן עבודה שאתה קורא בטרמינל.
 
-Both departures belong to the style, so they reach the conversation and not Han's skills.
+שתי הסטיות שייכות לסגנון, ולכן הן מגיעות לשיחה ולא לסקילים של Han.
 
-Neither style changes how work is done. Both keep Claude Code's built-in software engineering instructions.
+אף אחד מהסגנונות לא משנה איך העבודה נעשית. שניהם משאירים את הוראות הנדסת התוכנה המובנות של Claude Code.
 
-Both styles share the same three limits:
+לשני הסגנונות אותם שלושה גבולות:
 
-- **It does not reach subagents.** A subagent runs its own system prompt, so the style leaves Han's dispatched
-  specialists unchanged. The skills stay the mechanism that brings the standard to agent output.
-- **It carries the built-in voice only.** A static system prompt cannot run the `.han/config.md` probe, so a configured
-  `writing-voice` profile does not override it the way it overrides `readability-guidance`.
-- **It is a derived copy.** The canonical rule and voice profile stay authoritative. When you edit either one, check
-  whether the styles need the same change.
+- **הוא לא מגיע לסאב-סוכנים.** סאב-סוכן מריץ system prompt משלו, ולכן הסגנון משאיר את המומחים המשוגרים של Han ללא שינוי. הסקילים נשארים המנגנון שמביא את התקן לפלט של סוכנים.
+- **הוא נושא את הקול המובנה בלבד.** system prompt סטטי לא יכול להריץ את הבדיקה של `.han/config.md`, ולכן פרופיל `writing-voice` מוגדר לא עוקף אותו כפי שהוא עוקף את `readability-guidance`.
+- **הוא עותק נגזר.** הכלל הקנוני ופרופיל הקול נשארים המוסמכים. כשאתה עורך אחד מהם, בדוק אם הסגנונות צריכים את אותו שינוי.
 
-## Scope: which skills are reader-facing
+## היקף: אילו סקילים פונים לקורא
 
-A skill is in scope when its primary deliverable is human-facing prose that a non-author reads end to end. A structured
-specification, plan, phased build, work-item list, coding standard, or test plan also counts when a human reads it end
-to end, whether to approve it, follow it, or grab work from it. A structured artifact consumed only by downstream skills
-as machine input, with no human reading it end to end, is out of scope, and so is code output. The table below lists the
-skills that meet that test today.
+סקיל נמצא בהיקף כשהתוצר העיקרי שלו הוא טקסט שפונה לבני אדם, שקורא שאינו הכותב קורא מתחילתו ועד סופו. מפרט מובנה, תוכנית, בנייה בשלבים, רשימת פריטי עבודה, תקן קוד או תוכנית בדיקות נחשבים גם הם כשאדם קורא אותם מתחילתם ועד סופם, בין אם כדי לאשר אותם, ללכת לפיהם, או לתפוס מהם עבודה. תוצר מובנה שרק סקילים במורד הזרם צורכים כקלט מכונה, בלי שאדם קורא אותו מתחילתו ועד סופו, נמצא מחוץ להיקף, וכך גם פלט של קוד. הטבלה למטה מפרטת את הסקילים שעומדים במבחן הזה היום.
 
-| Skill                                                                                                 | Reader                                                                                    | Rewrite pass                                                              |
-| ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| [`/research`](../han-research/docs/skills/research.md)                                                | Default frame                                                                             | Synthesis: dispatches `readability-editor`                                |
-| [`/gap-analysis`](../han-research/docs/skills/gap-analysis.md)                                        | Default frame                                                                             | Synthesis (at consolidated report sizes): dispatches `readability-editor` |
-| [`/project-documentation`](../han-documentation/docs/skills/project-documentation.md)                 | A technically-literate reader who needs to understand the feature before reading its code | Synthesis: dispatches `readability-editor`                                |
-| [`/issue-triage`](../han-research/docs/skills/issue-triage.md)                                        | Default frame                                                                             | Self-check only                                                           |
-| [`/runbook`](../han-documentation/docs/skills/runbook.md)                                             | Default frame                                                                             | Self-check only                                                           |
-| [`/architectural-decision-record`](../han-documentation/docs/skills/architectural-decision-record.md) | Default frame                                                                             | Self-check only                                                           |
-| [`/code-overview`](../han-coding/docs/skills/code-overview.md)                                        | Default frame                                                                             | Synthesis: dispatches `readability-editor`                                |
-| [`/investigate`](../han-coding/docs/skills/investigate.md)                                            | The engineer who will implement the fix and may be paged on the bug                       | Synthesis: dispatches `readability-editor`                                |
-| [`/code-review`](../han-coding/docs/skills/code-review.md)                                            | The author and reviewers of the change under review                                       | Synthesis: dispatches `readability-editor`                                |
-| [`/architectural-analysis`](../han-coding/docs/skills/architectural-analysis.md)                      | The engineer weighing the module's design                                                 | Synthesis: dispatches `readability-editor`                                |
-| [`/stakeholder-summary`](../han-reporting/docs/skills/stakeholder-summary.md)                         | The non-technical stakeholder                                                             | Synthesis: dispatches `readability-editor`                                |
-| [`/html-summary`](../han-reporting/docs/skills/html-summary.md)                                       | The non-technical stakeholder                                                             | Self-check only (prose content; visual layout keeps its own conventions)  |
-| [`/update-pr-description`](../han-github/docs/skills/update-pr-description.md)                        | The reviewer evaluating the pull request, who will read the code                          | Synthesis: dispatches `readability-editor`                                |
-| [`/plan-a-feature`](../han-planning/docs/skills/plan-a-feature.md)                                    | The stakeholder or reviewer who reads the spec                                            | Synthesis: dispatches `readability-editor`                                |
-| [`/plan-implementation`](../han-planning/docs/skills/plan-implementation.md)                          | The engineer who will build the feature                                                   | Synthesis: dispatches `readability-editor`                                |
-| [`/plan-a-phased-build`](../han-planning/docs/skills/plan-a-phased-build.md)                          | The reader of the phased build (mixed engineering / product by default)                   | Synthesis: dispatches `readability-editor`                                |
-| [`/plan-work-items`](../han-planning/docs/skills/plan-work-items.md)                                  | The engineer who grabs a work item and implements it                                      | Self-check only                                                           |
-| [`/iterative-plan-review`](../han-planning/docs/skills/iterative-plan-review.md)                      | The reader of the plan the review refines                                                 | Self-check only                                                           |
-| [`/coding-standard`](../han-coding/docs/skills/coding-standard.md)                                    | The engineer who must follow the standard                                                 | Synthesis: dispatches `readability-editor`                                |
-| [`/automated-test-planning`](../han-coding/docs/skills/automated-test-planning.md)                    | The engineer who will implement the tests                                                 | Synthesis: dispatches `readability-editor`                                |
-| [`/manual-test-planning`](../han-coding/docs/skills/manual-test-planning.md)                          | The person who runs the tests by hand, who may not be technical                           | Synthesis: dispatches `readability-editor`                                |
+| סקיל                                                                                                  | קורא                                                                     | מעבר שכתוב                                                             |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| [`/research`](../han-research/docs/skills/research.md)                                                | מסגור ברירת מחדל                                                         | סינתזה: משגר `readability-editor`                                      |
+| [`/gap-analysis`](../han-research/docs/skills/gap-analysis.md)                                        | מסגור ברירת מחדל                                                         | סינתזה (בגדלים של דוח מאוחד): משגר `readability-editor`                |
+| [`/project-documentation`](../han-documentation/docs/skills/project-documentation.md)                 | קורא בעל אוריינות טכנית שצריך להבין את הפיצ'ר לפני שהוא קורא את הקוד שלו | סינתזה: משגר `readability-editor`                                      |
+| [`/issue-triage`](../han-research/docs/skills/issue-triage.md)                                        | מסגור ברירת מחדל                                                         | בדיקה עצמית בלבד                                                       |
+| [`/runbook`](../han-documentation/docs/skills/runbook.md)                                             | מסגור ברירת מחדל                                                         | בדיקה עצמית בלבד                                                       |
+| [`/architectural-decision-record`](../han-documentation/docs/skills/architectural-decision-record.md) | מסגור ברירת מחדל                                                         | בדיקה עצמית בלבד                                                       |
+| [`/code-overview`](../han-coding/docs/skills/code-overview.md)                                        | מסגור ברירת מחדל                                                         | סינתזה: משגר `readability-editor`                                      |
+| [`/investigate`](../han-coding/docs/skills/investigate.md)                                            | המהנדס שיממש את התיקון ושעשוי לקבל קריאה על הבאג                         | סינתזה: משגר `readability-editor`                                      |
+| [`/code-review`](../han-coding/docs/skills/code-review.md)                                            | הכותב והסוקרים של השינוי הנסקר                                           | סינתזה: משגר `readability-editor`                                      |
+| [`/architectural-analysis`](../han-coding/docs/skills/architectural-analysis.md)                      | המהנדס ששוקל את העיצוב של המודול                                         | סינתזה: משגר `readability-editor`                                      |
+| [`/stakeholder-summary`](../han-reporting/docs/skills/stakeholder-summary.md)                         | בעל העניין הלא-טכני                                                      | סינתזה: משגר `readability-editor`                                      |
+| [`/html-summary`](../han-reporting/docs/skills/html-summary.md)                                       | בעל העניין הלא-טכני                                                      | בדיקה עצמית בלבד (תוכן הטקסט; הפריסה הוויזואלית שומרת על המוסכמות שלה) |
+| [`/update-pr-description`](../han-github/docs/skills/update-pr-description.md)                        | הסוקר שמעריך את ה-pull request, ושיקרא את הקוד                           | סינתזה: משגר `readability-editor`                                      |
+| [`/plan-a-feature`](../han-planning/docs/skills/plan-a-feature.md)                                    | בעל העניין או הסוקר שקורא את המפרט                                       | סינתזה: משגר `readability-editor`                                      |
+| [`/plan-implementation`](../han-planning/docs/skills/plan-implementation.md)                          | המהנדס שיבנה את הפיצ'ר                                                   | סינתזה: משגר `readability-editor`                                      |
+| [`/plan-a-phased-build`](../han-planning/docs/skills/plan-a-phased-build.md)                          | הקורא של הבנייה בשלבים (מעורב הנדסה / מוצר כברירת מחדל)                  | סינתזה: משגר `readability-editor`                                      |
+| [`/plan-work-items`](../han-planning/docs/skills/plan-work-items.md)                                  | המהנדס שתופס פריט עבודה ומממש אותו                                       | בדיקה עצמית בלבד                                                       |
+| [`/iterative-plan-review`](../han-planning/docs/skills/iterative-plan-review.md)                      | הקורא של התוכנית שהסקירה מזקקת                                           | בדיקה עצמית בלבד                                                       |
+| [`/coding-standard`](../han-coding/docs/skills/coding-standard.md)                                    | המהנדס שחייב ללכת לפי התקן                                               | סינתזה: משגר `readability-editor`                                      |
+| [`/automated-test-planning`](../han-coding/docs/skills/automated-test-planning.md)                    | המהנדס שיממש את הבדיקות                                                  | סינתזה: משגר `readability-editor`                                      |
+| [`/manual-test-planning`](../han-coding/docs/skills/manual-test-planning.md)                          | האדם שמריץ את הבדיקות ידנית, שאולי אינו טכני                             | סינתזה: משגר `readability-editor`                                      |
 
-This list is authoritative. A contributor adding a new skill applies the inclusion test above and, if it passes, wires
-the standard in (see [Contributing](../CONTRIBUTING.md#wiring-the-readability-standard-into-a-skill)).
+הרשימה הזו מוסמכת. תורם שמוסיף סקיל חדש מחיל את מבחן ההכללה שלמעלה, ואם הוא עובר, מחבר את התקן פנימה (ראה [Contributing](../CONTRIBUTING.md#wiring-the-readability-standard-into-a-skill)).
 
-## Fidelity: the fact-preservation guard
+## נאמנות: שמירת העובדות
 
-The standard governs _how_ content is said, and drops a required fact only when the reader asked for less and losing it
-would not change what they do next. When reading more simply would drop or blur a fact, fidelity wins. Every claim,
-quantity, named entity, and stated condition survives with its precision intact. Flattening "exceeded 340ms in three of
-ten windows" to "was sometimes slow," or "only when X and Y both hold" to "generally," is a fidelity failure, not a
-simplification.
+התקן שולט ב*איך* התוכן נאמר, ומוותר על עובדה נדרשת רק כשהקורא ביקש פחות ואיבודה לא היה משנה את מה שהוא עושה אחר כך. כשקריאה פשוטה יותר הייתה זורקת או מטשטשת עובדה, הנאמנות מנצחת. כל טענה, כמות, ישות נקובה בשם ותנאי מוצהר שורדים עם הדיוק שלהם שלם. שיטוח של "חרג מ-340 מילישניות בשלושה מתוך עשרה חלונות" ל"היה לפעמים איטי", או של "רק כאשר גם X וגם Y מתקיימים" ל"בדרך כלל", הוא כשל נאמנות ולא פישוט.
 
-On a synthesis skill, the `readability-editor` preserves every fact as it rewrites. On a non-synthesis skill that runs
-no rewrite pass, the self-check's fact-preservation criterion is the only fidelity guard the output has, so it is not
-optional.
+בסקיל סינתזה, ה-`readability-editor` שומר על כל עובדה תוך כדי השכתוב. בסקיל שאינו סינתזה ולא מריץ מעבר שכתוב, קריטריון שמירת העובדות של הבדיקה העצמית הוא שמירת הנאמנות היחידה שיש לפלט, ולכן הוא לא אופציונלי.
 
-## What readability is not
+## מה קריאוּת אינה
 
-- **Not a comprehension score.** The standard commits to observable properties of the text and a concrete self-check,
-  not to a promise about a reader's comprehension or a readability-formula target. Formulas are weak comprehension
-  proxies that reward gaming; they are not the measure the standard optimizes.
-- **Not CI or prose linting.** Most reader-facing output is ephemeral conversational or scratch text with no build
-  surface to lint. The standard applies at generation time, not as a pipeline gate.
-- **Not a rewrite of the operator-documentation voice.** The existing writing-voice profile continues to govern operator
-  docs. This standard reuses its blocklist but does not rewrite it.
-- **Not a guarantee a committed file stays conformant.** The in-scope skills that write a committed file (for example
-  [`/project-documentation`](../han-documentation/docs/skills/project-documentation.md) and
-  [`/coding-standard`](../han-coding/docs/skills/coding-standard.md)) are covered at generation time. A later manual edit is
-  not re-checked automatically. Run
-  [`/edit-for-readability`](../han-communication/docs/skills/edit-for-readability.md) to re-apply the standard to an edited
-  file on demand.
+- **לא ציון הבנה.** התקן מתחייב לתכונות נצפות של הטקסט ולבדיקה עצמית קונקרטית, לא להבטחה על ההבנה של קורא או ליעד של נוסחת קריאוּת. נוסחאות הן מדדים חלשים להבנה שמתגמלים משחק בהן; הן אינן המדד שהתקן ממטב.
+- **לא CI ולא lint לטקסט.** רוב הפלט שפונה לקורא הוא טקסט שיחה או טיוטה חולפים, בלי משטח בנייה ל-lint. התקן חל בזמן הייצור, לא כשער בצינור.
+- **לא שכתוב של קול התיעוד למפעיל.** פרופיל קול הכתיבה הקיים ממשיך לשלוט במסמכי המפעיל. התקן הזה מנצל מחדש את רשימת החסימה שלו אבל לא משכתב אותו.
+- **לא ערובה לכך שקובץ שנכנס לקומיט יישאר תואם.** הסקילים בהיקף שכותבים קובץ שנכנס לקומיט (לדוגמה [`/project-documentation`](../han-documentation/docs/skills/project-documentation.md) ו-[`/coding-standard`](../han-coding/docs/skills/coding-standard.md)) מכוסים בזמן הייצור. עריכה ידנית מאוחרת לא נבדקת מחדש אוטומטית. הרץ את [`/edit-for-readability`](../han-communication/docs/skills/edit-for-readability.md) כדי להחיל מחדש את התקן על קובץ שנערך, לפי דרישה.
 
-## Design principles
+## עקרונות עיצוב
 
-- **One source of truth.** The rule lives in one canonical file in the foundational `han-communication` plugin; no
-  plugin vendors a copy. Every consuming skill sources it cross-plugin by invoking
-  `han-communication:readability-guidance`, so a contributor changes the rule in one place.
-- **Applied in stages, not stacked.** The template, the audience frame, the rewrite pass, and the self-check each carry
-  part of the rule, so no single step stacks enough instructions to decay.
-- **Fidelity outranks readability, unless the reader asked for less.** A required fact is never dropped to read more
-  simply. When the reader asked for less, a fact may go, unless losing it would change what they do next.
-- **Loading is not compliance.** Loading the rule does not make output readable. The template, the audience frame, the
-  rewrite pass, and the self-check are what make it take effect.
+- **מקור אמת אחד.** הכלל חי בקובץ קנוני אחד בפלאגין היסודי `han-communication`; אף פלאגין לא מחזיק עותק. כל סקיל צורך שואב אותו בין-פלאגינית בהפעלת `han-communication:readability-guidance`, ולכן תורם משנה את הכלל במקום אחד.
+- **מוחל בשלבים, לא נערם.** התבנית, מסגור הקהל, מעבר השכתוב והבדיקה העצמית נושאים כל אחד חלק מהכלל, כך שאף צעד בודד לא עורם מספיק הוראות כדי לדעוך.
+- **נאמנות גוברת על קריאוּת, אלא אם הקורא ביקש פחות.** עובדה נדרשת לעולם לא נזרקת כדי לקרוא פשוט יותר. כשהקורא ביקש פחות, עובדה יכולה ללכת, אלא אם איבודה היה משנה את מה שהוא עושה אחר כך.
+- **טעינה אינה ציות.** טעינת הכלל לא הופכת את הפלט לקריא. התבנית, מסגור הקהל, מעבר השכתוב והבדיקה העצמית הם מה שגורם לו להיכנס לתוקף.
 
-## Related reading
+## קריאה נוספת
 
-- [`han-communication/references/readability-rule.md`](../han-communication/references/readability-rule.md). The
-  canonical rule every reader-facing skill sources via `han-communication:readability-guidance`.
-- [`/readability-guidance`](../han-communication/docs/skills/readability-guidance.md). The skill that surfaces the standard
-  into a calling skill's context for in-voice drafting and self-check.
-- [`readability-editor`](../han-communication/docs/agents/readability-editor.md). The agent the synthesis skills dispatch for
-  the rewrite pass.
-- [`/edit-for-readability`](../han-communication/docs/skills/edit-for-readability.md). The standalone skill that applies this
-  standard on demand to a file, pasted text, or a conversation draft.
-- [`Han Readability`](../han-communication/docs/output-styles/han-readability.md). The output style that holds the
-  standard across a whole session, and the boundaries it does not reach.
-- [Concepts](./concepts.md). The skill / agent split, and where readability sits among the plugin's mechanics.
-- [YAGNI](./yagni.md) and [Evidence](./evidence.md). The other shared rules, summarized the same way (they remain
-  vendored per-plugin; readability is now sourced cross-plugin from `han-communication`).
-- [Contributing](../CONTRIBUTING.md). The wiring procedure a contributor follows to bring a new skill under the
-  standard.
-- [Writing voice](../han-communication/references/writing-voice.md). The voice profile whose blocklist the standard
-  reuses for word-level rules.
+- [`han-communication/references/readability-rule.md`](../han-communication/references/readability-rule.md). הכלל הקנוני שכל סקיל שפונה לקורא שואב דרך `han-communication:readability-guidance`.
+- [`/readability-guidance`](../han-communication/docs/skills/readability-guidance.md). הסקיל שמעלה את התקן לתוך ההקשר של סקיל קורא, לצורך ניסוח בקול ובדיקה עצמית.
+- [`readability-editor`](../han-communication/docs/agents/readability-editor.md). הסוכן שסקילי הסינתזה משגרים למעבר השכתוב.
+- [`/edit-for-readability`](../han-communication/docs/skills/edit-for-readability.md). הסקיל העצמאי שמחיל את התקן הזה לפי דרישה על קובץ, על טקסט מודבק, או על טיוטה בשיחה.
+- [`Han Readability`](../han-communication/docs/output-styles/han-readability.md). סגנון הפלט שמחזיק את התקן לאורך סשן שלם, והגבולות שהוא לא מגיע אליהם.
+- [מושגי יסוד](./concepts.md). ההפרדה בין סקיל לסוכן, ואיפה קריאוּת יושבת בין מנגנוני הפלאגין.
+- [YAGNI](./yagni.md) ו-[Evidence](./evidence.md). הכללים המשותפים האחרים, מסוכמים באותו אופן (הם נשארים מועתקים לכל פלאגין; קריאוּת נשאבת כיום בין-פלאגינית מ-`han-communication`).
+- [Contributing](../CONTRIBUTING.md). הליך החיבור שתורם הולך לפיו כדי להכניס סקיל חדש תחת התקן.
+- [Writing voice](../han-communication/references/writing-voice.md). פרופיל הקול שאת רשימת החסימה שלו התקן מנצל מחדש לכללים ברמת המילה.
