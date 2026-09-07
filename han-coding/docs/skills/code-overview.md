@@ -1,278 +1,162 @@
 # /code-overview
 
-Operator documentation for the `/code-overview` skill in the han plugin. This document helps you decide _when_ and _how_
-to use the skill. For what the skill does internally, read the skill definition at
-[`han-coding/skills/code-overview/SKILL.md`](../../skills/code-overview/SKILL.md).
+תיעוד מפעיל לסקיל `/code-overview` בפלאגין. המסמך הזה עוזר לך להחליט _מתי_ ו*איך* להשתמש בסקיל. למה שהסקיל עושה בפנים, קרא את הגדרת הסקיל ב-[`han-coding/skills/code-overview/SKILL.md`](../../skills/code-overview/SKILL.md).
 
-> See also: [Plugin README](../../README.md) · [Repo root](../../../README.md) · [All skills](../../../docs/skills/README.md) ·
-> [All agents](../../../docs/agents/README.md) · [Sizing](../../../docs/sizing.md)
+> ראה גם: [README של הפלאגין](../../README.md) · [שורש הריפו](../../../README.md) · [כל הסקילים](../../../docs/skills/README.md) · [כל הסוכנים](../../../docs/agents/README.md) · [Sizing](../../../docs/sizing.md)
 
 ## TL;DR
 
-- **What it does.** Produces a human-readable, progressive-disclosure overview of unfamiliar code or of a pull request's
-  changes, leading with _why_ (the real problem the code solves or the goal it accomplishes for the business or a
-  user) and flowing from there into what it does, how it works, and where to start, so you can get up to speed before
-  working on or reviewing it.
-- **When to use it.** You have landed in code you do not know, or a PR you are about to review, and you want a fast
-  orientation before you start.
-- **What you get back.** An overview file (written where you configured Han's output to go, or outside the repository
-  when you configured nothing) with a purpose statement, a linked
-  list of the context the overview drew on, Mermaid flow charts, the directly-related context, and where to start, all
-  at minimal technical depth.
+- **מה הוא עושה.** מייצר סקירת-על קריאה לבן אדם, בחשיפה הדרגתית, של קוד לא מוכר או של השינויים ב-pull request, כשהוא פותח ב*למה* (הבעיה האמיתית שהקוד פותר או המטרה שהוא משיג עבור העסק או עבור משתמש) וזורם משם למה הוא עושה, איך הוא עובד, ואיפה להתחיל, כדי שתוכל להתעדכן לפני שאתה עובד עליו או סוקר אותו.
+- **מתי להשתמש בו.** נחתת בקוד שאתה לא מכיר, או ב-PR שאתה עומד לסקור, ואתה רוצה התמצאות מהירה לפני שאתה מתחיל.
+- **מה אתה מקבל בחזרה.** קובץ סקירת-על (שנכתב לאן שהגדרת שהפלט של Han ילך, או מחוץ לריפו כשלא הגדרת כלום) עם הצהרת מטרה, רשימה מקושרת של ההקשר שהסקירה נשענה עליו, תרשימי זרימה ב-Mermaid, ההקשר הישיר, ואיפה להתחיל, הכול בעומק טכני מינימלי.
 
-## Key concepts
+## מושגי מפתח
 
-- **Size-aware.** The skill classifies the target as small / medium / large, defaults to small, and scales how many
-  `codebase-explorer` agents it dispatches. Pass the size as the first positional argument to override
-  (`/code-overview medium`). See [Sizing](../../../docs/sizing.md).
-- **Why first.** The overview is built to answer one question before any other: _why does this code exist?_ The answer
-  is the real problem it solves or the goal it accomplishes for the business or a user, not the technical mechanics.
-  What it does, how it flows, and where to start are not dropped; they flow out of the why and exist to give you the
-  context to understand it. A confidently stated why that the code's intent does not support is the one thing the skill
-  guards hardest against.
-- **Two modes.** _Code mode_ explains a file, directory, or symbol as it is now: why it exists, then what it does. _PR
-  mode_ explains a set of changes: why they exist, grouped by the intent each group serves, and how to look at the PR
-  before reviewing it. The skill picks the mode from the target.
-- **Understand now, not document for later.** The overview is an ephemeral orientation aid, and the skill never commits
-  it into the repository's documentation tree. That is the line against `/project-documentation`. It is why the file
-  lands outside the repository when you have configured nothing; a destination you configure yourself wins over that
-  default, wherever it points.
-- **No findings.** The overview raises no quality findings, severities, or recommended changes. Even the PR-mode "what
-  to watch" section is navigational: it names where the change is hardest to follow, not whether it is any good. That is
-  the line against `/code-review`.
-- **Accurate, not only readable.** Before you see it, an `adversarial-validator` pass re-reads the code and challenges
-  every claim the draft makes, so the flow charts, entry points, and change groupings reflect what the code does. The
-  validation guards truth (the description matches the code); it never crosses into judging the code's quality, which
-  stays `/code-review`'s job.
-- **Progressive disclosure, anchored on the why.** The most important understanding comes first: _why the code exists_,
-  the problem it solves or goal it serves. Then comes the flow chart, then context, then where to start, each flowing
-  from and serving that why. A reader who stops early still knows why the target exists and what need it meets.
-- **Minimal technical detail, scoped per section.** The why, flow, and context stay high-level: the why is told as a
-  problem solved or goal met, not technical mechanics. The where-to-start section is the exception, and names concrete
-  entry points so you can open the right file.
+- **מודע-גודל.** הסקיל מסווג את היעד כקטן / בינוני / גדול, ברירת המחדל היא קטן, ומתאים כמה סוכני `codebase-explorer` הוא משגר. העבר את הגודל כארגומנט המיקומי הראשון כדי לעקוף (`/code-overview medium`). ראה [Sizing](../../../docs/sizing.md).
+- **קודם למה.** סקירת-העל בנויה לענות על שאלה אחת לפני כל אחרת: _למה הקוד הזה קיים?_ התשובה היא הבעיה האמיתית שהוא פותר או המטרה שהוא משיג עבור העסק או עבור משתמש, ולא המכניקה הטכנית. מה הוא עושה, איך הוא זורם, ואיפה להתחיל, לא נזרקים; הם זורמים מתוך ה"למה" וקיימים כדי לתת לך את ההקשר להבין אותו. "למה" שנאמר בביטחון אבל כוונת הקוד לא תומכת בו הוא הדבר האחד שהסקיל שומר עליו הכי חזק.
+- **שני מצבים.** _מצב קוד_ מסביר קובץ, תיקייה או סמל כפי שהם עכשיו: למה הם קיימים, ואז מה הם עושים. _מצב PR_ מסביר מקבץ שינויים: למה הם קיימים, מקובצים לפי הכוונה שכל קבוצה משרתת, ואיך להסתכל על ה-PR לפני שסוקרים אותו. הסקיל בוחר את המצב מהיעד.
+- **להבין עכשיו, לא לתעד להמשך.** סקירת-העל היא עזר התמצאות חולף, והסקיל לעולם לא מכניס אותה לקומיט בעץ התיעוד של הריפו. זה הקו מול `/project-documentation`. בגלל זה הקובץ נוחת מחוץ לריפו כשלא הגדרת כלום; יעד שאתה מגדיר בעצמך מנצח את ברירת המחדל הזו, לאן שהוא לא יצביע.
+- **בלי ממצאים.** סקירת-העל לא מעלה ממצאי איכות, חומרות או שינויים מומלצים. אפילו סעיף "על מה לשים לב" במצב PR הוא ניווטי: הוא נוקב במקום שבו הכי קשה לעקוב אחרי השינוי, לא באם הוא טוב. זה הקו מול `/code-review`.
+- **מדויק, לא רק קריא.** לפני שאתה רואה אותה, מעבר של `adversarial-validator` קורא מחדש את הקוד ומאתגר כל טענה שהטיוטה עושה, כך שתרשימי הזרימה, נקודות הכניסה וקיבוץ השינויים משקפים את מה שהקוד עושה. האימות שומר על האמת (התיאור תואם לקוד); הוא לעולם לא חוצה לשיפוט איכות הקוד, שנשארת העבודה של `/code-review`.
+- **חשיפה הדרגתית, מעוגנת ב"למה".** ההבנה החשובה ביותר מגיעה קודם: _למה הקוד קיים_, הבעיה שהוא פותר או המטרה שהוא משרת. אחר כך מגיע תרשים הזרימה, אחר כך ההקשר, ואחר כך איפה להתחיל, כשכל אחד זורם מה"למה" הזה ומשרת אותו. קורא שעוצר מוקדם עדיין יודע למה היעד קיים ואיזה צורך הוא עונה עליו.
+- **פרטים טכניים מינימליים, מתוחמים לכל סעיף.** ה"למה", הזרימה וההקשר נשארים ברמה גבוהה: ה"למה" מסופר כבעיה שנפתרה או כמטרה שהושגה, לא כמכניקה טכנית. סעיף ה"איפה להתחיל" הוא היוצא מן הכלל, והוא נוקב בנקודות כניסה קונקרטיות כדי שתוכל לפתוח את הקובץ הנכון.
 
-## When to use it
+## מתי להשתמש בו
 
-**Invoke when:**
+**הפעל כאשר:**
 
-- You have been handed code you have never seen and need to work on it.
-- You are about to review a PR and want to understand what it does and why before you start reading line by line.
-- You are ramping onto an unfamiliar module, directory, or symbol and want a map before you dive in.
+- קיבלת לידיך קוד שמעולם לא ראית ואתה צריך לעבוד עליו.
+- אתה עומד לסקור PR ורוצה להבין מה הוא עושה ולמה לפני שאתה מתחיל לקרוא שורה-שורה.
+- אתה נכנס למודול, לתיקייה או לסמל לא מוכרים ורוצה מפה לפני שאתה צולל.
 
-**Do not invoke for:**
+**אל תפעיל עבור:**
 
-- **Reviewing code quality or finding problems.** Use [`/code-review`](./code-review.md) instead (or
-  [`/post-code-review-to-pr`](../../../han-github/docs/skills/post-code-review-to-pr.md) to post a review to GitHub).
-- **Writing durable feature or system documentation.** Use
-  [`/project-documentation`](../../../han-documentation/docs/skills/project-documentation.md) instead.
-- **Assessing architecture, coupling, or structural risk.** Use [`/architectural-analysis`](./architectural-analysis.md)
-  instead.
-- **Diagnosing a bug or root-causing a failure.** Use [`/investigate`](./investigate.md) instead.
-- **Being paced through the code one step at a time.** Use [`/code-walkthrough`](./code-walkthrough.md) instead. It
-  produces a conversation you drive, not a document you read alone.
+- **סקירת איכות קוד או מציאת בעיות.** השתמש ב-[`/code-review`](./code-review.md) במקום (או ב-[`/post-code-review-to-pr`](../../../han-github/docs/skills/post-code-review-to-pr.md) כדי לפרסם סקירה ל-GitHub).
+- **כתיבת תיעוד עמיד של פיצ'ר או מערכת.** השתמש ב-[`/project-documentation`](../../../han-documentation/docs/skills/project-documentation.md) במקום.
+- **הערכת ארכיטקטורה, צימוד או סיכון מבני.** השתמש ב-[`/architectural-analysis`](./architectural-analysis.md) במקום.
+- **אבחון באג או איתור שורש של כשל.** השתמש ב-[`/investigate`](./investigate.md) במקום.
+- **קיצוב דרך הקוד צעד אחר צעד.** השתמש ב-[`/code-walkthrough`](./code-walkthrough.md) במקום. הוא מייצר שיחה שאתה מוביל, לא מסמך שאתה קורא לבד.
 
-## How to invoke it
+## איך להפעיל אותו
 
-Run `/code-overview` in Claude Code.
+הרץ `/code-overview` ב-Claude Code.
 
-Give it:
+תן לו:
 
-1. **A target (optional).** A file path, a directory, a symbol name, or a pull request reference / URL. With no target,
-   the skill defaults to the current branch's changes in PR mode. A sharp target is a single file, symbol, directory, or
-   PR; a thin one ("explain the backend") forces the skill to ask you to narrow it.
-2. **A size (optional).** `small`, `medium`, `large`, or `dynamic` as the first positional argument, when you want to
-   override the skill's auto-classification.
+1. **יעד (אופציונלי).** נתיב קובץ, תיקייה, שם סמל, או הפניה / URL של pull request. בלי יעד, הסקיל עובר כברירת מחדל לשינויים בענף הנוכחי במצב PR. יעד חד הוא קובץ, סמל, תיקייה או PR יחידים; יעד דליל ("תסביר את ה-backend") מאלץ את הסקיל לבקש ממך לצמצם.
+2. **גודל (אופציונלי).** `small`, `medium`, `large` או `dynamic` כארגומנט המיקומי הראשון, כשאתה רוצה לעקוף את הסיווג האוטומטי של הסקיל.
 
-Example prompts:
+פרומפטים לדוגמה:
 
-- `/code-overview`. _"Explain what the changes on this branch do before I review them."_
-- `/code-overview src/auth/`. _"Help me understand the auth module before I work on it."_
-- `/code-overview #82`. _"Walk me through pull request 82 so I know how to review it."_
-- `/code-overview large src/billing/`. _"Give me a thorough overview of the billing subsystem."_
+- `/code-overview`. _"תסביר מה השינויים בענף הזה עושים לפני שאני סוקר אותם."_
+- `/code-overview src/auth/`. _"תעזור לי להבין את מודול האימות לפני שאני עובד עליו."_
+- `/code-overview #82`. _"תעביר אותי על pull request 82 כדי שאדע איך לסקור אותו."_
+- `/code-overview large src/billing/`. _"תן לי סקירת-על יסודית של תת-מערכת החיוב."_
 
-## What you get back
+## מה אתה מקבל בחזרה
 
-A single Markdown overview file. It lands under the `output-directory` in your `.han/config.md` when you have set one,
-and outside the repository (for example under your system temp directory) when you have not. A configured directory
-inside the repository is honored without comment, because you chose it. When the resolved destination cannot be written,
-the run falls back to the outside-the-repository default and tells you which destination it could not use, rather than
-throwing away work it has already finished.
+קובץ סקירת-על אחד ב-Markdown. הוא נוחת תחת ה-`output-directory` ב-`.han/config.md` שלך אם הגדרת כזה, ומחוץ לריפו (לדוגמה תחת תיקיית ה-temp של המערכת שלך) אם לא. תיקייה מוגדרת בתוך הריפו מכובדת בלי הערה, מפני שאתה בחרת אותה. כשלא ניתן לכתוב ליעד שהתפענח, הריצה נופלת לאחור לברירת המחדל של מחוץ-לריפו ואומרת לך באיזה יעד היא לא הצליחה להשתמש, במקום לזרוק עבודה שכבר סיימה.
 
-The skill shows you the path; open it where the Mermaid charts render. The file is not committed and is not maintained;
-it is a point-in-time orientation aid.
+הסקיל מציג לך את הנתיב; פתח אותו במקום שבו תרשימי ה-Mermaid מתרנדרים. הקובץ לא נכנס לקומיט ולא מתוחזק; הוא עזר התמצאות לנקודת זמן.
 
-The document follows one structure per mode, under a shared grammar. It opens with a title and a short intro paragraph
-naming what is being examined (not a metadata block), then leads with the why and lets every later section flow from it:
+המסמך הולך לפי מבנה אחד לכל מצב, תחת דקדוק משותף. הוא נפתח בכותרת ובפסקת מבוא קצרה שנוקבת במה שנבחן (לא בבלוק מטא-דאטה), ואז פותח ב"למה" ונותן לכל סעיף מאוחר יותר לזרום ממנו:
 
-- **Code mode:** _Why it exists_ (the problem solved or goal served, then briefly what it is) → _Context used_ (the
-  sources the overview drew on) → _Main flow_ (a Mermaid chart with a scope label, read as how the code delivers on the
-  why) → _Context and uses_ → _Where to start_ (the entry points numbered in the order to open them, each with what you
-  learn there, and a runnable example call on any entry point that is an interface other code calls) → _What this code
-  does, in plain language_.
-- **PR mode:** _Why this change exists_ (the need that motivated it, then the bottom line of what it does, plus a
-  sentence when the code turns out not to support that reason) → _Context
-  used_ → _Changes by intent_ (grouped by the outcome, the why, each group delivers) → _How the change flows_ (a Mermaid
-  chart with a scope label) → _What to watch when reviewing_ (navigational only) → _What this change does, in plain
-  language_.
+- **מצב קוד:** _למה זה קיים_ (הבעיה שנפתרה או המטרה שמשורתת, ואז בקצרה מה זה) ← _ההקשר שנוצל_ (המקורות שסקירת-העל נשענה עליהם) ← _הזרימה הראשית_ (תרשים Mermaid עם תווית היקף, שנקרא כאיך שהקוד מספק את ה"למה") ← _הקשר ושימושים_ ← _איפה להתחיל_ (נקודות הכניסה ממוספרות בסדר שבו צריך לפתוח אותן, כל אחת עם מה שלומדים שם, וקריאת דוגמה ניתנת להרצה על כל נקודת כניסה שהיא ממשק שקוד אחר קורא לו) ← _מה הקוד הזה עושה, בשפה פשוטה_.
+- **מצב PR:** _למה השינוי הזה קיים_ (הצורך שהניע אותו, ואז השורה התחתונה של מה שהוא עושה, בתוספת משפט כשמתברר שהקוד לא תומך בסיבה הזו) ← _ההקשר שנוצל_ ← _שינויים לפי כוונה_ (מקובצים לפי התוצאה, ה"למה", שכל קבוצה מספקת) ← _איך השינוי זורם_ (תרשים Mermaid עם תווית היקף) ← _על מה לשים לב בסקירה_ (ניווטי בלבד) ← _מה השינוי הזה עושה, בשפה פשוטה_.
 
-Both modes end with three or four sentences you could read aloud, carrying no file paths and no type names. They are
-there to be lifted out and pasted into a pull request description or a message to a reviewer. The run's closing message
-repeats those exact sentences rather than writing its own version, so you can paste from the terminal without opening
-the file and never wonder which of two summaries is the real one.
+שני המצבים מסתיימים בשלושה או ארבעה משפטים שאפשר להקריא בקול, בלי נתיבי קבצים ובלי שמות טיפוסים. הם שם כדי שיורמו החוצה ויודבקו לתיאור pull request או להודעה לסוקר. הודעת הסיום של הריצה חוזרת בדיוק על אותם משפטים ולא כותבת גרסה משלה, כך שתוכל להדביק מהטרמינל בלי לפתוח את הקובץ ולעולם לא תתהה איזה משני הסיכומים הוא האמיתי.
 
-Every chart is drawn to be read at a glance. Each box names a component or a boundary you can point at, and the fields,
-types, and technical annotations sit in the prose beneath the chart instead. A step the flow needs is never dropped to
-make the picture simpler; the step stays and its detail moves down. The skill owns this itself, because the readability
-pass described below is deliberately barred from editing chart bodies.
+כל תרשים מצויר כדי שייקרא במבט. כל תיבה נוקבת ברכיב או בגבול שאפשר להצביע עליו, והשדות, הטיפוסים והביאורים הטכניים יושבים בטקסט שמתחת לתרשים במקום. צעד שהזרימה צריכה לעולם לא נזרק כדי שהתמונה תהיה פשוטה יותר; הצעד נשאר והפרטים שלו יורדים למטה. הסקיל אחראי על זה בעצמו, מפני שמעבר הקריאוּת שמתואר למטה מנוע במכוון מלערוך גופי תרשימים.
 
-The _Context used_ section, placed directly after the lead why section, lists every source the overview drew on. Each
-source with an address is a direct link (a repository file by path, a pull request, issue, or commit by URL), so you
-can walk the same evidence the overview was built from. A source with no address (an uncommitted diff, the branch's
-commit messages, context supplied in conversation) is stated in one plain sentence instead.
+סעיף _ההקשר שנוצל_, שממוקם מיד אחרי סעיף ה"למה" הפותח, מפרט כל מקור שסקירת-העל נשענה עליו. כל מקור עם כתובת הוא קישור ישיר (קובץ בריפו לפי נתיב, pull request, issue או קומיט לפי URL), כך שתוכל ללכת על אותן ראיות שסקירת-העל נבנתה מהן. מקור בלי כתובת (diff שלא נכנס לקומיט, הודעות הקומיט של הענף, הקשר שסופק בשיחה) מצוין במשפט פשוט אחד במקום.
 
-In PR mode, when the pull request has screenshots, the overview embeds them inline next to the text they illustrate, so
-you do not have to switch back to the PR to see them.
+במצב PR, כשל-pull request יש צילומי מסך, סקירת-העל משבצת אותם בשורה לצד הטקסט שהם ממחישים, כך שלא תצטרך לחזור ל-PR כדי לראות אותם.
 
-Before you see it, the draft passes two checks in order: accuracy first, then readability.
+לפני שאתה רואה אותה, הטיוטה עוברת שתי בדיקות לפי סדר: קודם דיוק, אחר כך קריאוּת.
 
-The accuracy pass runs first. `adversarial-validator` re-reads the code and its intent and challenges every claim the
-overview makes. It starts with the load-bearing claim: is the stated _why_ grounded in real evidence (commit and
-PR/issue intent, comments, what the code visibly does toward a goal), or is it an invented rationale? It also checks
-whether the flow chart matches the real control flow, whether the named entry points exist, and whether each
-change-by-intent grouping describes what the code does. A confidently wrong overview, most of all a confidently wrong
-_why_, gets corrected before it can mislead you.
+מעבר הדיוק רץ ראשון. `adversarial-validator` קורא מחדש את הקוד ואת הכוונה שלו ומאתגר כל טענה שסקירת-העל עושה. הוא מתחיל בטענה נושאת-המשקל: האם ה*למה* המוצהר מעוגן בראיות אמיתיות (כוונת קומיט ו-PR/issue, הערות, מה שהקוד עושה באופן גלוי לקראת מטרה), או שהוא נימוק מומצא? הוא גם בודק אם תרשים הזרימה תואם לזרימת הבקרה האמיתית, אם נקודות הכניסה הנקובות קיימות, ואם כל קיבוץ של שינויים-לפי-כוונה מתאר את מה שהקוד עושה. סקירת-על שגויה בביטחון, ובעיקר _למה_ שגוי בביטחון, מתוקנת לפני שהיא יכולה להטעות אותך.
 
-The readability pass runs next. `readability-editor` rewrites the corrected draft against the shared readability
-standard, preserving every fact, so the overview leads with its point and reads for someone who did not do the work.
-Accuracy settles first, so the editor never polishes a claim that is about to change.
+מעבר הקריאוּת רץ אחריו. `readability-editor` משכתב את הטיוטה המתוקנת מול תקן הקריאוּת המשותף, תוך שמירה על כל עובדה, כך שסקירת-העל פותחת בעיקר ונקראת עבור מי שלא עשה את העבודה. הדיוק מתיישב קודם, ולכן העורך לעולם לא מלטש טענה שעומדת להשתנות.
 
-The skill then checks its own output before showing it to you: that every chart's boxes name components rather than
-carrying field and type detail, that the starting points are numbered in reading order with an example call where one is
-called for, that terms you could not look up carry their explanations, and that the closing restatement is there and free
-of file paths and type names. Anything that fails is fixed before you see it, not reported to you as a caveat.
+הסקיל אז בודק את הפלט שלו עצמו לפני שהוא מציג אותו לך: שהתיבות בכל תרשים נוקבות ברכיבים ולא נושאות פרטי שדות וטיפוסים, שנקודות ההתחלה ממוספרות בסדר הקריאה עם קריאת דוגמה במקום שנדרש, שמונחים שלא היית יכול לחפש נושאים את ההסברים שלהם, ושהניסוח החוזר הסוגר נמצא שם ונקי מנתיבי קבצים ומשמות טיפוסים. כל מה שנכשל מתוקן לפני שאתה רואה אותו, ולא מדווח לך כהסתייגות.
 
-The validator checks the description against the code only to keep it truthful. It never judges the code's quality; the
-overview still raises no findings about the work itself.
+המאמת בודק את התיאור מול הקוד רק כדי לשמור עליו כן. הוא לעולם לא שופט את איכות הקוד; סקירת-העל עדיין לא מעלה ממצאים על העבודה עצמה.
 
-One thing a change overview will now tell you that it used to keep to itself: when the code shows that the stated reason
-for a change is already satisfied, or does not hold, the overview says so where it states that reason. It says it as a
-fact about the reason, with no finding, no severity, and no recommendation. It only says it when it checked and found
-that, so a reason the code is silent about is still marked as inferred rather than reported as contradicted.
+דבר אחד שסקירת-על של שינוי תגיד לך עכשיו, ופעם שמרה לעצמה: כשהקוד מראה שהסיבה המוצהרת לשינוי כבר מסופקת, או שהיא לא מתקיימת, סקירת-העל אומרת זאת במקום שבו היא מציינת את הסיבה. היא אומרת זאת כעובדה על הסיבה, בלי ממצא, בלי חומרה ובלי המלצה. היא אומרת זאת רק כשהיא בדקה ומצאה את זה, ולכן סיבה שהקוד שותק לגביה עדיין מסומנת כמשוערת ולא מדווחת כסותרת.
 
-When the target is too large to cover fully at the chosen size, the overview adds a coverage note immediately after the
-header, naming what it did not cover and the next size up, so you know the picture is partial before you study the
-charts.
+כשהיעד גדול מכדי לכסות אותו במלואו בגודל שנבחר, סקירת-העל מוסיפה הערת כיסוי מיד אחרי הכותרת, שנוקבת במה שהיא לא כיסתה ובגודל הבא למעלה, כדי שתדע שהתמונה חלקית לפני שאתה לומד את התרשימים.
 
-## How to get the most out of it
+## איך להפיק ממנו את המרב
 
-- **Name a sharp target.** A file, a symbol, a directory, or a specific PR gets a focused overview. "The whole app" does
-  not; the skill will ask you to narrow it.
-- **Let the default carry the PR case.** With no argument on a feature branch, the skill orients you to exactly the
-  changes you are about to review. You rarely need to name the PR explicitly.
-- **Re-run larger when coverage is partial.** If the overview adds a coverage note, re-run at the next size up for a
-  fuller picture rather than guessing at the gaps.
-- **Read it before `/code-review`, not instead of it.** The overview tells you how to look at a PR; the review tells you
-  whether the PR is any good. Run code-overview first to orient, then `/code-review` to judge.
+- **נקוב ביעד חד.** קובץ, סמל, תיקייה או PR מסוים מקבלים סקירת-על ממוקדת. "כל האפליקציה" לא; הסקיל יבקש ממך לצמצם.
+- **תן לברירת המחדל לכסות את מקרה ה-PR.** בלי ארגומנט על ענף פיצ'ר, הסקיל מתמצא אותך בדיוק בשינויים שאתה עומד לסקור. לעיתים רחוקות תצטרך לנקוב ב-PR במפורש.
+- **הרץ מחדש בגדול יותר כשהכיסוי חלקי.** אם סקירת-העל מוסיפה הערת כיסוי, הרץ מחדש בגודל הבא למעלה לתמונה מלאה יותר במקום לנחש את הפערים.
+- **קרא אותה לפני `/code-review`, לא במקומה.** סקירת-העל אומרת לך איך להסתכל על PR; הסקירה אומרת לך אם ה-PR טוב. הרץ code-overview קודם כדי להתמצא, ואז `/code-review` כדי לשפוט.
 
-## Sizing
+## גודל
 
-The skill is one of the size-aware skills. It classifies the target and scales the exploration roster:
+הסקיל הוא אחד מהסקילים מודעי-הגודל. הוא מסווג את היעד ומתאים את מערך הגילוי:
 
-| Size                  | Typical target                                                               | Explorers dispatched |
-| --------------------- | ---------------------------------------------------------------------------- | -------------------- |
-| **Small** _(default)_ | A single file, a single symbol, or a small change set                        | 1                    |
-| **Medium**            | A directory or module, or a moderate change set across one or two subsystems | 2–3                  |
-| **Large**             | Multiple subsystems, or a large change set                                   | 3–5                  |
+| גודל                   | יעד אופייני                                                          | חוקרים משוגרים |
+| ---------------------- | -------------------------------------------------------------------- | -------------- |
+| **קטן** _(ברירת מחדל)_ | קובץ יחיד, סמל יחיד, או מקבץ שינויים קטן                             | 1              |
+| **בינוני**             | תיקייה או מודול, או מקבץ שינויים בינוני על פני תת-מערכת אחת או שתיים | 2–3            |
+| **גדול**               | כמה תת-מערכות, או מקבץ שינויים גדול                                  | 3–5            |
 
-Classification defaults to small and escalates only on a clear signal; a borderline target stays at the smaller band.
-Pass `small`, `medium`, or `large` as the first positional argument to override. The roster is intentionally lean,
-`codebase-explorer` agents only, because this is read-only orientation, not the multi-specialist audit that
-`/code-review` and `/architectural-analysis` run. See [Sizing](../../../docs/sizing.md) for the cross-skill model.
+הסיווג מוגדר כברירת מחדל לקטן ומסלים רק על אות ברור; יעד על הגבול נשאר ברצועה הקטנה יותר. העבר `small`, `medium` או `large` כארגומנט המיקומי הראשון כדי לעקוף. המערך רזה בכוונה, סוכני `codebase-explorer` בלבד, מפני שזו התמצאות קריאה-בלבד ולא הביקורת רבת-המומחים ש-`/code-review` ו-`/architectural-analysis` מריצים. ראה [Sizing](../../../docs/sizing.md) למודל החוצה-סקילים.
 
-## Cost and latency
+## עלות וזמן תגובה
 
-The skill runs on the default model tier and dispatches a lean roster: one to five `han-core:codebase-explorer` agents
-in parallel, scaled to size, then a synthesis pass the skill performs itself, then two review passes in order:
-`adversarial-validator` (accuracy, re-reading the code) first, then `han-communication:readability-editor` (a
-readability rewrite of the corrected draft, preserving every fact). The skill applies the accuracy corrections and the
-rewrite. The most expensive single step is the parallel exploration wave at large size. It is built for quick, on-demand
-orientation, so it is cheap at small size and safe to run often; it is read-only and re-runnable, so there is no
-approval gate before it works.
+הסקיל רץ על דרג מודל ברירת המחדל ומשגר מערך רזה: סוכן אחד עד חמישה של `han-core:codebase-explorer` במקביל, מותאמים לגודל, ואז מעבר סינתזה שהסקיל מבצע בעצמו, ואז שני מעברי סקירה לפי סדר: `adversarial-validator` (דיוק, קריאה חוזרת של הקוד) ראשון, ואז `han-communication:readability-editor` (שכתוב קריאוּת של הטיוטה המתוקנת, תוך שמירה על כל עובדה). הסקיל מחיל את תיקוני הדיוק ואת השכתוב. הצעד הבודד היקר ביותר הוא גל הגילוי המקבילי בגודל גדול. הוא בנוי להתמצאות מהירה לפי דרישה, ולכן הוא זול בגודל קטן ובטוח להרצה תכופה; הוא קריאה-בלבד וניתן להרצה חוזרת, ולכן אין שער אישור לפני שהוא עובד.
 
-## In more detail
+## בפירוט
 
-The skill orchestrates and synthesizes; the agents discover, validate, and refine.
+הסקיל מתזמר ומסנתז; הסוכנים מגלים, מאמתים ומזקקים.
 
-It resolves the target by a fixed precedence: an explicit pull request reference first, then a file or directory path,
-then a symbol, and finally (with no target) the current branch's changes. This order means an ambiguous string never
-silently selects the wrong mode.
+הוא מפענח את היעד לפי קדימות קבועה: הפניה מפורשת ל-pull request קודם, אחר כך נתיב קובץ או תיקייה, אחר כך סמל, ולבסוף (בלי יעד) השינויים בענף הנוכחי. הסדר הזה אומר שמחרוזת דו-משמעית לעולם לא בוחרת בשקט את המצב השגוי.
 
-It classifies size, then dispatches `codebase-explorer` agents over the target or the changed files. Each agent surfaces
-the evidence of _why_ the code exists (the problem it solves or goal it serves, drawn from commit and PR intent,
-comments, naming, and tests) alongside entry points, context, uses, and flow.
+הוא מסווג גודל, ואז משגר סוכני `codebase-explorer` על היעד או על הקבצים שהשתנו. כל סוכן מעלה את הראיות ל*למה* שהקוד קיים (הבעיה שהוא פותר או המטרה שהוא משרת, שנשאבות מכוונת הקומיט וה-PR, מהערות, משמות ומבדיקות) לצד נקודות כניסה, הקשר, שימושים וזרימה.
 
-The skill then writes the overview itself, leading with that why and flowing the grouping, charts, and orientation out
-of it. The grouping, the charts, and the orientation are the skill's work, not pasted agent output.
+הסקיל אז כותב את סקירת-העל בעצמו, פותח באותו "למה" ומזרים ממנו את הקיבוץ, את התרשימים ואת ההתמצאות. הקיבוץ, התרשימים וההתמצאות הם העבודה של הסקיל, לא פלט סוכן מודבק.
 
-PR mode runs on the local branch diff and does not require a remote pull request; a remote PR is needed only when you
-name one explicitly.
+מצב PR רץ על ה-diff של הענף המקומי ולא דורש pull request מרוחק; PR מרוחק נדרש רק כשאתה נוקב באחד במפורש.
 
-The skill degrades gracefully when its tools are missing. Code mode against a named target still runs without git, while
-PR mode and the bare-invocation default tell you they need git to read changes. When a named pull request cannot be
-reached, the skill offers code mode against a local target instead.
+הסקיל מתדרדר בחן כשהכלים שלו חסרים. מצב קוד מול יעד נקוב עדיין רץ בלי git, בעוד שמצב PR וברירת המחדל של ההפעלה החשופה אומרים לך שהם צריכים את git כדי לקרוא שינויים. כשלא ניתן להגיע ל-pull request נקוב, הסקיל מציע מצב קוד מול יעד מקומי במקום.
 
-## Sources
+## מקורות
 
-The skill's posture is grounded in established practice for progressive disclosure, information scent, and program
-comprehension. Each source below is cited because the skill draws a specific, named artifact from it.
+העמדה של הסקיל מעוגנת בפרקטיקה מבוססת של חשיפה הדרגתית, ריח מידע והבנת תוכניות. כל מקור למטה מצוטט מפני שהסקיל שואב ממנו תוצר ספציפי ונקוב בשם.
 
 ### Jakob Nielsen: Progressive Disclosure
 
-Nielsen's work on progressive disclosure (Nielsen Norman Group) is the structural principle behind the overview's
-section order: show the single most important thing first, then let detail unfold beneath it, so a reader who stops
-early is still oriented correctly. The skill's "what it does and why → flow → context → where to start" ordering is this
-principle applied to code.
+העבודה של Nielsen על חשיפה הדרגתית (Nielsen Norman Group) היא העיקרון המבני שמאחורי סדר הסעיפים של סקירת-העל: להציג את הדבר החשוב ביותר קודם, ואז לתת לפרטים להיפרש מתחתיו, כך שקורא שעוצר מוקדם עדיין מתמצא נכון. הסדר "מה זה עושה ולמה ← זרימה ← הקשר ← איפה להתחיל" של הסקיל הוא העיקרון הזה מוחל על קוד.
 
 URL: https://www.nngroup.com/articles/progressive-disclosure/
 
-### Peter Pirolli and Stuart Card: Information Foraging Theory
+### Peter Pirolli ו-Stuart Card: Information Foraging Theory
 
-Pirolli and Card's information-foraging work formalized "information scent," the cues a reader follows to decide where
-to look next. The skill's content-bearing section headings, the chart scope labels, and the partial-coverage note exist
-so a reader can forage the overview efficiently and know when the picture is incomplete.
+העבודה של Pirolli ו-Card על חיפוש מידע עיגנה את "ריח המידע", הרמזים שקורא הולך לפיהם כדי להחליט לאן להסתכל בהמשך. הכותרות נושאות-התוכן של הסקיל, תוויות ההיקף של התרשימים, והערת הכיסוי החלקי קיימים כדי שקורא יוכל לחפש בסקירת-העל ביעילות ולדעת מתי התמונה לא שלמה.
 
 URL: https://www.researchgate.net/publication/200085665_Information_Foraging
 
-### Spinellis and others: Program Comprehension
+### Spinellis ואחרים: Program Comprehension
 
-The program-comprehension literature establishes that developers understand unfamiliar code by building a mental model
-from entry points, control flow, and call relationships before reading detail. The skill's flow charts and its "where to
-start" section target exactly that model-building path, at minimal technical depth.
+ספרות הבנת התוכניות מבססת שמפתחים מבינים קוד לא מוכר על ידי בניית מודל מנטלי מנקודות כניסה, מזרימת בקרה ומיחסי קריאה, לפני שהם קוראים פרטים. תרשימי הזרימה של הסקיל וסעיף ה"איפה להתחיל" שלו מכוונים בדיוק למסלול בניית המודל הזה, בעומק טכני מינימלי.
 
 URL: https://www.spinellis.gr/codereading/
 
-## Related documentation
+## תיעוד קשור
 
-- [Plugin README](../../README.md). The plugin's front door: its skills, agents, and how they fit together.
-- [Repo root README](../../../README.md). The Han suite landing page. Start here if you arrived from outside the docs tree.
-- [Skills Index](../../../docs/skills/README.md). All skills, grouped by purpose.
-- [`/code-review`](./code-review.md). The judgment counterpart: run code-overview to understand a PR, then code-review
-  to evaluate it.
-- [`/project-documentation`](../../../han-documentation/docs/skills/project-documentation.md). The durable counterpart: code-overview is ephemeral
-  orientation, project-documentation is maintained docs in the repo tree.
-- [`/architectural-analysis`](./architectural-analysis.md). Reach for this when you need a structural, coupling, and
-  risk assessment rather than an orientation.
-- [`/investigate`](./investigate.md). Reach for this when something is broken and you need a root cause, not an
-  overview.
-- [`/code-walkthrough`](./code-walkthrough.md). The paced counterpart: same understanding goal, delivered as a
-  step-by-step conversation you can interrupt rather than one document.
-- [Sizing](../../../docs/sizing.md). The cross-skill sizing model. Explains the small / medium / large bands, the
-  default-to-small rule, and the `$size` override.
-- [`codebase-explorer`](../../../han-core/docs/agents/codebase-explorer.md). The agent this skill dispatches, scaled to size, to
-  discover entry points, context, uses, and flow.
-- [`adversarial-validator`](../../../han-core/docs/agents/adversarial-validator.md). The agent that re-reads the code to
-  challenge the drafted overview's claims for accuracy before you see it, so the description matches what the code does.
-- [`readability-editor`](../../../han-communication/docs/agents/readability-editor.md). Rewrites the drafted overview against
-  the shared readability standard, preserving every fact, before you see it. Runs after the accuracy validator, not
-  alongside it.
-- [`SKILL.md` for /code-overview](../../skills/code-overview/SKILL.md). The internal process definition.
+- [README של הפלאגין](../../README.md). הדלת הקדמית של הפלאגין: הסקילים שלו, הסוכנים, ואיך הם משתלבים.
+- [README של שורש הריפו](../../../README.md). דף הנחיתה של חבילת Han. התחל כאן אם הגעת מחוץ לעץ התיעוד.
+- [אינדקס הסקילים](../../../docs/skills/README.md). כל הסקילים, מקובצים לפי מטרה.
+- [`/code-review`](./code-review.md). המקביל של השיפוט: הרץ code-overview כדי להבין PR, ואז code-review כדי להעריך אותו.
+- [`/project-documentation`](../../../han-documentation/docs/skills/project-documentation.md). המקביל העמיד: code-overview הוא התמצאות חולפת, project-documentation הוא מסמכים מתוחזקים בעץ הריפו.
+- [`/architectural-analysis`](./architectural-analysis.md). פנה לזה כשאתה צריך הערכה מבנית, של צימוד ושל סיכון, ולא התמצאות.
+- [`/investigate`](./investigate.md). פנה לזה כשמשהו שבור ואתה צריך שורש בעיה, לא סקירת-על.
+- [`/code-walkthrough`](./code-walkthrough.md). המקביל המקוצב: אותה מטרת הבנה, שמסופקת כשיחה צעד-אחר-צעד שאתה יכול לקטוע ולא כמסמך אחד.
+- [Sizing](../../../docs/sizing.md). מודל הגודל החוצה-סקילים. מסביר את הרצועות קטן / בינוני / גדול, את כלל ברירת-המחדל-לקטן, ואת העקיפה `$size`.
+- [`codebase-explorer`](../../../han-core/docs/agents/codebase-explorer.md). הסוכן שהסקיל הזה משגר, מותאם לגודל, כדי לגלות נקודות כניסה, הקשר, שימושים וזרימה.
+- [`adversarial-validator`](../../../han-core/docs/agents/adversarial-validator.md). הסוכן שקורא מחדש את הקוד כדי לאתגר את הטענות של סקירת-העל המנוסחת לצורך דיוק לפני שאתה רואה אותה, כך שהתיאור תואם למה שהקוד עושה.
+- [`readability-editor`](../../../han-communication/docs/agents/readability-editor.md). משכתב את סקירת-העל המנוסחת מול תקן הקריאוּת המשותף, תוך שמירה על כל עובדה, לפני שאתה רואה אותה. רץ אחרי מאמת הדיוק, לא לצידו.
+- [`SKILL.md` של /code-overview](../../skills/code-overview/SKILL.md). הגדרת התהליך הפנימי.
