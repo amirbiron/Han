@@ -1,162 +1,99 @@
 # Evidence
 
-Evidence-based reasoning is the third foundational mechanic of the han plugin, alongside [sizing](./sizing.md) and
-[YAGNI](./yagni.md). Every skill that produces an artifact, every agent that reviews one, and every research,
-investigation, or review skill that draws a conclusion carries an evidence posture. This page defines what counts as
-evidence in Han, how to characterize how strong it is, and what to do when no evidence exists at all.
+חשיבה מבוססת-ראיות היא מנגנון היסוד השלישי של הפלאגין, לצד [גודל](./sizing.md) ו-[YAGNI](./yagni.md). לכל סקיל שמייצר תוצר, לכל סוכן שסוקר תוצר, ולכל סקיל מחקר, חקירה או סקירה שמסיק מסקנה, יש עמדת ראיות. הדף הזה מגדיר מה נחשב ראיה ב-Han, איך לאפיין עד כמה היא חזקה, ומה לעשות כשאין ראיות בכלל.
 
-This page supplements [YAGNI](./yagni.md). YAGNI's evidence test answers _is there any evidence at all to justify
-including this item?_ The rule on this page answers _once an item passes that test, how confident should you be in the
-evidence behind it, and what do you do when the evidence is thin or absent?_ The two work together.
+הדף הזה משלים את [YAGNI](./yagni.md). מבחן הראיות של YAGNI עונה על _האם יש בכלל ראיה כלשהי שמצדיקה לכלול את הפריט הזה?_ הכלל בדף הזה עונה על _אחרי שפריט עבר את המבחן, כמה בטוח אתה צריך להיות בראיות שמאחוריו, ומה עושים כשהראיות דלות או נעדרות?_ השניים עובדים יחד.
 
-> See also: [Plugin landing page](../README.md) · [Concepts](./concepts.md) · [Sizing](./sizing.md) ·
-> [YAGNI](./yagni.md) · [All skills](./skills/README.md) · [All agents](./agents/README.md)
+> ראה גם: [דף הנחיתה של הפלאגין](../README.md) · [מושגי יסוד](./concepts.md) · [Sizing](./sizing.md) · [YAGNI](./yagni.md) · [כל הסקילים](./skills/README.md) · [כל הסוכנים](./agents/README.md)
 
 ## TL;DR
 
-- **Three principles ground the rule.** Evidence drawn from closer to the originating event or data carries more weight
-  than evidence at greater remove (proximity). Independently corroborated evidence beats single-source evidence
-  (corroboration). The absence of evidence is a distinct state worth naming, not the bottom of a tier list (no-evidence
-  labeling).
-- **Trust classes name the boundary.** Codebase evidence is the trusted current-state anchor. Web evidence sits outside
-  the trust boundary. User-provided material gets interested-party scrutiny.
-- **Proximity is a heuristic, not a ranked ladder.** Running code beats documentation in many situations, but not all.
-  Formal-methods contexts, specification-compliance contexts, and regulatory contexts invert the ordering. The rule
-  names the principle and walks you through the inversions. It does not hand you a numbered list to apply blindly.
-- **The corroboration gate is scoped to web sources.** A single web claim that drives a recommendation gets marked
-  single-source and cannot stand alone. Codebase evidence at a specific file path and line is not weakened by being a
-  single citation. That asymmetry is intentional and matches how `/research` already behaves.
-- **No evidence is a state with a name and a response.** When a claim has no evidence at any tier, the response is to
-  label it, defer the dependent decision, and name the trigger that would reopen it. The same defer-with-trigger pattern
-  YAGNI uses.
-- **The canonical rule lives in [`han-core/references/evidence-rule.md`](../han-core/references/evidence-rule.md).**
-  Every skill and agent that loads the rule at runtime reads that file. This page is the operator-facing summary.
+- **שלושה עקרונות מבססים את הכלל.** ראיות שנשאבו מקרוב יותר לאירוע או לנתון המקורי נושאות משקל רב יותר מראיות במרחק גדול יותר (קרבה). ראיות שאומתו בהצלבה באופן בלתי תלוי מנצחות ראיות ממקור יחיד (אימות-הצלבה). היעדר ראיות הוא מצב נפרד שראוי לנקוב בו בשם, ולא תחתית של סולם דרגות (תיוג היעדר-ראיות).
+- **מחלקות אמון נוקבות בגבול.** ראיות מבסיס הקוד הן עוגן המצב הנוכחי המהימן. ראיות מהרשת יושבות מחוץ לגבול האמון. חומר שהמשתמש סיפק מקבל בחינה של צד מעוניין.
+- **קרבה היא היוריסטיקה, לא סולם מדורג.** קוד שרץ מנצח תיעוד במצבים רבים, אבל לא בכולם. הקשרים של שיטות פורמליות, הקשרים של ציות למפרט, והקשרים רגולטוריים הופכים את הסדר. הכלל נוקב בעיקרון ומוליך אותך דרך ההיפוכים. הוא לא מוסר לך רשימה ממוספרת להחיל בעיוורון.
+- **שער אימות-ההצלבה מוגבל למקורות מהרשת.** טענה יחידה מהרשת שמניעה המלצה מסומנת כמקור-יחיד ולא יכולה לעמוד לבדה. ראיה מבסיס הקוד בנתיב קובץ ובשורה ספציפיים לא נחלשת בכך שהיא ציטוט יחיד. האסימטריה הזו מכוונת ותואמת את ההתנהגות הקיימת של `/research`.
+- **היעדר ראיות הוא מצב עם שם ועם תגובה.** כשלטענה אין ראיות בשום דרג, התגובה היא לתייג אותה, לדחות את ההחלטה התלויה, ולנקוב בטריגר שיפתח אותה מחדש. אותו דפוס דחייה-עם-טריגר ש-YAGNI משתמש בו.
+- **הכלל הקנוני יושב ב-[`han-core/references/evidence-rule.md`](../han-core/references/evidence-rule.md).** כל סקיל וכל סוכן שטוענים את הכלל בזמן ריצה קוראים את הקובץ הזה. הדף הזה הוא הסיכום שפונה למפעיל.
 
-## Why evidence-based matters
+## למה חשיבה מבוססת-ראיות חשובה
 
-Han is a plugin full of agents and skills that produce judgments: feature specifications, implementation plans,
-investigation conclusions, architectural recommendations, code-review findings. Every one of those judgments rests on
-evidence the agent or skill collected. Without an explicit posture on what counts as evidence and how confident to be in
-it:
+Han היא פלאגין מלא בסוכנים ובסקילים שמייצרים שיפוטים: מפרטי פיצ'רים, תוכניות מימוש, מסקנות חקירה, המלצות ארכיטקטוניות, ממצאי סקירת קוד. כל אחד מהשיפוטים האלה נשען על ראיות שהסוכן או הסקיל אספו. בלי עמדה מפורשת על מה נחשב ראיה וכמה לבטוח בה:
 
-- Skills accept whatever the fastest-to-collect source said and treat the conclusion as settled, including conclusions
-  that a second source would have contradicted.
-- Agents conflate "the documentation says X" with "X is true," when the documentation may have drifted from what the
-  system does today.
-- Investigations rest on a single web search result and a plausible-sounding LLM rephrasing of it, with neither the
-  search result nor the rephrasing held to a corroboration standard.
-- Skills treat the absence of evidence as identical to the weakest tier of evidence and proceed anyway, when the honest
-  move is to defer.
+- סקילים מקבלים כל מה שהמקור המהיר-לאיסוף אמר ומתייחסים למסקנה כסגורה, כולל מסקנות שמקור שני היה סותר.
+- סוכנים מערבבים בין "התיעוד אומר X" לבין "X נכון", כשייתכן שהתיעוד נסחף ממה שהמערכת עושה היום.
+- חקירות נשענות על תוצאת חיפוש אחת מהרשת ועל ניסוח מחדש של LLM שנשמע סביר, כששניהם לא נמדדים מול תקן של אימות-הצלבה.
+- סקילים מתייחסים להיעדר ראיות כזהה לדרג הראיות החלש ביותר וממשיכים בכל זאת, כשהמהלך הכן הוא לדחות.
 
-Evidence-based reasoning is not the same as scientific rigor. The bar is "you can tell where this claim came from, you
-can tell how strongly it rests on its source, and you can tell what would change your mind." That is the bar this page
-sets.
+חשיבה מבוססת-ראיות אינה זהה לקפדנות מדעית. הרף הוא "אתה יכול לומר מאיפה הטענה הזו הגיעה, אתה יכול לומר כמה חזק היא נשענת על המקור שלה, ואתה יכול לומר מה היה משנה את דעתך". זה הרף שהדף הזה קובע.
 
-## The three principles
+## שלושת העקרונות
 
-### Principle 1: Proximity to origin
+### עיקרון 1: קרבה למקור
 
-Evidence drawn from closer to the originating event or data carries more weight than evidence at greater remove. A
-reproducible failure observed in production carries more weight than a Stack Overflow answer that describes the same
-symptom. The current source code carries more weight than an architecture diagram from a year ago. A passing test that
-exercises the code path carries more weight than a docstring claiming the path works.
+ראיות שנשאבו מקרוב יותר לאירוע או לנתון המקורי נושאות משקל רב יותר מראיות במרחק גדול יותר. כשל בר-שחזור שנצפה בפרודקשן נושא משקל רב יותר מתשובה ב-Stack Overflow שמתארת את אותו סימפטום. קוד המקור הנוכחי נושא משקל רב יותר מדיאגרמת ארכיטקטורה מלפני שנה. בדיקה עוברת שמפעילה את מסלול הקוד נושאת משקל רב יותר מ-docstring שטוען שהמסלול עובד.
 
-Apply this as a heuristic, not as a ranked ladder. A numbered list of source types ("production observation > tests >
-codebase > commits > docs > blogs > LLM output") looks operational but breaks immediately at the first tier boundary. A
-passing test that does not exercise the failing input is not stronger evidence than a clearly-documented contract that
-says the input should work. The principle is real; the strict ordering it appears to imply is not.
+החל את זה כהיוריסטיקה, לא כסולם מדורג. רשימה ממוספרת של סוגי מקורות ("תצפית בפרודקשן > בדיקות > בסיס קוד > קומיטים > מסמכים > בלוגים > פלט LLM") נראית מבצעית אבל נשברת מיד בגבול הדרגות הראשון. בדיקה עוברת שלא מפעילה את הקלט הכושל אינה ראיה חזקה יותר מחוזה מתועד בבירור שאומר שהקלט אמור לעבוד. העיקרון אמיתי; הסדר הנוקשה שהוא כביכול מרמז עליו אינו.
 
-Specifically, the proximity ordering inverts in three contexts:
+באופן ספציפי, סדר הקרבה מתהפך בשלושה הקשרים:
 
-- **Formal-methods or specification-compliance contexts.** When the specification is the authoritative artifact (an API
-  contract, a state-machine definition, a regulatory schema), running code that diverges from the specification is a bug
-  in the code, not new evidence about the system. The specification wins.
-- **Regulatory or legal-compliance contexts.** When a regulation or contract names a required behavior, observed
-  behavior that violates the requirement does not become the new requirement. The regulation wins.
-- **Pre-incident observation of intended behavior.** A test that fails proves a bug exists. A test that passes proves
-  the tested inputs behaved correctly for the tested code paths, and nothing more. Passing and failing tests are not
-  symmetric evidence.
+- **הקשרים של שיטות פורמליות או ציות למפרט.** כשהמפרט הוא התוצר המוסמך (חוזה API, הגדרת מכונת מצבים, סכמה רגולטורית), קוד שרץ וסוטה מהמפרט הוא באג בקוד, לא ראיה חדשה על המערכת. המפרט מנצח.
+- **הקשרים רגולטוריים או של ציות משפטי.** כשרגולציה או חוזה נוקבים בהתנהגות נדרשת, התנהגות שנצפתה ומפרה את הדרישה לא הופכת לדרישה החדשה. הרגולציה מנצחת.
+- **תצפית שלפני תקרית על ההתנהגות המיועדת.** בדיקה שנכשלת מוכיחה שקיים באג. בדיקה שעוברת מוכיחה שהקלטים שנבדקו התנהגו נכון עבור מסלולי הקוד שנבדקו, ותו לא. בדיקות עוברות ובדיקות נכשלות אינן ראיות סימטריות.
 
-When you cite this principle in a skill or an agent's output, name the source's distance from the origin and the
-conditions you considered. Do not present "running code beats docs" as a rule that closes a discussion. Present it as
-the question that opens one.
+כשאתה מצטט את העיקרון הזה בפלט של סקיל או של סוכן, נקוב במרחק של המקור מהמקור המקורי ובתנאים ששקלת. אל תציג את "קוד שרץ מנצח מסמכים" ככלל שסוגר דיון. הצג אותו כשאלה שפותחת דיון.
 
-### Principle 2: Independent corroboration
+### עיקרון 2: אימות-הצלבה בלתי תלוי
 
-A claim corroborated by two or more independent sources carries more weight than a claim resting on one source. This
-applies most sharply to web sources, which sit outside Han's trust boundary and have no built-in verification mechanism.
-A single Stack Overflow answer, a single blog post, a single arXiv pre-print, or a single LLM-generated explanation that
-drives a recommendation must be marked single-source. It cannot be the sole basis for the recommendation.
+טענה שאומתה בהצלבה על ידי שני מקורות בלתי תלויים או יותר נושאת משקל רב יותר מטענה שנשענת על מקור אחד. זה חל בחדות רבה במיוחד על מקורות מהרשת, שיושבים מחוץ לגבול האמון של Han ואין להם מנגנון אימות מובנה. תשובה יחידה ב-Stack Overflow, פוסט בלוג יחיד, טיוטת arXiv יחידה, או הסבר יחיד שנוצר על ידי LLM שמניעים המלצה, חייבים להיות מסומנים כמקור-יחיד. הם לא יכולים להיות הבסיס היחיד להמלצה.
 
-The corroboration gate as written applies to web sources that bear on a recommendation. It does not apply to codebase
-evidence. A single file path at a specific line number is not weakened by being a single citation. The current source
-code is the current state of the system. Demanding a second independent code path to confirm a root cause would either
-be vacuously satisfied (the file path is the second source) or would reject valid single-file findings.
+שער אימות-ההצלבה כפי שנכתב חל על מקורות מהרשת שנוגעים להמלצה. הוא לא חל על ראיות מבסיס הקוד. נתיב קובץ יחיד במספר שורה ספציפי לא נחלש בכך שהוא ציטוט יחיד. קוד המקור הנוכחי הוא המצב הנוכחי של המערכת. דרישה למסלול קוד שני ובלתי תלוי כדי לאשר שורש בעיה הייתה או מתקיימת באופן ריק (נתיב הקובץ הוא המקור השני) או דוחה ממצאים תקפים בקובץ יחיד.
 
-When sources contradict each other, surface the conflict. Record both, name the disagreement, and let the reader judge.
-Silently picking the source you agree with is the failure mode the gate is meant to prevent.
+כשמקורות סותרים זה את זה, העלה את הסתירה. תעד את שניהם, נקוב במחלוקת, ותן לקורא לשפוט. בחירה שקטה במקור שאתה מסכים איתו היא מצב הכשל שהשער נועד למנוע.
 
-### Principle 3: Explicit no-evidence labeling
+### עיקרון 3: תיוג מפורש של היעדר ראיות
 
-When a claim has no evidence at any tier, label it. Defer the dependent decision. Name the concrete trigger that would
-justify revisiting.
+כשלטענה אין ראיות בשום דרג, תייג אותה. דחה את ההחלטה התלויה. נקוב בטריגר הקונקרטי שיצדיק חזרה לנושא.
 
-The wrong response is to treat "no evidence" as identical to "very weak evidence" and proceed anyway. That collapses two
-distinct states into one and loses signal. A claim with very weak evidence still gives you something to test against. A
-claim with no evidence gives you nothing. Proceeding as if you had something is how cargo-culting takes root.
+התגובה השגויה היא להתייחס ל"אין ראיות" כזהה ל"ראיות חלשות מאוד" ולהמשיך בכל זאת. זה מקפל שני מצבים נפרדים לאחד ומאבד אות. לטענה עם ראיות חלשות מאוד עדיין יש משהו שאפשר לבדוק מולו. לטענה בלי ראיות אין כלום. להמשיך כאילו היה לך משהו זה איך שחיקוי חסר הבנה משתרש.
 
-The response Han uses is the same defer-with-trigger pattern [YAGNI](./yagni.md#the-deferred-yagni-section-format) uses.
-Record the claim, record why no evidence exists yet, record the concrete trigger that would justify revisiting, and move
-on to the next item that has evidence to work with. Real triggers are a measured metric, an incident that fires, a
-customer commitment, a regulation taking effect, or a dependency landing. Aspirational triggers ("when we have time to
-investigate") are not triggers.
+התגובה ש-Han משתמשת בה היא אותו דפוס דחייה-עם-טריגר ש-[YAGNI](./yagni.md#הפורמט-של-סעיף-deferred-yagni) משתמש בו. תעד את הטענה, תעד למה עדיין אין ראיות, תעד את הטריגר הקונקרטי שיצדיק חזרה לנושא, והמשך לפריט הבא שיש לו ראיות לעבוד איתן. טריגרים אמיתיים הם מטריקה שנמדדה, תקרית שנורית, התחייבות ללקוח, רגולציה שנכנסת לתוקף, או תלות שנוחתת. טריגרים שאפתניים ("כשיהיה לנו זמן לחקור") אינם טריגרים.
 
-## Trust classes
+## מחלקות אמון
 
-The corroboration gate and the proximity heuristic both rest on a vocabulary that names where an artifact came from and
-how much trust to extend to it. The vocabulary lives at three levels:
+גם שער אימות-ההצלבה וגם היוריסטיקת הקרבה נשענים על אוצר מילים שנוקב במקום שממנו התוצר הגיע ובכמות האמון שיש להעניק לו. אוצר המילים חי בשלוש רמות:
 
-- **Codebase** is the trusted current-state anchor. The current source code, the current tests, the current
-  configuration, the current build output. When codebase evidence contradicts other evidence, surface the conflict
-  explicitly and treat the codebase as authoritative on what the system does today.
-- **Web** sits outside the trust boundary. Documentation pages, blog posts, Stack Overflow, GitHub issues, RFCs, vendor
-  whitepapers, LLM-generated content. Web sources can be wrong, stale, adversarially shaped, or contextually misapplied.
-  The corroboration gate applies here.
-- **Provided** is user-supplied material. Files you pasted in, links you handed to a skill, screenshots, transcripts.
-  Apply interested-party scrutiny: the user's intent in providing the material is itself a piece of context.
-  User-provided material is held to the same scrutiny as a web source.
+- **בסיס הקוד** הוא עוגן המצב הנוכחי המהימן. קוד המקור הנוכחי, הבדיקות הנוכחיות, הקונפיגורציה הנוכחית, פלט הבנייה הנוכחי. כשראיה מבסיס הקוד סותרת ראיה אחרת, העלה את הסתירה במפורש והתייחס לבסיס הקוד כמוסמך על מה שהמערכת עושה היום.
+- **הרשת** יושבת מחוץ לגבול האמון. דפי תיעוד, פוסטי בלוג, Stack Overflow, issues ב-GitHub, RFCs, ניירות לבנים של ספקים, תוכן שנוצר על ידי LLM. מקורות מהרשת יכולים להיות שגויים, מיושנים, מעוצבים באופן אדוורסרי, או מוחלים בהקשר לא נכון. שער אימות-ההצלבה חל כאן.
+- **סופק** הוא חומר שהמשתמש סיפק. קבצים שהדבקת, קישורים שמסרת לסקיל, צילומי מסך, תמלילים. החל בחינה של צד מעוניין: הכוונה של המשתמש בסיפוק החומר היא בעצמה פיסת הקשר. חומר שהמשתמש סיפק נמדד באותה בחינה כמו מקור מהרשת.
 
-These trust classes are the same ones [`/research`](../han-research/docs/skills/research.md) already uses. The canonical rule
-extracts them so other skills and agents can apply the same vocabulary.
+מחלקות האמון האלה הן אותן מחלקות ש-[`/research`](../han-research/docs/skills/research.md) כבר משתמש בהן. הכלל הקנוני מחלץ אותן כדי שסקילים וסוכנים אחרים יוכלו להחיל את אותו אוצר מילים.
 
-## How evidence-based reasoning applies across the plugin
+## איך חשיבה מבוססת-ראיות חלה לרוחב הפלאגין
 
-Evidence applies in two postures: **producing** (when a skill drafts a judgment or conclusion) and **reviewing** (when a
-skill or agent audits one).
+ראיות חלות בשתי עמדות: **ייצור** (כשסקיל מנסח שיפוט או מסקנה) ו**סקירה** (כשסקיל או סוכן מבקרים שיפוט).
 
-| Surface                                                                                               | What evidence-based gates                                                                                                                                                                                                                     |
-| ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`/research`](../han-research/docs/skills/research.md)                                                | The canonical home of the trust classes, the corroboration gate, and the no-evidence label. Strict mode requires every claim driving the recommendation to carry an explicit evidence status.                                                 |
-| [`/investigate`](../han-coding/docs/skills/investigate.md)                                            | Investigation findings cite the file path, log line, or measurement that supports them. The corroboration gate applies when the investigation draws on web sources for context; codebase findings stand on their citation.                    |
-| [`/plan-a-feature`](../han-planning/docs/skills/plan-a-feature.md)                                    | Behaviors, edge cases, and coordinations in the spec carry evidence. Items without evidence move to `## Deferred (YAGNI)`; items with evidence flagged as single-source web claims get marked accordingly.                                    |
-| [`/plan-implementation`](../han-planning/docs/skills/plan-implementation.md)                          | Implementation choices cite evidence per the YAGNI rule. When a recommendation rests on web research, the corroboration gate applies.                                                                                                         |
-| [`/iterative-plan-review`](../han-planning/docs/skills/iterative-plan-review.md)                      | Review pillars include the evidence sweep alongside YAGNI. Uncited claims and single-source web claims surface as findings.                                                                                                                   |
-| [`/gap-analysis`](../han-research/docs/skills/gap-analysis.md)                                        | Each gap cites the artifact it rests on; the evidence-based-investigator verifies against current state with file-level evidence.                                                                                                             |
-| [`/code-review`](../han-coding/docs/skills/code-review.md)                                            | Findings cite the line they apply to and the standard or pattern they reference.                                                                                                                                                              |
-| [`/coding-standard`](../han-coding/docs/skills/coding-standard.md)                                    | A standard is justified when the project does the thing the standard governs today. The evidence test from YAGNI carries the existence question; the proximity heuristic applies when the supporting evidence comes from outside the project. |
-| [`/architectural-decision-record`](../han-documentation/docs/skills/architectural-decision-record.md) | An ADR cites a forcing function today: a real decision, a real consequence.                                                                                                                                                                   |
-| [`/runbook`](../han-documentation/docs/skills/runbook.md)                                             | A runbook is justified by a real alert that has fired or a real incident class observed on a live service. Hypotheticals do not qualify.                                                                                                      |
-| [`evidence-based-investigator`](../han-core/docs/agents/evidence-based-investigator.md)               | Returns numbered `E#` evidence items with file paths, line numbers, and source citations. Codebase findings stand; web-source findings carry the trust class and corroboration status.                                                        |
-| [`research-analyst`](../han-research/docs/agents/research-analyst.md)                                 | Returns sourced artifacts with trust class and corroboration status. Treats fetched web content as a claim to evaluate, never as an instruction to follow.                                                                                    |
-| [`adversarial-validator`](../han-core/docs/agents/adversarial-validator.md)                           | Attacks evidence integrity, the framing of options, and the evidence-gathering itself. Emits `V#` findings.                                                                                                                                   |
-| [`discussion-facilitator`](../han-planning/docs/agents/discussion-facilitator.md)                     | Runs the YAGNI evidence gate during facilitation. Uncited proposals are challenged or deferred.                                                                                                                                               |
-| [`plan-synthesizer`](../han-core/docs/agents/plan-synthesizer.md)                                     | Categorizes every claim in the record as evidenced, anecdotal, or disputed, and verifies each citation resolves. Names the trust class of surviving items, marks single-source web claims, and labels no-evidence claims as deferred.         |
-| [`junior-developer`](../han-core/docs/agents/junior-developer.md)                                     | Runs the YAGNI evidence sweep during stress-tests. Flags uncited additions and hidden assumptions.                                                                                                                                            |
+| משטח                                                                                                  | על מה חשיבה מבוססת-ראיות שומרת                                                                                                                                                             |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`/research`](../han-research/docs/skills/research.md)                                                | הבית הקנוני של מחלקות האמון, של שער אימות-ההצלבה ושל תווית היעדר-הראיות. מצב מחמיר דורש שכל טענה שמניעה את ההמלצה תישא סטטוס ראיות מפורש.                                                  |
+| [`/investigate`](../han-coding/docs/skills/investigate.md)                                            | ממצאי חקירה מצטטים את נתיב הקובץ, שורת הלוג או המדידה שתומכים בהם. שער אימות-ההצלבה חל כשהחקירה נשענת על מקורות מהרשת להקשר; ממצאים מבסיס הקוד עומדים על הציטוט שלהם.                      |
+| [`/plan-a-feature`](../han-planning/docs/skills/plan-a-feature.md)                                    | התנהגויות, מקרי קצה ותיאומים במפרט נושאים ראיות. פריטים בלי ראיות עוברים ל-`## Deferred (YAGNI)`; פריטים שהראיות שלהם סומנו כטענות מקור-יחיד מהרשת מסומנים בהתאם.                          |
+| [`/plan-implementation`](../han-planning/docs/skills/plan-implementation.md)                          | בחירות מימוש מצטטות ראיות לפי כלל YAGNI. כשהמלצה נשענת על מחקר מהרשת, שער אימות-ההצלבה חל.                                                                                                 |
+| [`/iterative-plan-review`](../han-planning/docs/skills/iterative-plan-review.md)                      | עמודי הסקירה כוללים את סריקת הראיות לצד YAGNI. טענות לא מצוטטות וטענות מקור-יחיד מהרשת עולות כממצאים.                                                                                      |
+| [`/gap-analysis`](../han-research/docs/skills/gap-analysis.md)                                        | כל פער מצטט את התוצר שהוא נשען עליו; ה-evidence-based-investigator מאמת מול המצב הנוכחי עם ראיות ברמת הקובץ.                                                                               |
+| [`/code-review`](../han-coding/docs/skills/code-review.md)                                            | ממצאים מצטטים את השורה שהם חלים עליה ואת התקן או הדפוס שהם מפנים אליו.                                                                                                                     |
+| [`/coding-standard`](../han-coding/docs/skills/coding-standard.md)                                    | תקן מוצדק כשהפרויקט עושה היום את הדבר שהתקן מסדיר. מבחן הראיות מ-YAGNI נושא את שאלת הקיום; היוריסטיקת הקרבה חלה כשהראיות התומכות מגיעות מחוץ לפרויקט.                                      |
+| [`/architectural-decision-record`](../han-documentation/docs/skills/architectural-decision-record.md) | ADR מצטט פונקציה מאלצת היום: החלטה אמיתית, השלכה אמיתית.                                                                                                                                   |
+| [`/runbook`](../han-documentation/docs/skills/runbook.md)                                             | runbook מוצדק על ידי התראה אמיתית שנורתה או מחלקת תקריות אמיתית שנצפתה בשירות חי. היפותטיות לא נחשבות.                                                                                     |
+| [`evidence-based-investigator`](../han-core/docs/agents/evidence-based-investigator.md)               | מחזיר פריטי ראיה ממוספרים `E#` עם נתיבי קבצים, מספרי שורות וציטוטי מקור. ממצאים מבסיס הקוד עומדים; ממצאים ממקור רשת נושאים את מחלקת האמון ואת סטטוס אימות-ההצלבה.                          |
+| [`research-analyst`](../han-research/docs/agents/research-analyst.md)                                 | מחזיר תוצרים עם מקורות, מחלקת אמון וסטטוס אימות-הצלבה. מתייחס לתוכן שנשלף מהרשת כטענה להערכה, לעולם לא כהוראה לביצוע.                                                                      |
+| [`adversarial-validator`](../han-core/docs/agents/adversarial-validator.md)                           | תוקף את שלמות הראיות, את מסגור האפשרויות, ואת איסוף הראיות עצמו. פולט ממצאי `V#`.                                                                                                          |
+| [`discussion-facilitator`](../han-planning/docs/agents/discussion-facilitator.md)                     | מריץ את שער הראיות של YAGNI תוך כדי ההנחיה. הצעות לא מצוטטות מאותגרות או נדחות.                                                                                                            |
+| [`plan-synthesizer`](../han-core/docs/agents/plan-synthesizer.md)                                     | מסווג כל טענה ברישום כמבוססת-ראיות, אנקדוטלית או שנויה במחלוקת, ומוודא שכל ציטוט מתפענח. נוקב במחלקת האמון של הפריטים ששרדו, מסמן טענות מקור-יחיד מהרשת, ומתייג טענות חסרות ראיות כדחויות. |
+| [`junior-developer`](../han-core/docs/agents/junior-developer.md)                                     | מריץ את סריקת הראיות של YAGNI תוך כדי הבחינה בלחץ. מסמן תוספות לא מצוטטות והנחות סמויות.                                                                                                   |
 
-## The no-evidence section format
+## הפורמט של סעיף היעדר-הראיות
 
-When a skill or agent encounters a claim with no evidence and the dependent decision needs to be recorded somewhere, use
-the same shape YAGNI's deferred section uses:
+כשסקיל או סוכן נתקלים בטענה בלי ראיות וההחלטה התלויה צריכה להיות מתועדת במקום כלשהו, השתמש באותה צורה שסעיף הדחייה של YAGNI משתמש בה:
 
 ```
 ## No evidence yet
@@ -167,48 +104,26 @@ the same shape YAGNI's deferred section uses:
 **Source:** {where the claim was originally proposed: skill, agent, conversation context}
 ```
 
-Most artifacts will not need this section. Skills that produce one are typically `/research`, `/investigate`, or
-`/gap-analysis` working at the edges of available evidence. When the section would be empty, omit it entirely. Do not
-write empty stub sections.
+רוב התוצרים לא יזדקקו לסעיף הזה. הסקילים שמייצרים אותו הם בדרך כלל `/research`, `/investigate` או `/gap-analysis` שעובדים בשולי הראיות הזמינות. כשהסעיף יהיה ריק, השמט אותו לגמרי. אל תכתוב סעיפי גדם ריקים.
 
-## What evidence-based reasoning is not
+## מה חשיבה מבוססת-ראיות אינה
 
-- **Not academic rigor.** The bar is "you can tell where this came from and how strongly it rests." It is not "you have
-  a systematic review of randomized controlled trials." The vocabulary borrows from prior art in medicine,
-  historiography, law, intelligence analysis, and journalism, but the bar is operational, not scholarly.
-- **Not a rule that says docs are useless.** Docs are evidence. They are weaker evidence than the running system in many
-  contexts, and stronger evidence in others (specification compliance, regulatory contracts). The proximity heuristic
-  gives you a question to ask, not a default to apply.
-- **Not a replacement for YAGNI.** YAGNI's evidence test asks _is there any evidence?_ This rule asks _how strong is the
-  evidence you have?_ You can pass YAGNI and still have single-source web evidence the corroboration gate flags. You can
-  fail YAGNI even when one source is strong, if no source falls into any of YAGNI's five categories of acceptable
-  evidence. The two rules work together. They do not collapse into one.
-- **Not an excuse to refuse to commit.** When evidence is strong enough to act on, act. The rule asks for an honest
-  label on the evidence; it does not require you to keep gathering until you have certainty. Certainty is rare.
-  Calibrated confidence is the goal.
+- **לא קפדנות אקדמית.** הרף הוא "אתה יכול לומר מאיפה זה הגיע וכמה חזק זה נשען". הוא לא "יש לך סקירה שיטתית של ניסויים מבוקרים אקראיים". אוצר המילים שואל מקודמים ברפואה, בהיסטוריוגרפיה, במשפט, בניתוח מודיעין ובעיתונות, אבל הרף מבצעי ולא אקדמי.
+- **לא כלל שאומר שמסמכים חסרי ערך.** מסמכים הם ראיות. הם ראיות חלשות יותר מהמערכת הרצה בהקשרים רבים, וראיות חזקות יותר באחרים (ציות למפרט, חוזים רגולטוריים). היוריסטיקת הקרבה נותנת לך שאלה לשאול, לא ברירת מחדל להחיל.
+- **לא תחליף ל-YAGNI.** מבחן הראיות של YAGNI שואל _האם יש ראיה כלשהי?_ הכלל הזה שואל _כמה חזקות הראיות שיש לך?_ אתה יכול לעבור את YAGNI ועדיין להחזיק ראיה ממקור-יחיד ברשת ששער אימות-ההצלבה מסמן. אתה יכול להיכשל ב-YAGNI גם כשמקור אחד חזק, אם אף מקור לא נופל לאחת מחמש הקטגוריות של ראיות קבילות ב-YAGNI. שני הכללים עובדים יחד. הם לא מתקפלים לאחד.
+- **לא תירוץ לסרב להתחייב.** כשהראיות חזקות מספיק כדי לפעול לפיהן, פעל. הכלל מבקש תווית כנה על הראיות; הוא לא דורש ממך להמשיך לאסוף עד שתהיה לך ודאות. ודאות היא נדירה. ביטחון מכויל הוא המטרה.
 
-## Design principles
+## עקרונות עיצוב
 
-- **Evidence-based is operational, not aspirational.** The rule has a concrete vocabulary (trust classes), a concrete
-  gate (corroboration for web), and a concrete response to absence (defer with trigger). Disagreement resolves by
-  pointing at the vocabulary, not by argument.
-- **Codebase is the current-state anchor.** When web evidence and codebase evidence disagree, the codebase wins on what
-  the system does today. Web evidence may still win on what the system should do, given a separate authority.
-- **The proximity heuristic asks a question; it does not close one.** Skills and agents cite the proximity-to-origin
-  principle by naming the source's distance and the inversion conditions they considered. They do not invoke "running
-  code beats docs" as a discussion-ender.
-- **No-evidence is honest, not embarrassing.** Labeling a claim as having no evidence is a feature, not a failure. The
-  defer-with-trigger pattern keeps the claim live for the moment evidence arrives.
+- **מבוסס-ראיות הוא מבצעי, לא שאפתני.** לכלל יש אוצר מילים קונקרטי (מחלקות אמון), שער קונקרטי (אימות-הצלבה לרשת), ותגובה קונקרטית להיעדר (דחייה עם טריגר). מחלוקת נפתרת בהצבעה על אוצר המילים, לא בוויכוח.
+- **בסיס הקוד הוא עוגן המצב הנוכחי.** כשראיה מהרשת וראיה מבסיס הקוד חולקות, בסיס הקוד מנצח על מה שהמערכת עושה היום. ראיה מהרשת עדיין עשויה לנצח על מה שהמערכת אמורה לעשות, בהינתן סמכות נפרדת.
+- **היוריסטיקת הקרבה שואלת שאלה; היא לא סוגרת אותה.** סקילים וסוכנים מצטטים את עיקרון הקרבה-למקור בכך שהם נוקבים במרחק של המקור ובתנאי ההיפוך ששקלו. הם לא מפעילים את "קוד שרץ מנצח מסמכים" כסוגר-דיון.
+- **היעדר ראיות הוא כן, לא מביך.** תיוג טענה כחסרת ראיות הוא פיצ'ר, לא כישלון. דפוס הדחייה-עם-טריגר משאיר את הטענה חיה לרגע שבו ראיות יגיעו.
 
-## Related reading
+## קריאה נוספת
 
-- [`han-core/references/evidence-rule.md`](../han-core/references/evidence-rule.md). The canonical rule that every
-  evidence-aware skill and agent loads at runtime.
-- [YAGNI](./yagni.md). The evidence test that gates inclusion. This rule and YAGNI work together: YAGNI asks _is there
-  any evidence?_ and this rule asks _how strong is the evidence?_
-- [Concepts](./concepts.md). The skill / agent split. Evidence is a property of skills that produce judgments and agents
-  that review them.
-- [Sizing](./sizing.md). The other foundational mechanic. Sizing decides _how much review_ an artifact gets; YAGNI
-  decides _what survives_; evidence decides _how confident you are in what survives_.
-- [`/research`](../han-research/docs/skills/research.md). The skill where the trust classes and the corroboration gate originated.
-  Reads its own canonical rule at runtime.
+- [`han-core/references/evidence-rule.md`](../han-core/references/evidence-rule.md). הכלל הקנוני שכל סקיל וכל סוכן מודעי-ראיות טוענים בזמן ריצה.
+- [YAGNI](./yagni.md). מבחן הראיות ששומר על ההכללה. הכלל הזה ו-YAGNI עובדים יחד: YAGNI שואל _האם יש ראיה כלשהי?_ והכלל הזה שואל _כמה חזקות הראיות?_
+- [מושגי יסוד](./concepts.md). ההפרדה בין סקיל לסוכן. ראיות הן תכונה של סקילים שמייצרים שיפוטים ושל סוכנים שסוקרים אותם.
+- [Sizing](./sizing.md). מנגנון היסוד השני. גודל מחליט _כמה סקירה_ תוצר מקבל; YAGNI מחליט _מה שורד_; ראיות מחליטות _כמה בטוח אתה במה ששרד_.
+- [`/research`](../han-research/docs/skills/research.md). הסקיל שבו מחלקות האמון ושער אימות-ההצלבה נולדו. קורא את הכלל הקנוני שלו בזמן ריצה.

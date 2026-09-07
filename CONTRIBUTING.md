@@ -258,7 +258,7 @@ invoking `han-communication:explanation-guidance` at the point it talks to the o
 question needs only the readability wiring below.
 
 The inclusion test is the guide; the enumerated list in
-[Readability](./docs/readability.md#scope-which-skills-are-reader-facing) is authoritative. When a new skill passes the
+[Readability](./docs/readability.md#היקף-אילו-סקילים-פונים-לקורא) is authoritative. When a new skill passes the
 test, add it to that list and wire the standard in:
 
 1. **Declare the dependency on `han-communication`.** The canonical rule and writing-voice profile live in

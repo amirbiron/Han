@@ -1,84 +1,56 @@
 # Sizing
 
-Sizing is one of the two foundational mechanics of the han plugin. Every skill that dispatches a swarm of specialist
-agents first classifies the work as **small**, **medium**, or **large**. That classification decides how many agents to
-dispatch, which agents to dispatch, how many rounds to iterate, and how aggressively to calibrate findings. The
-sizing-aware skills are `/architectural-analysis`, `/code-overview`, `/code-review`, `/code-walkthrough`,
-`/design-an-api`, `/gap-analysis`, `/iterative-plan-review`, `/plan-a-feature`, `/plan-implementation`, and
-`/research`.
+גודל הוא אחד משני מנגנוני היסוד של הפלאגין. כל סקיל שמשגר swarm של סוכנים מומחים מסווג קודם את העבודה כ**קטנה**, **בינונית** או **גדולה**. הסיווג הזה קובע כמה סוכנים לשגר, אילו סוכנים לשגר, כמה סבבים לעבור, ובאיזו אגרסיביות לכייל ממצאים. הסקילים מודעי-הגודל הם `/architectural-analysis`, `/code-overview`, `/code-review`, `/code-walkthrough`, `/design-an-api`, `/gap-analysis`, `/iterative-plan-review`, `/plan-a-feature`, `/plan-implementation` ו-`/research`.
 
-> See also: [Plugin landing page](../README.md) · [Concepts](./concepts.md) · [YAGNI](./yagni.md) ·
-> [All skills](./skills/README.md) · [All agents](./agents/README.md)
+> ראה גם: [דף הנחיתה של הפלאגין](../README.md) · [מושגי יסוד](./concepts.md) · [YAGNI](./yagni.md) · [כל הסקילים](./skills/README.md) · [כל הסוכנים](./agents/README.md)
 
 ## TL;DR
 
-- **Three bands.** Small / medium / large. Each band caps the team or swarm size and the iteration depth.
-- **Default is small.** Every sizing-aware skill starts the classification at **small** and only escalates to medium or
-  large when concrete signals clearly require it. When a signal is borderline, the skill stays at the smaller band.
-- **Auto-classified.** When you do not pass `$size`, the skill reads concrete signals: file count, subsystems touched,
-  security/data/infra surface, and cross-cutting concerns. It announces the chosen size with a one-line justification
-  before dispatching agents.
-- **Always overridable.** Pass the size as the first positional argument when invoking the skill (`/code-review medium`,
-  `/plan-a-feature small "describe the feature"`, and so on). The skill honors the override and still scales the team
-  and round caps to the chosen size.
-- **Configurable default.** You can set a standing default band with the `default-swarm-size` setting in
-  [`.han/config.md`](./configuration.md), personally or per project. A configured band is forced exactly like a passed size argument; an explicit
-  size on the invocation, including `dynamic` to auto-classify one run, always wins over it.
-- **Conservative by design.** Fewer agents producing higher-signal findings is the goal; quantity is not the metric. The
-  skill prefers under-dispatching that you can re-run at a larger size to over-dispatching that drowns you in low-signal
-  findings.
+- **שלוש רצועות.** קטן / בינוני / גדול. כל רצועה תוחמת את גודל הצוות או ה-swarm ואת עומק האיטרציות.
+- **ברירת המחדל היא קטן.** כל סקיל מודע-גודל מתחיל את הסיווג ב**קטן** ומסלים לבינוני או לגדול רק כשאותות קונקרטיים מחייבים זאת בבירור. כשאות נמצא על הגבול, הסקיל נשאר ברצועה הקטנה יותר.
+- **סיווג אוטומטי.** כשאתה לא מעביר `$size`, הסקיל קורא אותות קונקרטיים: מספר קבצים, תת-מערכות שנגעו בהן, משטח אבטחה/נתונים/תשתית, וסוגיות חוצות. הוא מכריז על הגודל שנבחר עם הצדקה בשורה אחת לפני שיגור הסוכנים.
+- **תמיד ניתן לעקיפה.** העבר את הגודל כארגומנט המיקומי הראשון בהפעלת הסקיל (`/code-review medium`, `/plan-a-feature small "describe the feature"`, וכן הלאה). הסקיל מכבד את העקיפה ועדיין מתאים את הצוות ואת תקרות הסבבים לגודל שנבחר.
+- **ברירת מחדל ניתנת להגדרה.** אתה יכול לקבוע רצועת ברירת מחדל קבועה עם ההגדרה `default-swarm-size` ב-[`.han/config.md`](./configuration.md), אישית או לכל פרויקט. רצועה מוגדרת נכפית בדיוק כמו ארגומנט גודל שהועבר; גודל מפורש בהפעלה, כולל `dynamic` לסיווג אוטומטי בריצה אחת, תמיד גובר עליה.
+- **שמרני בכוונה.** המטרה היא פחות סוכנים שמייצרים ממצאים בעלי אות גבוה יותר; כמות אינה המדד. הסקיל מעדיף לשגר בחסר, מה שאתה יכול להריץ מחדש בגודל גדול יותר, על פני שיגור ביתר שמטביע אותך בממצאים חסרי אות.
 
-## Why sizing matters
+## למה גודל חשוב
 
-Specialist agents are expensive: in tokens, in latency, and in your attention to reconcile their findings. Without
-sizing:
+סוכנים מומחים יקרים: בטוקנים, בזמן תגובה, ובתשומת הלב שלך ליישב את הממצאים שלהם. בלי גודל:
 
-- A two-line README fix would dispatch the full security, structural, behavioral, concurrency, data, devops, test, and
-  edge-case roster. You would drown in low-signal findings and burn tokens for nothing.
-- A genuinely cross-service change would get the same default roster as a single-file rename. The skill would miss
-  specialists whose domain it touches, and the change would arrive under-reviewed.
-- Findings would not calibrate to scope. A `Suggestion` about a hypothetical scaling concern would land alongside a
-  `Critical` about a real exploit, and the team would have to triage the false equivalence themselves.
+- תיקון של שתי שורות ב-README היה משגר את כל המערך של אבטחה, מבנה, התנהגות, מקביליות, נתונים, devops, בדיקות ומקרי קצה. היית טובע בממצאים חסרי אות ושורף טוקנים לחינם.
+- שינוי שבאמת חוצה שירותים היה מקבל את אותו מערך ברירת מחדל כמו שינוי שם של קובץ בודד. הסקיל היה מפספס מומחים שהשינוי נוגע בתחומם, והשינוי היה מגיע בתת-סקירה.
+- ממצאים לא היו מכוילים להיקף. `Suggestion` על סוגיית קנה מידה היפותטית היה נוחת לצד `Critical` על ניצול אמיתי, והצוות היה צריך למיין את השקילות המזויפת בעצמו.
 
-Sizing fixes all three. It picks a roster proportional to the actual change, calibrates each agent's brief to the size,
-and tells you up front what was chosen and why.
+גודל מתקן את שלושתם. הוא בוחר מערך פרופורציונלי לשינוי בפועל, מכייל את התדריך של כל סוכן לגודל, ואומר לך מראש מה נבחר ולמה.
 
-## The three bands
+## שלוש הרצועות
 
-The exact cutoffs vary per skill (a "medium" code review is not a "medium" feature plan), but the bands carry the same
-meaning across the plugin:
+נקודות החיתוך המדויקות משתנות מסקיל לסקיל (סקירת קוד "בינונית" אינה תוכנית פיצ'ר "בינונית"), אבל הרצועות נושאות את אותה משמעות בכל הפלאגין:
 
-| Band       | Meaning                                                                                                               | Typical signals                                                                                     | Team / swarm posture                                                                                                                       |
-| ---------- | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Small**  | Single subsystem, no cross-cutting concerns, contained surface area.                                                  | A handful of files, one module, no auth/PII, no schema or migration, no integration boundary.       | Minimum roster: the cheapest specialists that still cover correctness and security. Iteration cap is at its lowest (often a single round). |
-| **Medium** | Two or three adjacent subsystems, may touch one cross-cutting concern.                                                | Up to a dozen files, a single API contract, schema migration, new permission check, or new index.   | A modest team: required roles plus two to three domain specialists chosen by signal. Iteration cap is moderate.                            |
-| **Large**  | Cross-service, security-sensitive, multiple new coordinations, data ownership shifts, or you explicitly requested it. | More than a dozen files, multiple subsystems, architectural changes, security or data implications. | A larger team: required roles plus four to six domain specialists. Iteration cap is at its highest.                                        |
+| רצועה      | משמעות                                                                                     | אותות אופייניים                                                                 | עמדת הצוות / ה-swarm                                                                                   |
+| ---------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| **קטן**    | תת-מערכת אחת, בלי סוגיות חוצות, משטח מוכל.                                                 | קומץ קבצים, מודול אחד, בלי אימות/PII, בלי סכמה או מיגרציה, בלי גבול אינטגרציה.  | מערך מינימלי: המומחים הזולים ביותר שעדיין מכסים נכונות ואבטחה. תקרת האיטרציות בשפל שלה (לרוב סבב אחד). |
+| **בינוני** | שתיים או שלוש תת-מערכות סמוכות, עשוי לגעת בסוגיה חוצה אחת.                                 | עד תריסר קבצים, חוזה API אחד, מיגרציית סכמה, בדיקת הרשאה חדשה, או אינדקס חדש.   | צוות צנוע: התפקידים הנדרשים בתוספת שניים עד שלושה מומחי תחום שנבחרו לפי אות. תקרת האיטרציות בינונית.   |
+| **גדול**   | חוצה שירותים, רגיש-אבטחה, כמה תיאומים חדשים, העברות בעלות על נתונים, או שביקשת זאת במפורש. | יותר מתריסר קבצים, כמה תת-מערכות, שינויים ארכיטקטוניים, השלכות אבטחה או נתונים. | צוות גדול יותר: התפקידים הנדרשים בתוספת ארבעה עד שישה מומחי תחום. תקרת האיטרציות בשיא שלה.             |
 
-Each sizing-aware skill restates these bands with skill-specific signals and caps; see the **Sizing** section in each
-skill's long-form doc.
+כל סקיל מודע-גודל מנסח מחדש את הרצועות האלה עם אותות ותקרות ספציפיים לו; ראה את סעיף **Sizing** בתיעוד המורחב של כל סקיל.
 
-## How auto-classification works
+## איך הסיווג האוטומטי עובד
 
-Each sizing-aware skill performs classification before dispatching agents. The skill:
+כל סקיל מודע-גודל מבצע סיווג לפני שיגור הסוכנים. הסקיל:
 
-1. Reads the available context. For code, the changed file list and diff. For plans and specs, the document body. For
-   gap analyses, the structured `gap-analyzer` output.
-2. Starts the classification at **small**.
-3. Maps signals to a band: file count, subsystem count, presence of security/PII/auth/data/integration concerns,
-   cross-cutting surface area.
-4. Escalates from small to medium only when at least one medium-band signal is clearly present, and from medium to large
-   only when at least one large-band signal is clearly present. Borderline signals do not escalate.
-5. States the chosen band to you in one line with a justification (for example,
-   `Medium: 6 files touched, adds one index and a query for it`).
-6. Caps the team or swarm size and the iteration depth based on the band.
+1. קורא את ההקשר הזמין. עבור קוד, את רשימת הקבצים שהשתנו ואת ה-diff. עבור תוכניות ומפרטים, את גוף המסמך. עבור ניתוחי פערים, את הפלט המובנה של `gap-analyzer`.
+2. מתחיל את הסיווג ב**קטן**.
+3. ממפה אותות לרצועה: מספר קבצים, מספר תת-מערכות, נוכחות של סוגיות אבטחה/PII/אימות/נתונים/אינטגרציה, ומשטח חוצה.
+4. מסלים מקטן לבינוני רק כשלפחות אות אחד ברצועת הבינוני נוכח בבירור, ומבינוני לגדול רק כשלפחות אות אחד ברצועת הגדול נוכח בבירור. אותות על הגבול לא מסלימים.
+5. מציין לך את הרצועה שנבחרה בשורה אחת עם הצדקה (לדוגמה, `Medium: 6 files touched, adds one index and a query for it`).
+6. תוחם את גודל הצוות או ה-swarm ואת עומק האיטרציות לפי הרצועה.
 
-## Overriding the size with `$size`
+## עקיפת הגודל עם `$size`
 
-Every sizing-aware skill declares a `$size` positional argument in its frontmatter. The argument is optional. If
-present, it bypasses the skill's signal-based classification and forces the chosen band. If absent, the skill
-auto-classifies as above.
+כל סקיל מודע-גודל מצהיר על ארגומנט מיקומי `$size` ב-frontmatter שלו. הארגומנט אופציונלי. אם הוא קיים, הוא עוקף את הסיווג מבוסס-האותות של הסקיל וכופה את הרצועה שנבחרה. אם הוא חסר, הסקיל מסווג אוטומטית כמתואר למעלה.
 
-Pass the size as the first positional argument when invoking the skill:
+העבר את הגודל כארגומנט המיקומי הראשון בהפעלת הסקיל:
 
 ```
 /code-review medium
@@ -89,68 +61,43 @@ Pass the size as the first positional argument when invoking the skill:
 /plan-implementation large docs/features/checkout/feature-specification.md
 ```
 
-Accepted values: `small`, `medium`, `large`, and `dynamic`. A band forces that size; `dynamic` forces auto-classification
-for that run, which is how you get one signal-classified run in a project whose config sets a default band. Anything
-else is treated as part of the trailing context, not as a size — it supplies no explicit value, so the resolution
-continues down the chain: the config's `default-swarm-size` if the project sets one, and auto-classification otherwise.
+ערכים קבילים: `small`, `medium`, `large` ו-`dynamic`. רצועה כופה את הגודל הזה; `dynamic` כופה סיווג אוטומטי לאותה ריצה, וכך אתה מקבל ריצה אחת מסווגת-אותות בפרויקט שהקונפיגורציה שלו קובעת רצועת ברירת מחדל. כל דבר אחר נחשב לחלק מההקשר הנגרר ולא לגודל, ולכן הוא לא מספק ערך מפורש והפענוח ממשיך במורד השרשרת: ה-`default-swarm-size` של הקונפיגורציה אם הפרויקט קובע כזה, וסיווג אוטומטי אחרת.
 
-When the size is overridden with `$size`:
+כשהגודל נעקף עם `$size`:
 
-- The skill announces the override (`Medium: passed via $size`) instead of an auto-classification justification.
-- The team or swarm still scales to the chosen band. Overriding to `large` does not bypass the team cap.
-- Specialists are still selected by signal. The size sets the upper bound, but agents whose domain is not touched are
-  still skipped.
-- Conversational overrides ("run this as a large review") still work; `$size` and conversational override are equivalent
-  inputs.
+- הסקיל מכריז על העקיפה (`Medium: passed via $size`) במקום על הצדקת סיווג אוטומטי.
+- הצוות או ה-swarm עדיין מתאימים את עצמם לרצועה שנבחרה. עקיפה ל-`large` לא עוקפת את תקרת הצוות.
+- המומחים עדיין נבחרים לפי אות. הגודל קובע את הגבול העליון, אבל סוכנים שהשינוי לא נוגע בתחומם עדיין מדולגים.
+- עקיפות בשיחה ("תריץ את זה כסקירה גדולה") עדיין עובדות; `$size` ועקיפה בשיחה הם קלטים שקולים.
 
-## Sizing across skills at a glance
+## גודל לרוחב הסקילים במבט אחד
 
-| Skill                                                                            | What gets sized                                       | Small                                                                              | Medium                                                                                            | Large                                                                                                    |
-| -------------------------------------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| [`/architectural-analysis`](../han-coding/docs/skills/architectural-analysis.md) | Signal-selected roster + finding calibration          | Single module, no cross-cutting signal (spine + concurrency, 3–4 agents)           | One cross-cutting concern (spine + 1–2 specialists, 4–6 agents)                                   | Multi-subsystem or cross-service seam (spine + all signalled specialists + system-architect, 6–9 agents) |
-| [`/code-overview`](../han-coding/docs/skills/code-overview.md)                   | Exploration roster (codebase-explorer only)           | Single file, symbol, or small change set (1 explorer)                              | A directory/module or moderate change set (2–3 explorers)                                         | Multiple subsystems or a large change set (3–5 explorers)                                                |
-| [`/code-review`](../han-coding/docs/skills/code-review.md)                       | Agent roster + finding calibration                    | 1–3 files, single subsystem                                                        | 3–10 files, one cross-cutting concern                                                             | More than 10 files, multiple subsystems                                                                  |
-| [`/code-walkthrough`](../han-coding/docs/skills/code-walkthrough.md)             | Exploration roster + itinerary length                 | One file, symbol, or a change across a few files (1 explorer, 3–5 steps)           | A directory/module or a change across one or two subsystems (2–3 explorers, 5–8 steps)            | Several subsystems, or a change spanning many files across them (3–5 explorers, 8–12 steps)              |
-| [`/design-an-api`](../han-coding/docs/skills/design-an-api.md)                   | Signal-selected roster on a fixed four-agent spine    | One interface, contained consumers, no cross-cutting signal (spine only, 4 agents) | Consumer-spread signal, or one cross-cutting signal (spine + up to 2 specialists, up to 6 agents) | Two or more cross-cutting signals, or a system-seam signal (spine + up to 4 specialists, up to 8 agents) |
-| [`/gap-analysis`](../han-research/docs/skills/gap-analysis.md)                   | Default-on swarm size                                 | 0–3 gaps, single domain (2–3 agents, no PM)                                        | 4–10 gaps, two or three domains (4–6 agents with PM)                                              | 11+ gaps or cross-cutting domains (6–8 agents with PM)                                                   |
-| [`/iterative-plan-review`](../han-planning/docs/skills/iterative-plan-review.md) | Lightweight vs team mode + specialist cap + round cap | 2–3 files, single system (lightweight, 1 round)                                    | 3–5 files, one cross-cutting concern (team, 1 chosen specialist, 2 rounds)                        | More than 5 files, multiple systems (team, 2 chosen specialists, 3 rounds)                               |
-| [`/plan-a-feature`](../han-planning/docs/skills/plan-a-feature.md)               | Review-team size cap                                  | Single subsystem (team cap 2)                                                      | Two to three subsystems (team cap 3–4)                                                            | Cross-service or security-sensitive (team cap 4–5)                                                       |
-| [`/plan-implementation`](../han-planning/docs/skills/plan-implementation.md)     | Implementation specialist cap + round cap             | Single subsystem (1 chosen specialist, 1 round)                                    | Two to three subsystems (2 chosen specialists, 2 rounds)                                          | Cross-service or security-sensitive (3–4 chosen specialists, 3 rounds)                                   |
-| [`/research`](../han-research/docs/skills/research.md)                           | Research-analyst angle count + reach                  | One domain, few or no options, narrow reach (2–3 agents)                           | Two to three domains or several options, codebase-plus-web reach (3–5 agents)                     | Many options across multiple domains, or full-breadth request (5–8 agents)                               |
+| סקיל                                                                             | מה מקבל גודל                                   | קטן                                                         | בינוני                                                                 | גדול                                                                                          |
+| -------------------------------------------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [`/architectural-analysis`](../han-coding/docs/skills/architectural-analysis.md) | מערך נבחר-אות + כיול ממצאים                    | מודול אחד, בלי אות חוצה (שדרה + מקביליות, 3–4 סוכנים)       | סוגיה חוצה אחת (שדרה + 1–2 מומחים, 4–6 סוכנים)                         | רב-תת-מערכתי או תפר בין שירותים (שדרה + כל המומחים שקיבלו אות + system-architect, 6–9 סוכנים) |
+| [`/code-overview`](../han-coding/docs/skills/code-overview.md)                   | מערך גילוי (codebase-explorer בלבד)            | קובץ, סמל או מקבץ שינויים קטן (חוקר אחד)                    | תיקייה/מודול או מקבץ שינויים בינוני (2–3 חוקרים)                       | כמה תת-מערכות או מקבץ שינויים גדול (3–5 חוקרים)                                               |
+| [`/code-review`](../han-coding/docs/skills/code-review.md)                       | מערך סוכנים + כיול ממצאים                      | 1–3 קבצים, תת-מערכת אחת                                     | 3–10 קבצים, סוגיה חוצה אחת                                             | יותר מ-10 קבצים, כמה תת-מערכות                                                                |
+| [`/code-walkthrough`](../han-coding/docs/skills/code-walkthrough.md)             | מערך גילוי + אורך המסלול                       | קובץ, סמל, או שינוי על פני כמה קבצים (חוקר אחד, 3–5 צעדים)  | תיקייה/מודול או שינוי על פני תת-מערכת או שתיים (2–3 חוקרים, 5–8 צעדים) | כמה תת-מערכות, או שינוי שפרוש על קבצים רבים בהן (3–5 חוקרים, 8–12 צעדים)                      |
+| [`/design-an-api`](../han-coding/docs/skills/design-an-api.md)                   | מערך נבחר-אות על שדרה קבועה של ארבעה סוכנים    | ממשק אחד, צרכנים מוכלים, בלי אות חוצה (שדרה בלבד, 4 סוכנים) | אות של פיזור צרכנים, או אות חוצה אחד (שדרה + עד 2 מומחים, עד 6 סוכנים) | שני אותות חוצים או יותר, או אות של תפר מערכת (שדרה + עד 4 מומחים, עד 8 סוכנים)                |
+| [`/gap-analysis`](../han-research/docs/skills/gap-analysis.md)                   | גודל swarm שפעיל כברירת מחדל                   | 0–3 פערים, תחום אחד (2–3 סוכנים, בלי PM)                    | 4–10 פערים, שניים או שלושה תחומים (4–6 סוכנים עם PM)                   | 11+ פערים או תחומים חוצים (6–8 סוכנים עם PM)                                                  |
+| [`/iterative-plan-review`](../han-planning/docs/skills/iterative-plan-review.md) | מצב קל מול מצב צוות + תקרת מומחים + תקרת סבבים | 2–3 קבצים, מערכת אחת (קל, סבב אחד)                          | 3–5 קבצים, סוגיה חוצה אחת (צוות, מומחה אחד נבחר, 2 סבבים)              | יותר מ-5 קבצים, כמה מערכות (צוות, 2 מומחים נבחרים, 3 סבבים)                                   |
+| [`/plan-a-feature`](../han-planning/docs/skills/plan-a-feature.md)               | תקרת גודל צוות הסקירה                          | תת-מערכת אחת (תקרת צוות 2)                                  | שתיים עד שלוש תת-מערכות (תקרת צוות 3–4)                                | חוצה שירותים או רגיש-אבטחה (תקרת צוות 4–5)                                                    |
+| [`/plan-implementation`](../han-planning/docs/skills/plan-implementation.md)     | תקרת מומחי מימוש + תקרת סבבים                  | תת-מערכת אחת (מומחה אחד נבחר, סבב אחד)                      | שתיים עד שלוש תת-מערכות (2 מומחים נבחרים, 2 סבבים)                     | חוצה שירותים או רגיש-אבטחה (3–4 מומחים נבחרים, 3 סבבים)                                       |
+| [`/research`](../han-research/docs/skills/research.md)                           | מספר הזוויות של research-analyst + טווח        | תחום אחד, מעט אפשרויות או אף אחת, טווח צר (2–3 סוכנים)      | שניים עד שלושה תחומים או כמה אפשרויות, טווח בסיס-קוד-ורשת (3–5 סוכנים) | אפשרויות רבות בכמה תחומים, או בקשה ברוחב מלא (5–8 סוכנים)                                     |
 
-Read each skill's **Sizing** section for the full per-skill rules.
+קרא את סעיף **Sizing** של כל סקיל לכללים המלאים שלו.
 
-## Design principles
+## עקרונות עיצוב
 
-- **Sizing is transparent.** The skill always announces the chosen band before dispatching agents. You can override, and
-  the skill states the override explicitly.
-- **Sizing is conservative.** Borderline signals drop to the smaller band. Over-dispatching is more expensive than
-  under-dispatching when you can re-run a skill at a larger size.
-- **Sizing is signal-driven.** The bands are defined by what the work touches, not by who asked for the review. The
-  auto-classification is the same for everyone.
-- **Sizing scales the team and the brief.** A larger size dispatches more agents _and_ tells each agent that more
-  severity bands are in scope and more findings are acceptable. A smaller size narrows both the roster and what each
-  agent escalates.
-- **Sizing is overridable, and the default is configurable.** The `default-swarm-size` setting in
-  [`.han/config.md`](./configuration.md) gives a project, or a person across every project, a standing default band,
-  adopted exactly like a passed size argument and announced with the file that supplied it named as the source. The per-invocation override still always wins, including
-  `dynamic` to auto-classify a single run. This revises the original principle that sizing was overridable but never
-  project-configurable;
-  [ADR 0001](./adr/0001-project-configurable-default-swarm-size.md) records that reversal and explains why.
+- **גודל הוא שקוף.** הסקיל תמיד מכריז על הרצועה שנבחרה לפני שיגור הסוכנים. אתה יכול לעקוף, והסקיל מציין את העקיפה במפורש.
+- **גודל הוא שמרני.** אותות על הגבול יורדים לרצועה הקטנה יותר. שיגור ביתר יקר יותר משיגור בחסר, כשאתה יכול להריץ סקיל מחדש בגודל גדול יותר.
+- **גודל מונע-אותות.** הרצועות מוגדרות לפי מה שהעבודה נוגעת בו, לא לפי מי ביקש את הסקירה. הסיווג האוטומטי זהה לכולם.
+- **גודל מתאים את הצוות ואת התדריך.** גודל גדול יותר משגר יותר סוכנים _וגם_ אומר לכל סוכן שיותר רצועות חומרה בהיקף ושיותר ממצאים קבילים. גודל קטן יותר מצמצם גם את המערך וגם את מה שכל סוכן מסלים.
+- **גודל ניתן לעקיפה, וברירת המחדל ניתנת להגדרה.** ההגדרה `default-swarm-size` ב-[`.han/config.md`](./configuration.md) נותנת לפרויקט, או לאדם לרוחב כל פרויקט, רצועת ברירת מחדל קבועה, שמאומצת בדיוק כמו ארגומנט גודל שהועבר ומוכרזת כשהקובץ שסיפק אותה נקוב כמקור. העקיפה לכל הפעלה עדיין תמיד גוברת, כולל `dynamic` לסיווג אוטומטי של ריצה בודדת. זה משנה את העיקרון המקורי שלפיו גודל היה ניתן לעקיפה אך לעולם לא להגדרה ברמת הפרויקט; [ADR 0001](./adr/0001-project-configurable-default-swarm-size.md) מתעד את ההיפוך הזה ומסביר למה.
 
-## Related reading
+## קריאה נוספת
 
-- [Concepts](./concepts.md). The skill / agent split. Sizing is a property of skills that dispatch agent swarms.
-- [YAGNI](./yagni.md). The other foundational mechanic. Sizing decides _how much review_ an artifact gets; YAGNI decides
-  _what survives_ the review.
-- [`han-plugin-builder/skills/guidance/references/agent-building-guidelines/multi-agent-economics.md`](../han-plugin-builder/skills/guidance/references/agent-building-guidelines/multi-agent-economics.md).
-  Why dispatching the right number of agents matters more than dispatching the most agents.
-- The **Sizing** section in each sizing-aware skill's long-form doc:
-  [`/architectural-analysis`](../han-coding/docs/skills/architectural-analysis.md),
-  [`/code-overview`](../han-coding/docs/skills/code-overview.md), [`/code-review`](../han-coding/docs/skills/code-review.md),
-  [`/code-walkthrough`](../han-coding/docs/skills/code-walkthrough.md),
-  [`/design-an-api`](../han-coding/docs/skills/design-an-api.md),
-  [`/gap-analysis`](../han-research/docs/skills/gap-analysis.md),
-  [`/iterative-plan-review`](../han-planning/docs/skills/iterative-plan-review.md),
-  [`/plan-a-feature`](../han-planning/docs/skills/plan-a-feature.md),
-  [`/plan-implementation`](../han-planning/docs/skills/plan-implementation.md), [`/research`](../han-research/docs/skills/research.md).
+- [מושגי יסוד](./concepts.md). ההפרדה בין סקיל לסוכן. גודל הוא תכונה של סקילים שמשגרים swarm של סוכנים.
+- [YAGNI](./yagni.md). מנגנון היסוד השני. גודל מחליט _כמה סקירה_ תוצר מקבל; YAGNI מחליט _מה שורד_ את הסקירה.
+- [`han-plugin-builder/skills/guidance/references/agent-building-guidelines/multi-agent-economics.md`](../han-plugin-builder/skills/guidance/references/agent-building-guidelines/multi-agent-economics.md). למה שיגור המספר הנכון של סוכנים חשוב יותר משיגור המספר הגדול ביותר של סוכנים.
+- סעיף **Sizing** בתיעוד המורחב של כל סקיל מודע-גודל: [`/architectural-analysis`](../han-coding/docs/skills/architectural-analysis.md), [`/code-overview`](../han-coding/docs/skills/code-overview.md), [`/code-review`](../han-coding/docs/skills/code-review.md), [`/code-walkthrough`](../han-coding/docs/skills/code-walkthrough.md), [`/design-an-api`](../han-coding/docs/skills/design-an-api.md), [`/gap-analysis`](../han-research/docs/skills/gap-analysis.md), [`/iterative-plan-review`](../han-planning/docs/skills/iterative-plan-review.md), [`/plan-a-feature`](../han-planning/docs/skills/plan-a-feature.md), [`/plan-implementation`](../han-planning/docs/skills/plan-implementation.md), [`/research`](../han-research/docs/skills/research.md).

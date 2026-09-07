@@ -1,48 +1,27 @@
 # Configuration
 
-Han reads two optional configuration files, and you can use either one or both. A personal `.han/config.md` in your
-Claude Code configuration directory carries settings that follow you into every project. A project's own
-`.han/config.md` adjusts those settings for that project. Both control where skills write their markdown deliverables,
-which extra agents dispatching skills consider, the default swarm size the sizing-aware skills start at, and the
-writing-voice profile the readability skills apply. Every Han skill reads both files on every run, so the overrides take
-effect without depending on the model remembering to look. Someone with neither file sees no change of any kind.
+Han קוראת שני קובצי קונפיגורציה אופציונליים, ואתה יכול להשתמש באחד מהם או בשניהם. `.han/config.md` אישי בתיקיית הקונפיגורציה של Claude Code שלך נושא הגדרות שנוסעות איתך לכל פרויקט. `.han/config.md` של פרויקט מכוונן את ההגדרות האלה עבור אותו פרויקט. שניהם שולטים באיפה סקילים כותבים את תוצרי ה-markdown שלהם, אילו סוכנים נוספים סקילים משגרים שוקלים, מה גודל ה-swarm שהסקילים מודעי-הגודל מתחילים בו, ואיזה פרופיל קול כתיבה סקילי הקריאוּת מחילים. כל סקיל של Han קורא את שני הקבצים בכל ריצה, כך שהעקיפות נכנסות לתוקף בלי להיות תלויות בכך שהמודל יזכור להסתכל. מי שאין לו אף אחד מהקבצים לא רואה שום שינוי מכל סוג.
 
-> See also: [Plugin landing page](../README.md) · [Concepts](./concepts.md) · [Quickstart](./quickstart.md) ·
-> [All skills](./skills/README.md) · [All agents](./agents/README.md)
+> ראה גם: [דף הנחיתה של הפלאגין](../README.md) · [מושגי יסוד](./concepts.md) · [Quickstart](./quickstart.md) · [כל הסקילים](./skills/README.md) · [כל הסוכנים](./agents/README.md)
 
 ## TL;DR
 
-- **You write the files; Han cannot.** Han cannot ship or seed either config from the plugin side. You create them by
-  hand, and the project one travels through version control like any other file. The annotated example below is the
-  canonical source to author from, and both files use it.
-- **The personal file is for you; the project file is for the project.** Write a setting once in your personal file and
-  every project picks it up. A project that needs something different says so in its own file, and it wins for the
-  settings it names and only those.
-- **These overrides ship.** `output-directory` sets one base directory for every skill's markdown deliverables.
-  `default-swarm-size` sets the size band every sizing-aware skill starts at. `writing-voice` points the readability
-  skills at a writing-voice profile of your own in place of the built-in Han voice. `## Extra Agents` names
-  project-defined or third-party agents that Han's dispatching skills consider alongside their built-in rosters.
-- **A bad config can never fail a skill run.** The worst it can do is be ignored, with a one-line note naming what was
-  ignored and which file it came from. A missing or empty file changes nothing and says nothing.
-- **The interpretation contract lives in
-  [`han-core/references/config-rule.md`](../han-core/references/config-rule.md).** Every skill applies that one rule
-  file (vendored byte-identical into each plugin), so one pair of files resolves identically across the whole suite.
-  This page is the operator-facing guide.
+- **אתה כותב את הקבצים; Han לא יכולה.** Han לא יכולה לספק או לזרוע אף אחת מהקונפיגורציות מצד הפלאגין. אתה יוצר אותן ידנית, וזו של הפרויקט נוסעת דרך ניהול הגרסאות כמו כל קובץ אחר. הדוגמה המוערת למטה היא המקור הקנוני לכתוב לפיו, ושני הקבצים משתמשים בה.
+- **הקובץ האישי הוא בשבילך; קובץ הפרויקט הוא בשביל הפרויקט.** כתוב הגדרה פעם אחת בקובץ האישי שלך וכל פרויקט יאסוף אותה. פרויקט שצריך משהו אחר אומר זאת בקובץ שלו, והוא מנצח עבור ההגדרות שהוא נוקב בהן ורק עבורן.
+- **אלה העקיפות שקיימות.** `output-directory` קובע תיקיית בסיס אחת לתוצרי ה-markdown של כל סקיל. `default-swarm-size` קובע את רצועת הגודל שכל סקיל מודע-גודל מתחיל בה. `writing-voice` מפנה את סקילי הקריאוּת לפרופיל קול כתיבה משלך במקום לקול המובנה של Han. `## Extra Agents` נוקב בסוכנים שהפרויקט הגדיר או של צד שלישי, שהסקילים המשגרים של Han שוקלים לצד המערכים המובנים שלהם.
+- **קונפיגורציה שגויה לעולם לא יכולה להכשיל ריצת סקיל.** הגרוע ביותר שהיא יכולה לעשות הוא להיות מוזנחת, עם הערה בשורה אחת שנוקבת במה שהוזנח ובאיזה קובץ הוא הגיע ממנו. קובץ חסר או ריק לא משנה כלום ולא אומר כלום.
+- **חוזה הפירוש יושב ב-[`han-core/references/config-rule.md`](../han-core/references/config-rule.md).** כל סקיל מחיל את קובץ הכלל האחד הזה (מועתק ביט-לביט לכל פלאגין), כך שזוג קבצים אחד מתפענח באופן זהה לרוחב כל החבילה. הדף הזה הוא המדריך שפונה למפעיל.
 
-## Where each file goes
+## לאן כל קובץ הולך
 
-- **Personal:** `.han/config.md` inside your Claude Code configuration directory. That is `~/.claude` unless you have
-  set `CLAUDE_CONFIG_DIR`, in which case it is wherever that points. If you have moved your configuration directory, a
-  file left behind in `~/.claude/.han/` does not apply.
-- **Project:** `.han/config.md` in the directory you run Han skills from.
+- **אישי:** `.han/config.md` בתוך תיקיית הקונפיגורציה של Claude Code שלך. זו `~/.claude` אלא אם הגדרת `CLAUDE_CONFIG_DIR`, ואז זה לאן שהוא מצביע. אם העברת את תיקיית הקונפיגורציה שלך, קובץ שנשאר מאחור ב-`~/.claude/.han/` לא חל.
+- **פרויקט:** `.han/config.md` בתיקייה שממנה אתה מריץ סקילים של Han.
 
-Neither lookup walks up the directory tree. In a monorepo, each package can carry its own config; running a skill from a
-directory without one behaves as if the project file were absent, even when another directory in the repo has one. Your
-personal file still applies in all of them.
+אף אחד מהחיפושים לא מטפס במעלה עץ התיקיות. במונורפו, כל חבילה יכולה לשאת קונפיגורציה משלה; הרצת סקיל מתיקייה שאין בה אחת מתנהגת כאילו קובץ הפרויקט נעדר, גם כשלתיקייה אחרת בריפו יש אחד. הקובץ האישי שלך עדיין חל בכולן.
 
-## The file, annotated
+## הקובץ, עם הערות
 
-Every setting is optional, everything unrecognized is ignored, and both files take the same shape.
+כל הגדרה אופציונלית, כל מה שלא מזוהה מוזנח, ושני הקבצים לובשים את אותה צורה.
 
 ```markdown
 ---
@@ -81,134 +60,74 @@ case-insensitively against the agents available in the session.
 - accessibility-reviewer
 ```
 
-## What each override does
+הבלוק הזה נשאר באנגלית בכוונה: הוא נועד להעתקה ישירה לתוך ה-`.han/config.md` שלך, ושמות ההגדרות והערכים נקראים על ידי הסקילים. הסעיף הבא מסביר כל הגדרה בעברית.
+
+## מה כל עקיפה עושה
 
 ### `output-directory`
 
-Skills that write markdown deliverables (plans, reports, documentation) write them under this base directory instead of
-their default locations, keeping their own folder structure beneath it. A skill that writes nothing ignores the setting
-silently. The directory is created on first write.
+סקילים שכותבים תוצרי markdown (תוכניות, דוחות, תיעוד) כותבים אותם תחת תיקיית הבסיס הזו במקום במיקומי ברירת המחדל שלהם, ושומרים על מבנה התיקיות שלהם מתחתיה. סקיל שלא כותב כלום מזניח את ההגדרה בשקט. התיקייה נוצרת בכתיבה הראשונה.
 
-The value may point anywhere, including outside the project. Han used to refuse an absolute path or one escaping upward
-through `..`; that guard is gone. If you set this to a path outside your repository, deliverables land there and are not
-committed with your code, and nothing warns you on each run. That is the trade for being able to keep Han's output out
-of the repo on purpose.
+הערך יכול להצביע לכל מקום, כולל מחוץ לפרויקט. Han נהגה לסרב לנתיב מוחלט או לנתיב שבורח כלפי מעלה דרך `..`; השמירה הזו הוסרה. אם תקבע את זה לנתיב מחוץ לריפו שלך, תוצרים ינחתו שם ולא ייקמטו עם הקוד שלך, ושום דבר לא יזהיר אותך בכל ריצה. זה הטרייד-אוף עבור היכולת לשמור את הפלט של Han מחוץ לריפו בכוונה.
 
 ### `default-swarm-size`
 
-The eight sizing-aware skills ([`/architectural-analysis`](../han-coding/docs/skills/architectural-analysis.md),
-[`/code-overview`](../han-coding/docs/skills/code-overview.md),
-[`/code-review`](../han-coding/docs/skills/code-review.md),
-[`/gap-analysis`](../han-research/docs/skills/gap-analysis.md),
-[`/iterative-plan-review`](../han-planning/docs/skills/iterative-plan-review.md),
-[`/plan-a-feature`](../han-planning/docs/skills/plan-a-feature.md),
-[`/plan-implementation`](../han-planning/docs/skills/plan-implementation.md), and
-[`/research`](../han-research/docs/skills/research.md)) start at this band instead of classifying the size themselves.
-A configured `small`, `medium`, or `large` is forced exactly like an explicit size argument: the skill skips its
-signal-based classification, scales its caps to the band, and announces the band naming which file supplied it.
-Specialists are still selected by signal within the band's caps. `dynamic`, or omitting the setting, keeps today's
-auto-classification. Values are trimmed and matched case-insensitively; anything else degrades with a one-line note and
-the skill classifies the size itself.
+שמונת הסקילים מודעי-הגודל ([`/architectural-analysis`](../han-coding/docs/skills/architectural-analysis.md), [`/code-overview`](../han-coding/docs/skills/code-overview.md), [`/code-review`](../han-coding/docs/skills/code-review.md), [`/gap-analysis`](../han-research/docs/skills/gap-analysis.md), [`/iterative-plan-review`](../han-planning/docs/skills/iterative-plan-review.md), [`/plan-a-feature`](../han-planning/docs/skills/plan-a-feature.md), [`/plan-implementation`](../han-planning/docs/skills/plan-implementation.md) ו-[`/research`](../han-research/docs/skills/research.md)) מתחילים ברצועה הזו במקום לסווג את הגודל בעצמם. `small`, `medium` או `large` מוגדרים נכפים בדיוק כמו ארגומנט גודל מפורש: הסקיל מדלג על הסיווג מבוסס-האותות שלו, מתאים את התקרות שלו לרצועה, ומכריז על הרצועה כשהוא נוקב בקובץ שסיפק אותה. מומחים עדיין נבחרים לפי אות בתוך התקרות של הרצועה. `dynamic`, או השמטת ההגדרה, שומרים על הסיווג האוטומטי הקיים. ערכים מקוצצים ומותאמים ללא תלות ברישיות; כל דבר אחר מתדרדר עם הערה בשורה אחת והסקיל מסווג את הגודל בעצמו.
 
-One configured band applies to all eight skills at once, and their bands scope differently (a `large` code review and a
-`large` research swarm cost different work), so a global `large` raises agent cost on every sizing-aware run. Setting it
-personally raises that cost in every project you touch, so it is the setting most worth leaving at `dynamic` until you
-want otherwise. The per-run correction never needs a file edit: passing a size on the invocation always wins, and
-passing `dynamic` auto-classifies that run. See [Sizing](./sizing.md) for the bands and per-skill caps.
+רצועה מוגדרת אחת חלה על כל שמונת הסקילים בבת אחת, והרצועות שלהם משתרעות אחרת (סקירת קוד `large` ו-swarm מחקר `large` עולים עבודה שונה), ולכן `large` גלובלי מעלה את עלות הסוכנים בכל ריצה מודעת-גודל. הגדרה שלו באופן אישי מעלה את העלות הזו בכל פרויקט שאתה נוגע בו, ולכן זו ההגדרה שהכי כדאי להשאיר ב-`dynamic` עד שתרצה אחרת. התיקון לכל ריצה לעולם לא דורש עריכת קובץ: העברת גודל בהפעלה תמיד מנצחת, והעברת `dynamic` מסווגת את הריצה ההיא אוטומטית. ראה [Sizing](./sizing.md) לרצועות ולתקרות לכל סקיל.
 
 ### `writing-voice`
 
-The readability surfaces in `han-communication` ([`/readability-guidance`](../han-communication/docs/skills/readability-guidance.md),
-[`/edit-for-readability`](../han-communication/docs/skills/edit-for-readability.md), and the
-[`readability-editor`](../han-communication/docs/agents/readability-editor.md) agent they feed) read their
-writing-voice profile from this setting. The value is a file path naming a writing-voice profile of your own. When the
-file exists, it replaces the built-in profile at
-[`han-communication/references/writing-voice.md`](../han-communication/references/writing-voice.md) wholesale,
-including the vocabulary blocklist the readability rule enforces, so every prose-producing Han skill drafts in your
-voice instead of Han's.
+משטחי הקריאוּת ב-`han-communication` ([`/readability-guidance`](../han-communication/docs/skills/readability-guidance.md), [`/edit-for-readability`](../han-communication/docs/skills/edit-for-readability.md), וסוכן ה-[`readability-editor`](../han-communication/docs/agents/readability-editor.md) שהם מזינים) קוראים את פרופיל קול הכתיבה שלהם מההגדרה הזו. הערך הוא נתיב קובץ שנוקב בפרופיל קול כתיבה משלך. כשהקובץ קיים, הוא מחליף את הפרופיל המובנה ב-[`han-communication/references/writing-voice.md`](../han-communication/references/writing-voice.md) במלואו, כולל רשימת החסימה של אוצר המילים שכלל הקריאוּת אוכף, כך שכל סקיל של Han שמייצר טקסט מנסח בקול שלך במקום בקול של Han.
 
-This is the setting the personal file was made for. Keep the profile beside your personal config, name it with a
-relative path, and it applies in every project without a copy in any of them.
+זו ההגדרה שהקובץ האישי נוצר בשבילה. שמור את הפרופיל לצד הקונפיגורציה האישית שלך, נקוב בו בנתיב יחסי, והוא יחול בכל פרויקט בלי עותק באף אחד מהם.
 
-When the setting names a file that does not exist, the skill does not degrade silently: it warns you that the file was
-not found, names which config declared it, and asks whether to use the built-in Han voice or skip the writing voice
-entirely for that run. Skipping applies the readability rule with no voice profile and no vocabulary blocklist. Omitting
-the setting keeps the built-in Han voice with no mention of the config.
+כשההגדרה נוקבת בקובץ שלא קיים, הסקיל לא מתדרדר בשקט: הוא מזהיר אותך שהקובץ לא נמצא, נוקב באיזו קונפיגורציה הצהירה עליו, ושואל אם להשתמש בקול המובנה של Han או לוותר על קול הכתיבה לגמרי עבור אותה ריצה. ויתור מחיל את כלל הקריאוּת בלי פרופיל קול ובלי רשימת חסימה של אוצר מילים. השמטת ההגדרה שומרת על הקול המובנה של Han בלי שום אזכור של הקונפיגורציה.
 
 ### `## Extra Agents`
 
-Skills that select among candidate agents (for example [`/code-review`](../han-coding/docs/skills/code-review.md),
-[`/research`](../han-research/docs/skills/research.md), or
-[`/plan-implementation`](../han-planning/docs/skills/plan-implementation.md)) add these agents to their candidate pool.
-Both files' lists are considered together rather than one replacing the other. The extras compete under the same
-signal-based selection and the same size caps as the skill's own roster: a selected extra agent can take a slot a
-default specialist would otherwise have filled, and that displacement is intended. An entry that duplicates an agent
-already in the pool has no effect, whether the duplicate came from the same file or the other one. An entry that does
-not resolve to a dispatchable agent (a misspelling, a skill name) is skipped with a one-line note. The override selects
-among agents that already exist in the session; it does not define new agents.
+סקילים שבוחרים מבין סוכנים מועמדים (לדוגמה [`/code-review`](../han-coding/docs/skills/code-review.md), [`/research`](../han-research/docs/skills/research.md) או [`/plan-implementation`](../han-planning/docs/skills/plan-implementation.md)) מוסיפים את הסוכנים האלה למאגר המועמדים שלהם. הרשימות של שני הקבצים נשקלות יחד ולא אחת מחליפה את השנייה. התוספות מתחרות תחת אותה בחירה מבוססת-אותות ותחת אותן תקרות גודל כמו המערך של הסקיל עצמו: סוכן תוספת שנבחר יכול לתפוס מקום שמומחה ברירת מחדל היה ממלא, וההדחה הזו מכוונת. רשומה שמשכפלת סוכן שכבר במאגר לא משפיעה, בין אם הכפילות הגיעה מאותו קובץ ובין אם מהשני. רשומה שלא מתפענחת לסוכן בר-שיגור (שגיאת כתיב, שם של סקיל) מדולגת עם הערה בשורה אחת. העקיפה בוחרת מבין סוכנים שכבר קיימים בסשן; היא לא מגדירה סוכנים חדשים.
 
-## How the two files combine
+## איך שני הקבצים מצטרפים
 
-Each single-value setting resolves through a fixed chain; the first source that supplies a usable value wins:
+כל הגדרה בעלת ערך יחיד מתפענחת דרך שרשרת קבועה; המקור הראשון שמספק ערך שמיש מנצח:
 
-1. Explicit input, which is what you tell the skill directly, or an explicit path a wrapper skill passes.
-2. The project `.han/config.md`.
-3. Your personal `.han/config.md`.
-4. The CLAUDE.md `## Project Discovery` section.
-5. The project-discovery file.
-6. The skill's built-in defaults.
+1. קלט מפורש, כלומר מה שאתה אומר לסקיל ישירות, או נתיב מפורש שסקיל עוטף מעביר.
+2. ה-`.han/config.md` של הפרויקט.
+3. ה-`.han/config.md` האישי שלך.
+4. הסעיף `## Project Discovery` ב-CLAUDE.md.
+5. קובץ גילוי הפרויקט.
+6. ברירות המחדל המובנות של הסקיל.
 
-Both config files beat CLAUDE.md, silently.
+שני קובצי הקונפיגורציה מנצחים את CLAUDE.md, בשקט.
 
-Resolution happens per setting, not per file. A project file that names one setting leaves your other personal settings
-in place, which is what makes it an adjustment rather than a replacement. A setting the project file leaves blank counts
-as no value, so it falls through to your personal value rather than to the skill's default.
+הפענוח קורה לכל הגדרה, לא לכל קובץ. קובץ פרויקט שנוקב בהגדרה אחת משאיר את יתר ההגדרות האישיות שלך במקומן, וזה מה שהופך אותו לכיוונון ולא להחלפה. הגדרה שקובץ הפרויקט משאיר ריקה נחשבת כחסרת ערך, ולכן היא נופלת לערך האישי שלך ולא לברירת המחדל של הסקיל.
 
-The extra-agents list adds rather than replaces: agents you name explicitly are always considered, and both files'
-entries join them as candidates.
+רשימת הסוכנים הנוספים מוסיפה ולא מחליפה: סוכנים שאתה נוקב בהם במפורש תמיד נשקלים, והרשומות של שני הקבצים מצטרפות אליהם כמועמדים.
 
-## When something is wrong
+## כשמשהו לא בסדר
 
-A configuration problem degrades to defaults; it never blocks or fails the run. You hear about a problem under one rule:
-a one-line note appears only when content that attempts a recognized override cannot be used, such as malformed
-frontmatter, an unrecognized setting name, a blank value, or an unresolvable agent name. Every such note names which of
-the two files held the problem, because they share a name and you would otherwise open both. Two separate problems, one
-in each file, produce two notes. Content the suite has no use for (plain prose in the file) is passed over silently, and
-when everything applies cleanly the skills say nothing about the config at all.
+בעיית קונפיגורציה מתדרדרת לברירות מחדל; היא לעולם לא חוסמת או מכשילה את הריצה. אתה שומע על בעיה תחת כלל אחד: הערה בשורה אחת מופיעה רק כשתוכן שמנסה לבצע עקיפה מוכרת לא ניתן לשימוש, כמו frontmatter פגום, שם הגדרה לא מוכר, ערך ריק, או שם סוכן שלא מתפענח. כל הערה כזו נוקבת באיזה משני הקבצים החזיק את הבעיה, מפני שהם חולקים שם ואחרת היית פותח את שניהם. שתי בעיות נפרדות, אחת בכל קובץ, מייצרות שתי הערות. תוכן שלחבילה אין בו שימוש (טקסט רגיל בקובץ) מדולג בשקט, וכשהכול חל בצורה נקייה הסקילים לא אומרים דבר על הקונפיגורציה.
 
-`writing-voice` naming a missing file is the one exception to the note-and-move-on rule: because the wrong fallback
-would silently change the voice of everything a run writes, the skill asks you whether to use the built-in Han voice or
-skip the writing voice, instead of picking for you.
+`writing-voice` שנוקב בקובץ חסר הוא היוצא מן הכלל היחיד לכלל של הערה-והמשך: מפני שנפילה-לאחור שגויה הייתה משנה בשקט את הקול של כל מה שריצה כותבת, הסקיל שואל אותך אם להשתמש בקול המובנה של Han או לוותר על קול הכתיבה, במקום לבחור עבורך.
 
-A personal configuration directory a run cannot reach is treated as no personal config, with no note. A run cannot tell
-that apart from someone who never wrote the file.
+תיקיית קונפיגורציה אישית שריצה לא יכולה להגיע אליה נחשבת כאין קונפיגורציה אישית, בלי הערה. ריצה לא יכולה להבחין בין זה לבין מישהו שמעולם לא כתב את הקובץ.
 
-There is one way the personal file can go quiet while still sitting where you put it. Skills locate your configuration
-directory by running a small script that ships inside each plugin. If that script is missing or fails, the lookup falls
-back to `~/.claude`, so a personal file at a directory named by `CLAUDE_CONFIG_DIR` stops applying until the script is
-restored. Nothing announces this, because the fallback looks the same as never having set the variable. Reinstalling the
-plugin restores the script.
+יש דרך אחת שבה הקובץ האישי יכול להשתתק ועדיין לשבת במקום שבו שמת אותו. סקילים מאתרים את תיקיית הקונפיגורציה שלך בהרצת סקריפט קטן שמגיע בתוך כל פלאגין. אם הסקריפט הזה חסר או נכשל, החיפוש נופל בחזרה ל-`~/.claude`, ולכן קובץ אישי בתיקייה שנקובה ב-`CLAUDE_CONFIG_DIR` מפסיק לחול עד שהסקריפט משוחזר. שום דבר לא מכריז על זה, מפני שהנפילה-לאחור נראית בדיוק כמו מצב שבו מעולם לא הגדרת את המשתנה. התקנה מחדש של הפלאגין משחזרת את הסקריפט.
 
-## Which version you need
+## איזו גרסה אתה צריך
 
-The personal file needs every installed Han plugin at or above the release that introduced it. The suite ships as
-independently versioned plugins, so upgrading some and not others gives you settings that apply in some skills and not
-others, with no way to tell which. Upgrade the whole suite together.
+הקובץ האישי דורש שכל פלאגין מותקן של Han יהיה בגרסה שהציגה אותו או מעליה. החבילה מגיעה כפלאגינים בעלי גרסאות עצמאיות, ולכן שדרוג של חלקם ולא של אחרים נותן לך הגדרות שחלות בחלק מהסקילים ולא באחרים, בלי דרך לדעת באילו. שדרג את כל החבילה יחד.
 
-## Keeping the project file visible
+## לשמור על קובץ הפרויקט גלוי
 
-Because the config silently outranks CLAUDE.md, [`/project-discovery`](../han-core/docs/skills/project-discovery.md)
-keeps the project file visible: when `.han/config.md` exists it offers to add a one-line pointer to it in your CLAUDE.md,
-and when the file is gone but a pointer remains it offers to remove the stale line. Both only with your consent. The
-pointer covers the project file only; your personal config is yours and is not advertised in a project's CLAUDE.md.
+מפני שהקונפיגורציה גוברת בשקט על CLAUDE.md, [`/project-discovery`](../han-core/docs/skills/project-discovery.md) שומר על קובץ הפרויקט גלוי: כש-`.han/config.md` קיים הוא מציע להוסיף אליו מצביע בשורה אחת ב-CLAUDE.md שלך, וכשהקובץ נעלם אבל מצביע נשאר הוא מציע להסיר את השורה המיושנת. שניהם רק בהסכמתך. המצביע מכסה את קובץ הפרויקט בלבד; הקונפיגורציה האישית שלך היא שלך ולא מפורסמת ב-CLAUDE.md של פרויקט.
 
-Keep both files small. Their whole content is read on every skill run, so everything in them costs context on every run.
+שמור על שני הקבצים קטנים. כל התוכן שלהם נקרא בכל ריצת סקיל, ולכן כל מה שבהם עולה הקשר בכל ריצה.
 
-## Related reading
+## קריאה נוספת
 
-- [`han-core/references/config-rule.md`](../han-core/references/config-rule.md). The canonical interpretation contract
-  every skill applies.
-- [Concepts](./concepts.md). How skills, agents, sizing, and the other cross-suite mechanics fit together.
-- [Quickstart](./quickstart.md). Which skill to start with, including project setup in Path D.
-- [`/project-discovery`](../han-core/docs/skills/project-discovery.md). The skill that keeps the CLAUDE.md pointer to
-  the project config honest.
+- [`han-core/references/config-rule.md`](../han-core/references/config-rule.md). חוזה הפירוש הקנוני שכל סקיל מחיל.
+- [מושגי יסוד](./concepts.md). איך סקילים, סוכנים, גודל ויתר המנגנונים החוצים את החבילה משתלבים יחד.
+- [Quickstart](./quickstart.md). באיזה סקיל להתחיל, כולל הכנת הפרויקט במסלול ד.
+- [`/project-discovery`](../han-core/docs/skills/project-discovery.md). הסקיל ששומר על המצביע ב-CLAUDE.md לקונפיגורציית הפרויקט כן.
