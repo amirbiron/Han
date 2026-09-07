@@ -38,6 +38,12 @@ print(m.slug(sys.argv[1]))
   [ "$output" = 'the-feature_name-field' ]
 }
 
+@test "an underscore inside a Hebrew word survives too" {
+  run slug 'השדה שם_ספר'
+  [ "$status" -eq 0 ]
+  [ "$output" = 'השדה-שם_ספר' ]
+}
+
 @test "backticks and asterisks are still stripped" {
   run slug '**Bold** and `code` heading'
   [ "$status" -eq 0 ]
