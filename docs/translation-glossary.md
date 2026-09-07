@@ -97,6 +97,7 @@ grep -rnP '\bקמט|\bלנקד|\bמנקד|\bניקוד' --include='*.md' . | gre
 2. בלוקי הקוד זהים בתוכן ובמספר.
 3. העוגנים מתפענחים: `python3 scripts/check-translation-anchors.py` עובר על כל הריפו.
 4. `npx prettier --check <file>` עובר.
+5. מפת התרגום מעודכנת: `python3 scripts/translation-status.py` מייצר מחדש את [`docs/translation-status.md`](./translation-status.md), ו-`--check` נכשל כשהיא מפגרת אחרי הדיסק.
 
 ## למה בעברית אין שבירת שורות
 

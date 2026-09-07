@@ -18,3 +18,7 @@ tests/libduckdb.dylib
 # ralph loop progress tracking
 progress.txt
 deferred.txt
+
+# bytecode של פייתון, נוצר כשסקריפט אחד מייבא את השני
+__pycache__/
+*.pyc
