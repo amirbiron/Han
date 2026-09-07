@@ -1,293 +1,159 @@
 # /coding-standard
 
-Operator documentation for the `/coding-standard` skill in the han plugin. This document helps you decide _when_ and
-_how_ to use the skill. For what the skill does internally, read the skill definition at
-[`han-coding/skills/coding-standard/SKILL.md`](../../skills/coding-standard/SKILL.md).
+תיעוד מפעיל לסקיל `/coding-standard` בפלאגין. המסמך הזה עוזר לך להחליט _מתי_ ו*איך* להשתמש בסקיל. למה שהסקיל עושה בפנים, קרא את הגדרת הסקיל ב-[`han-coding/skills/coding-standard/SKILL.md`](../../skills/coding-standard/SKILL.md).
 
-> See also: [Plugin README](../../README.md) · [Repo root](../../../README.md) · [All skills](../../../docs/skills/README.md) ·
-> [All agents](../../../docs/agents/README.md) · [YAGNI](../../../docs/yagni.md) · [Evidence](../../../docs/evidence.md)
+> ראה גם: [README של הפלאגין](../../README.md) · [שורש הריפו](../../../README.md) · [כל הסקילים](../../../docs/skills/README.md) · [כל הסוכנים](../../../docs/agents/README.md) · [YAGNI](../../../docs/yagni.md) · [Evidence](../../../docs/evidence.md)
 
 ## TL;DR
 
-- **What it does.** Creates and updates coding standards for the current project, whether from scratch, by converting an
-  existing document, or by updating an existing standard.
-- **When to use it.** You want to formalize a convention the team already follows, or establish a new one grounded in
-  codebase evidence, with real code examples from the codebase.
-- **What you get back.** A hierarchically-named coding-standard document under `docs/coding-standards/` with metadata,
-  `paths:` YAML frontmatter, Correct-usage examples, and What-to-avoid examples, plus an entry in one or more
-  per-file-type index files under `.claude/rules/coding-standards/` so Claude Code loads only a small index when a
-  matching file is read and then pulls the full standard only if it decides the standard applies.
+- **מה הוא עושה.** יוצר ומעדכן תקני קוד לפרויקט הנוכחי, בין אם מאפס, בין אם בהמרה של מסמך קיים, ובין אם בעדכון תקן קיים.
+- **מתי להשתמש בו.** אתה רוצה לעגן מוסכמה שהצוות כבר הולך לפיה, או לבסס חדשה שמעוגנת בראיות מבסיס הקוד, עם דוגמאות קוד אמיתיות מבסיס הקוד.
+- **מה אתה מקבל בחזרה.** מסמך תקן קוד בשם היררכי תחת `docs/coding-standards/` עם מטא-דאטה, frontmatter מסוג `paths:` ב-YAML, דוגמאות שימוש נכון, ודוגמאות ממה להימנע, בתוספת רשומה בקובץ אינדקס אחד או יותר לפי סוג קובץ תחת `.claude/rules/coding-standards/`, כך ש-Claude Code טוען רק אינדקס קטן כשקובץ תואם נקרא, ואז מושך את התקן המלא רק אם הוא מחליט שהתקן חל.
 
-## Key concepts
+## מושגי מפתח
 
-- **Three modes.** Creating new, Converting existing (for example, an ADR into a standard), Updating existing.
-- **Linter-first check.** Before writing anything, the skill asks: should this be a linter or formatter rule instead?
-  Style conventions that tooling can enforce become tooling configuration, not standards documents.
-- **Evidence from the codebase via parallel explorers.** Two `codebase-explorer` agents run in parallel. One finds
-  implementation patterns (Correct-usage and What-to-avoid candidates with file and symbol name references); the other
-  finds existing standards and ADRs the new one should link or resolve. Correct-usage examples are drawn from real
-  files. If the pattern is not yet implemented, examples are labeled "Proposed pattern."
-- **Adversarial review before verification.** A `junior-developer` agent stress-tests the draft for ambiguous rules,
-  hidden assumptions, and conflicts with existing standards. An `information-architect` agent audits the draft for
-  findability, scannability, and whether the Rationale is placed where the right reader will find it.
-- **Hierarchically-prefixed filenames.** `{top-level}[-{second-level}]-{hyphenated-name}.md`. A one- or two-level
-  hierarchy prefix (for example, `svelte-stores-state-shape.md`) discovered at runtime from existing standards and
-  project context, so related standards sort together in a directory listing.
-- **Path-scoped rules via per-file-type index files.** Each new standard carries `paths:` YAML frontmatter declaring the
-  file globs it governs. The skill routes the standard into one or more per-file-type index files under
-  `.claude/rules/coding-standards/` (for example, `svelte.md`, `typescript.md`, `ruby.md`). The index files are
-  themselves path-scoped rules: when Claude Code reads a file matching an index's globs, it loads only that small index,
-  a short load-on-demand instruction plus a list of standards relevant to that file type, each with a 1-3 sentence
-  description of what it covers and when to pull it. Claude then opens the full text of a standard only if it decides
-  the standard applies. Standards do not appear in the available-skills picker; the rules surface is separate.
-- **`/code-review` reads these automatically.** Once landed, the standards are consulted during every `/code-review`.
-  Violations surface as findings.
+- **שלושה מצבים.** יצירה חדשה, המרה של קיים (לדוגמה, ADR לתקן), עדכון קיים.
+- **בדיקת linter-קודם.** לפני שנכתב משהו, הסקיל שואל: האם זה צריך להיות כלל של linter או formatter במקום? מוסכמות סגנון שכלים יכולים לאכוף הופכות לקונפיגורציה של כלים, לא למסמכי תקן.
+- **ראיות מבסיס הקוד דרך חוקרים מקבילים.** שני סוכני `codebase-explorer` רצים במקביל. אחד מוצא דפוסי מימוש (מועמדים לשימוש נכון ולממה-להימנע, עם הפניות לקובץ ולשם סמל); השני מוצא תקנים ו-ADRs קיימים שהחדש צריך לקשר או ליישב. דוגמאות לשימוש נכון נשאבות מקבצים אמיתיים. אם הדפוס עדיין לא ממומש, הדוגמאות מתויגות "Proposed pattern".
+- **סקירה אדוורסרית לפני האימות.** סוכן `junior-developer` בוחן את הטיוטה בלחץ לאיתור כללים דו-משמעיים, הנחות סמויות והתנגשויות עם תקנים קיימים. סוכן `information-architect` מבקר את הטיוטה לאיתור יכולת מציאה, יכולת סריקה, והאם ה-Rationale ממוקם במקום שבו הקורא הנכון ימצא אותו.
+- **שמות קבצים עם קידומת היררכית.** `{top-level}[-{second-level}]-{hyphenated-name}.md`. קידומת היררכיה בת רמה אחת או שתיים (לדוגמה, `svelte-stores-state-shape.md`) שמתגלה בזמן ריצה מתקנים קיימים ומהקשר הפרויקט, כך שתקנים קשורים ממוינים יחד ברשימת תיקייה.
+- **כללים מתוחמי-נתיב דרך קובצי אינדקס לכל סוג קובץ.** כל תקן חדש נושא frontmatter מסוג `paths:` ב-YAML שמצהיר על ה-globs של הקבצים שהוא מסדיר. הסקיל מנתב את התקן לקובץ אינדקס אחד או יותר לפי סוג קובץ תחת `.claude/rules/coding-standards/` (לדוגמה, `svelte.md`, `typescript.md`, `ruby.md`). קובצי האינדקס הם בעצמם כללים מתוחמי-נתיב: כש-Claude Code קורא קובץ שתואם ל-globs של אינדקס, הוא טוען רק את האינדקס הקטן הזה, הוראת טעינה-לפי-דרישה קצרה בתוספת רשימה של תקנים רלוונטיים לסוג הקובץ, כל אחד עם תיאור של 1-3 משפטים על מה הוא מכסה ומתי למשוך אותו. Claude אז פותח את הטקסט המלא של תקן רק אם הוא מחליט שהתקן חל. תקנים לא מופיעים בבורר הסקילים הזמינים; משטח הכללים נפרד.
+- **`/code-review` קורא את אלה אוטומטית.** ברגע שהם נוחתים, התקנים נלקחים בחשבון בכל `/code-review`. הפרות עולות כממצאים.
 
-## When to use it
+## מתי להשתמש בו
 
-**Invoke when:**
+**הפעל כאשר:**
 
-- The team already follows a convention informally and you want it written down so newcomers find it without asking.
-- A code review keeps surfacing the same kind of finding, and the fix is to record the rule once and point to it.
-- An ADR has subsections that are really coding rules. Convert them so the standard is authoritative and the ADR stays
-  focused on its decision.
-- A new standard needs research-backed rationale (testing boundaries, error handling, transaction patterns). The skill
-  grounds the standard in evidence from the codebase and surfaces Correct and Avoid examples.
+- הצוות כבר הולך לפי מוסכמה באופן לא רשמי ואתה רוצה לכתוב אותה כדי שחדשים ימצאו אותה בלי לשאול.
+- סקירת קוד ממשיכה להעלות את אותו סוג של ממצא, והתיקון הוא לתעד את הכלל פעם אחת ולהצביע עליו.
+- ל-ADR יש תת-סעיפים שהם באמת כללי קוד. המר אותם כך שהתקן יהיה המוסמך וה-ADR יישאר ממוקד בהחלטה שלו.
+- תקן חדש צריך נימוק מגובה-מחקר (גבולות בדיקה, טיפול בשגיאות, דפוסי טרנזקציות). הסקיל מעגן את התקן בראיות מבסיס הקוד ומעלה דוגמאות של נכון ושל הימנעות.
 
-**Do not invoke for:**
+**אל תפעיל עבור:**
 
-- **Architectural decisions.** Use [`/architectural-decision-record`](../../../han-documentation/docs/skills/architectural-decision-record.md) to
-  record a decision. A coding standard encodes a rule; an ADR records a choice and its alternatives.
-- **Feature documentation.** Use [`/project-documentation`](../../../han-documentation/docs/skills/project-documentation.md) for describing how a
-  system works.
-- **Style rules that a linter or formatter can enforce.** Configure the tool. Do not write a standard that duplicates
-  it.
-- **Open-ended research not destined for a standard.** Use [`/research`](../../../han-research/docs/skills/research.md) to survey options and
-  prior art when the output you want is a recommendation, not an enforceable rule.
-- **Runbooks for operational scenarios.** Use [`/runbook`](../../../han-documentation/docs/skills/runbook.md). A runbook captures the procedure for
-  an alert or incident; a coding standard encodes a rule the code itself must follow.
+- **החלטות ארכיטקטוניות.** השתמש ב-[`/architectural-decision-record`](../../../han-documentation/docs/skills/architectural-decision-record.md) כדי לתעד החלטה. תקן קוד מקודד כלל; ADR מתעד בחירה ואת החלופות שלה.
+- **תיעוד פיצ'רים.** השתמש ב-[`/project-documentation`](../../../han-documentation/docs/skills/project-documentation.md) לתיאור איך מערכת עובדת.
+- **כללי סגנון ש-linter או formatter יכולים לאכוף.** הגדר את הכלי. אל תכתוב תקן שמשכפל אותו.
+- **מחקר פתוח שלא מיועד לתקן.** השתמש ב-[`/research`](../../../han-research/docs/skills/research.md) כדי לסקור אפשרויות ומה שכבר נעשה, כשהפלט שאתה רוצה הוא המלצה ולא כלל בר-אכיפה.
+- **runbooks לתרחישים תפעוליים.** השתמש ב-[`/runbook`](../../../han-documentation/docs/skills/runbook.md). runbook לוכד את הנוהל להתראה או לתקרית; תקן קוד מקודד כלל שהקוד עצמו חייב ללכת לפיו.
 
-## How to invoke it
+## איך להפעיל אותו
 
-Run `/coding-standard` with a topic or an existing document path.
+הרץ `/coding-standard` עם נושא או עם נתיב למסמך קיים.
 
-Give it:
+תן לו:
 
-1. **The topic.** _"Error handling in Go services," "transaction boundaries in our repositories," "test-double usage for
-   collaborator seams."_
-2. **A source document, optional.** If you want to convert an existing document (for example, an ADR) into a standard,
-   pass the path.
-3. **A motivation, optional.** Why this should be a standard: a recurring review finding, a new architectural pattern, a
-   compliance requirement.
+1. **את הנושא.** _"טיפול בשגיאות בשירותי Go", "גבולות טרנזקציה ב-repositories שלנו", "שימוש ב-test-doubles לתפרי משתפי פעולה"._
+2. **מסמך מקור, אופציונלי.** אם אתה רוצה להמיר מסמך קיים (לדוגמה, ADR) לתקן, העבר את הנתיב.
+3. **מוטיבציה, אופציונלי.** למה זה צריך להיות תקן: ממצא סקירה חוזר, דפוס ארכיטקטוני חדש, דרישת ציות.
 
-Example prompts:
+פרומפטים לדוגמה:
 
-- `/coding-standard`. _"Create a coding standard for error handling based on what we already do in this codebase."_
-- `/coding-standard`. _"Create a standard for when to use unit tests vs integration tests, with examples drawn from this
-  codebase."_
-- `/coding-standard docs/adr/data-soft-deletes.md`. _"Convert the soft-deletes ADR into a coding standard."_
-- `/coding-standard`. _"Update the existing API naming conventions standard. The new one is under `/v2`."_
+- `/coding-standard`. _"תיצור תקן קוד לטיפול בשגיאות על בסיס מה שאנחנו כבר עושים בבסיס הקוד הזה."_
+- `/coding-standard`. _"תיצור תקן למתי להשתמש בבדיקות יחידה מול בדיקות אינטגרציה, עם דוגמאות שנשאבות מבסיס הקוד הזה."_
+- `/coding-standard docs/adr/data-soft-deletes.md`. _"תמיר את ה-ADR של המחיקות הרכות לתקן קוד."_
+- `/coding-standard`. _"תעדכן את תקן מוסכמות שמות ה-API הקיים. החדש נמצא תחת `/v2`."_
 
-## What you get back
+## מה אתה מקבל בחזרה
 
-A coding-standard document in the project's coding-standards directory, plus integration:
+מסמך תקן קוד בתיקיית תקני הקוד של הפרויקט, בתוספת אינטגרציה:
 
-- **`docs/coding-standards/{top-level}[-{second-level}]-{name}.md`.** The standard itself, following the template at
-  [`references/template.md`](../../skills/coding-standard/references/template.md). The hierarchy prefix is
-  discovered from existing standards and the project's languages, frameworks, and subsystems so related standards sort
-  together. The file opens with a YAML frontmatter block carrying the approved `paths:` globs, followed by metadata
-  (Status, Applies To, Date Created, Last Updated), an Introduction, the Standard (rules in testable form),
-  Correct-usage examples from real code, What-to-avoid examples, Rationale, and Additional Resources.
-- **One or more entries in per-file-type index files under `.claude/rules/coding-standards/`.** The skill maps the
-  standard's approved `paths:` globs to existing index files (or creates a new one when no bucket fits) and adds the new
-  standard as a single-bullet entry: the standard's title, a relative link back to the canonical doc, and a 1-3 sentence
-  description of what the standard covers and when a reader should pull the full file. A cross-cutting standard whose
-  `paths:` spans multiple file types is listed in each matching index; the canonical file remains in one place. The
-  skill never adds the standard as an enumerated entry in `CLAUDE.md` (or `AGENTS.md`); it adds a one-time pointer
-  paragraph to the memory file only if the file does not already reference `.claude/rules/coding-standards/`.
-- **Cross-references.** Links to related standards, ADRs, and feature docs, added bidirectionally.
-- **Source-document handling** (conversion mode). If the source is fully subsumed, it is deleted and references updated.
-  If it retains useful content, a link to the new standard is added.
+- **`docs/coding-standards/{top-level}[-{second-level}]-{name}.md`.** התקן עצמו, לפי התבנית ב-[`references/template.md`](../../skills/coding-standard/references/template.md). קידומת ההיררכיה מתגלה מתקנים קיימים ומהשפות, הפריימוורקים ותת-המערכות של הפרויקט, כך שתקנים קשורים ממוינים יחד. הקובץ נפתח בבלוק frontmatter ב-YAML שנושא את ה-globs של `paths:` שאושרו, ואחריו מטא-דאטה (Status, Applies To, Date Created, Last Updated), Introduction, ה-Standard (כללים בצורה ניתנת לבדיקה), דוגמאות שימוש נכון מקוד אמיתי, דוגמאות ממה להימנע, Rationale, ו-Additional Resources.
+- **רשומה אחת או יותר בקובצי אינדקס לפי סוג קובץ תחת `.claude/rules/coding-standards/`.** הסקיל ממפה את ה-globs של `paths:` שאושרו לקובצי אינדקס קיימים (או יוצר חדש כשאף דלי לא מתאים) ומוסיף את התקן החדש כרשומה בתבליט יחיד: הכותרת של התקן, קישור יחסי בחזרה למסמך הקנוני, ותיאור של 1-3 משפטים על מה התקן מכסה ומתי קורא צריך למשוך את הקובץ המלא. תקן חוצה שה-`paths:` שלו פרוש על כמה סוגי קבצים מפורט בכל אינדקס תואם; הקובץ הקנוני נשאר במקום אחד. הסקיל לעולם לא מוסיף את התקן כרשומה ממוספרת ב-`CLAUDE.md` (או ב-`AGENTS.md`); הוא מוסיף פסקת מצביע חד-פעמית לקובץ הזיכרון רק אם הקובץ לא כבר מפנה ל-`.claude/rules/coding-standards/`.
+- **הצלבות.** קישורים לתקנים קשורים, ל-ADRs ולמסמכי פיצ'רים, מתווספים דו-כיוונית.
+- **טיפול במסמך המקור** (מצב המרה). אם המקור נבלע במלואו, הוא נמחק וההפניות מתעדכנות. אם הוא שומר תוכן שימושי, מתווסף אליו קישור לתקן החדש.
 
-## Why the canonical doc lives in `docs/` and an index entry lives in `.claude/rules/`
+## למה המסמך הקנוני חי ב-`docs/` ורשומת אינדקס חיה ב-`.claude/rules/`
 
-Plain-language version of the design choice, for anyone who reads a new standard and wonders how Claude finds it.
+גרסה בשפה פשוטה של בחירת העיצוב, עבור כל מי שקורא תקן חדש ותוהה איך Claude מוצא אותו.
 
-**One canonical file. A small index points to it.** The actual standard is a single readable document under your
-project's coding-standards directory (usually `docs/coding-standards/`). That is the only copy. The files under
-`.claude/rules/coding-standards/` are small index files, one per file type (for example, `typescript.md`, `ruby.md`,
-`svelte.md`), each carrying a `paths:` glob, a short load-on-demand instruction, and a list of bullet entries that link
-back to the canonical standards. The canonical standard itself is never copied; only its title, link, and a short
-description appear in the index.
+**קובץ קנוני אחד. אינדקס קטן מצביע עליו.** התקן עצמו הוא מסמך קריא יחיד תחת תיקיית תקני הקוד של הפרויקט שלך (בדרך כלל `docs/coding-standards/`). זה העותק היחיד. הקבצים תחת `.claude/rules/coding-standards/` הם קובצי אינדקס קטנים, אחד לכל סוג קובץ (לדוגמה, `typescript.md`, `ruby.md`, `svelte.md`), כל אחד נושא glob של `paths:`, הוראת טעינה-לפי-דרישה קצרה, ורשימה של רשומות תבליט שמקשרות בחזרה לתקנים הקנוניים. התקן הקנוני עצמו לעולם לא מועתק; רק הכותרת שלו, הקישור ותיאור קצר מופיעים באינדקס.
 
-**Why not store the standards directly inside `.claude/rules/`?** Because `.claude/` is a directory most teams treat as
-tool configuration, not human-readable documentation. Standards are documents people open in pull request reviews, link
-from onboarding pages, and read on GitHub. They belong in `docs/`. The index files let Claude Code find them through its
-rules surface without dragging the source-of-truth out of the docs tree.
+**למה לא לאחסן את התקנים ישירות בתוך `.claude/rules/`?** מפני ש-`.claude/` היא תיקייה שרוב הצוותים מתייחסים אליה כקונפיגורציה של כלים ולא כתיעוד קריא לבני אדם. תקנים הם מסמכים שאנשים פותחים בסקירות pull request, מקשרים מדפי onboarding, וקוראים ב-GitHub. הם שייכים ל-`docs/`. קובצי האינדקס מאפשרים ל-Claude Code למצוא אותם דרך משטח הכללים שלו בלי לגרור את מקור האמת מחוץ לעץ המסמכים.
 
-**Why a per-file-type index instead of one rule file per standard?** The prior layout, one symlink under
-`.claude/rules/coding-standards/` per standard, each pointing to a full standards file with its own `paths:`
-frontmatter, meant every standard whose globs matched the current file was loaded into context the moment Claude opened
-that file. On a project with dozens of standards, a single `Read` on a `.ts` file could pull tens of thousands of tokens
-of standards material into context, all at once, with no chance for Claude to evaluate relevance first. After
-auto-compact, the same files would re-load on the next `Read` and the cycle would repeat.
+**למה אינדקס לכל סוג קובץ ולא קובץ כלל אחד לכל תקן?** הפריסה הקודמת, symlink אחד תחת `.claude/rules/coding-standards/` לכל תקן, כשכל אחד מצביע לקובץ תקנים מלא עם frontmatter `paths:` משלו, גרמה לכך שכל תקן שה-globs שלו התאימו לקובץ הנוכחי נטען להקשר ברגע ש-Claude פתח את הקובץ הזה. בפרויקט עם עשרות תקנים, `Read` יחיד על קובץ `.ts` היה יכול למשוך עשרות אלפי טוקנים של חומר תקנים להקשר, הכול בבת אחת, בלי הזדמנות ל-Claude להעריך רלוונטיות קודם. אחרי auto-compact, אותם קבצים היו נטענים מחדש ב-`Read` הבא והמחזור היה חוזר.
 
-The per-file-type index files invert that. Each index file is small: a `paths:` block, a brief load-on-demand
-instruction, and a list of entries with 1-3 sentence descriptions. When Claude opens a file that matches the index, only
-the small index loads. Claude then reads the descriptions, decides which (if any) standards are relevant to the work at
-hand, and uses the `Read` tool to open only those. Standards that do not apply stay on disk.
+קובצי האינדקס לכל סוג קובץ הופכים את זה. כל קובץ אינדקס קטן: בלוק `paths:`, הוראת טעינה-לפי-דרישה תמציתית, ורשימה של רשומות עם תיאורים של 1-3 משפטים. כש-Claude פותח קובץ שתואם לאינדקס, רק האינדקס הקטן נטען. Claude אז קורא את התיאורים, מחליט אילו תקנים (אם בכלל) רלוונטיים לעבודה שעל הפרק, ומשתמש בכלי ה-`Read` כדי לפתוח רק אותם. תקנים שלא חלים נשארים על הדיסק.
 
-**Why not enumerate standards in `CLAUDE.md`?** Claude Code's path-scoped rules (see
-[Claude Code memory](https://code.claude.com/docs/en/memory)) load a rule only when a file matching its `paths:` glob is
-read. A `typescript.md` index will not load when you are editing a Ruby file, so file types unrelated to the current
-work do not bloat session startup. An enumerated link in `CLAUDE.md` loads on every session whether the standard is
-relevant or not. The index-file model keeps context small and load-on-demand at two layers: file-type filtering at the
-rules layer, per-standard filtering at the relevance-decision layer.
+**למה לא למנות תקנים ב-`CLAUDE.md`?** הכללים מתוחמי-הנתיב של Claude Code (ראה [Claude Code memory](https://code.claude.com/docs/en/memory)) טוענים כלל רק כשקובץ שתואם ל-glob של `paths:` שלו נקרא. אינדקס `typescript.md` לא ייטען כשאתה עורך קובץ Ruby, ולכן סוגי קבצים שלא קשורים לעבודה הנוכחית לא מנפחים את תחילת הסשן. קישור ממוספר ב-`CLAUDE.md` נטען בכל סשן בין אם התקן רלוונטי ובין אם לא. מודל קובץ האינדקס שומר על ההקשר קטן ועל הטעינה לפי דרישה בשתי שכבות: סינון לפי סוג קובץ בשכבת הכללים, וסינון לכל תקן בשכבת החלטת הרלוונטיות.
 
-**What the skill does and does not touch in `CLAUDE.md`/`AGENTS.md`.** It will add a short pointer paragraph once, only
-if the memory file does not already mention `.claude/rules/coding-standards/`. The pointer wording describes the
-per-file-type index mechanism. It never adds an enumerated link for the new standard. Pre-existing enumerated entries
-from earlier versions of this skill are left alone; migrating them out is a separate one-time operation, not the skill's
-job.
+**במה הסקיל נוגע ובמה לא ב-`CLAUDE.md`/`AGENTS.md`.** הוא יוסיף פסקת מצביע קצרה פעם אחת, רק אם קובץ הזיכרון לא כבר מזכיר את `.claude/rules/coding-standards/`. ניסוח המצביע מתאר את מנגנון האינדקס לכל סוג קובץ. הוא לעולם לא מוסיף קישור ממוספר לתקן החדש. רשומות ממוספרות שהיו קיימות מגרסאות קודמות של הסקיל הזה נשארות בשקט; העברתן החוצה היא פעולה חד-פעמית נפרדת, לא העבודה של הסקיל.
 
-## How to get the most out of it
+## איך להפיק ממנו את המרב
 
-- **Run `/project-discovery` first.** The skill reads CLAUDE.md's Project Discovery section to find the coding-standards
-  directory, the language, and the documentation root. Without discovery, it falls back to Glob defaults.
-- **Ground the rule in the codebase.** A standard that points at actual files in the repo is authoritative; one with
-  invented examples is not. Before dispatching, think about which existing files best illustrate Correct usage.
-- **Write the rule as testable.** _"Wrap errors with `%w` at every service boundary"_ is testable. _"Handle errors
-  appropriately"_ is not. If you cannot write a clear enforcement check, the rule is not ready to be a standard yet.
-- **Pair with `/architectural-decision-record` when the standard embeds a choice.** If the rule reflects a decision
-  among alternatives, record the decision as an ADR and link the standard to it.
-- **Re-run to update.** Standards drift as the codebase evolves. When a new pattern lands, re-run `/coding-standard` in
-  update mode.
+- **הרץ `/project-discovery` קודם.** הסקיל קורא את סעיף ה-Project Discovery ב-CLAUDE.md כדי למצוא את תיקיית תקני הקוד, את השפה ואת שורש התיעוד. בלי הגילוי, הוא נופל לאחור לברירות מחדל של Glob.
+- **עגן את הכלל בבסיס הקוד.** תקן שמצביע על קבצים אמיתיים בריפו הוא מוסמך; אחד עם דוגמאות מומצאות אינו. לפני השיגור, תחשוב אילו קבצים קיימים ממחישים הכי טוב שימוש נכון.
+- **כתוב את הכלל כניתן לבדיקה.** _"עטוף שגיאות עם `%w` בכל גבול שירות"_ ניתן לבדיקה. _"טפל בשגיאות כראוי"_ אינו. אם אתה לא יכול לכתוב בדיקת אכיפה ברורה, הכלל עדיין לא מוכן להיות תקן.
+- **צמד עם `/architectural-decision-record` כשהתקן מכיל בחירה.** אם הכלל משקף החלטה בין חלופות, תעד את ההחלטה כ-ADR וקשר את התקן אליה.
+- **הרץ מחדש כדי לעדכן.** תקנים נסחפים ככל שבסיס הקוד מתפתח. כשדפוס חדש נוחת, הרץ מחדש את `/coding-standard` במצב עדכון.
 
-## Cost and latency
+## עלות וזמן תגובה
 
-The skill dispatches two `codebase-explorer` agents in parallel during Step 4 (evidence gathering) and two review agents
-in parallel during Step 9 (`junior-developer` + `information-architect`). All four run on their default models. Once the
-standard is final, the skill runs one `han-communication:readability-editor` rewrite of its prose, so expect one
-additional readability pass. Cost scales with codebase size and how many documents the explorers have to read. Typical
-runs are a few minutes.
+הסקיל משגר שני סוכני `codebase-explorer` במקביל בצעד 4 (איסוף ראיות) ושני סוכני סקירה במקביל בצעד 9 (`junior-developer` + `information-architect`). כל הארבעה רצים על מודלי ברירת המחדל שלהם. ברגע שהתקן סופי, הסקיל מריץ שכתוב אחד של `han-communication:readability-editor` על הטקסט שלו, אז צפה למעבר קריאוּת נוסף אחד. העלות גדלה עם גודל בסיס הקוד ועם כמה מסמכים החוקרים צריכים לקרוא. ריצות טיפוסיות הן כמה דקות.
 
-## In more detail
+## בפירוט
 
-The skill walks an eleven-step process:
+הסקיל עובר תהליך של אחד-עשר צעדים:
 
-1. **Determine mode.** Creating new / Converting existing / Updating existing.
-2. **Evaluate appropriateness.** Should this be tooling instead? If yes, warn and ask.
-3. **Discover project structure.** Find the coding-standards directory (or create one), enumerate existing standards,
-   check format compatibility, discover the filename hierarchy taxonomy from existing standards' filenames plus the
-   project's languages, frameworks, and subsystems, and capture the project's primary file-type globs for the `paths:`
-   proposal in Step 6.
-4. **Gather context.** Topic, scope, motivation. Dispatch two `codebase-explorer` agents in parallel for implementation
-   patterns and existing standards/ADRs. The patterns explorer returns each candidate's durable anchor (exported symbol
-   or stable heading) alongside the line range it used to navigate; the author drops the line range by default and keeps
-   it only to match an established line-number house style. The standards explorer returns cross-references by stable
-   heading, plus whether the existing standards establish that house style.
-5. **Convert source document** (conversion mode only). Map sections using the ADR-conversion-mapping reference; handle
-   the source file (delete if fully subsumed, link if partial).
-6. **Write the coding standard.** Hierarchically-prefixed filename (top-level subsystem/framework, optional second
-   level), fill the template with real code examples and actual project language identifiers. Propose a `paths:` glob
-   list scoped to what the standard governs, get user approval, and write it as YAML frontmatter at the top of the file.
-7. **Integration.** Determine which per-file-type index files under `.claude/rules/coding-standards/` the standard
-   belongs in (based on the buckets discovered in Step 3.6); for each, create from the
-   [index-file template](../../skills/coding-standard/references/index-file-template.md) or update in
-   place to add a bullet entry with the standard's title, a relative link to the canonical doc, and a 1-3 sentence
-   description of what it covers and when to pull it; ensure the memory file's pointer paragraph exists (added once if
-   missing, never enumerating individual standards); add cross-references in both directions. In update-mode, the skill
-   deltas the standard's entry across index files when its `paths:` changed: removed from buckets that no longer match,
-   added to buckets that newly match, description updated in place when scope shifted.
-8. **Adoption-bias audit.** Six structural checks against over-application: primary-rationale visibility, a decision
-   tree near the top, a substantive _When NOT to Apply_ section, surfaced (not buried) exceptions, code-example comments
-   that match the primary rationale, and a verification step for defensive adoptions.
-9. **Adversarial review.** Dispatch `junior-developer` for ambiguity and assumption checks and `information-architect`
-   for findability and structure. Apply actionable edits.
-10. **Verification.** Re-read the file, confirm metadata, template structure, `paths:` frontmatter, index-file
-    membership across every matching bucket (with the entry's link resolving back to the canonical doc and the
-    description in the 1-3 sentence shape that names both coverage and when-to-pull), durable references in both the
-    standard body and its index entry (ensure that standard references don't get outdated upon next code change), real
-    file paths in examples, distinct Correct-vs-Avoid examples, that no enumerated entry was added to the memory file,
-    and that Step 8 and Step 9 edits were applied.
+1. **קביעת המצב.** יצירה חדשה / המרה של קיים / עדכון קיים.
+2. **הערכת התאמה.** האם זה צריך להיות כלים במקום? אם כן, אזהרה ושאלה.
+3. **גילוי מבנה הפרויקט.** מציאת תיקיית תקני הקוד (או יצירת אחת), מניית התקנים הקיימים, בדיקת תאימות פורמט, גילוי טקסונומיית ההיררכיה של שמות הקבצים מתוך שמות הקבצים של תקנים קיימים בתוספת השפות, הפריימוורקים ותת-המערכות של הפרויקט, ולכידת ה-globs של סוגי הקבצים העיקריים של הפרויקט עבור הצעת ה-`paths:` בצעד 6.
+4. **איסוף הקשר.** נושא, היקף, מוטיבציה. שיגור שני סוכני `codebase-explorer` במקביל לדפוסי מימוש ולתקנים/ADRs קיימים. חוקר הדפוסים מחזיר את העוגן העמיד של כל מועמד (סמל מיוצא או כותרת יציבה) לצד טווח השורות שהוא השתמש בו כדי לנווט; הכותב זורק את טווח השורות כברירת מחדל ושומר אותו רק כדי להתאים לסגנון בית מבוסס של מספרי שורות. חוקר התקנים מחזיר הצלבות לפי כותרת יציבה, בתוספת האם התקנים הקיימים מבססים את סגנון הבית הזה.
+5. **המרת מסמך המקור** (מצב המרה בלבד). מיפוי סעיפים בעזרת ייחוס מיפוי-המרת-ADR; טיפול בקובץ המקור (מחיקה אם נבלע במלואו, קישור אם חלקי).
+6. **כתיבת תקן הקוד.** שם קובץ עם קידומת היררכית (תת-מערכת/פריימוורק ברמה העליונה, רמה שנייה אופציונלית), מילוי התבנית עם דוגמאות קוד אמיתיות ועם מזהי שפה אמיתיים של הפרויקט. הצעת רשימת globs של `paths:` מתוחמת למה שהתקן מסדיר, קבלת אישור המשתמש, וכתיבתה כ-frontmatter ב-YAML בראש הקובץ.
+7. **אינטגרציה.** קביעה לאילו קובצי אינדקס לפי סוג קובץ תחת `.claude/rules/coding-standards/` התקן שייך (על בסיס הדליים שהתגלו בצעד 3.6); לכל אחד, יצירה מ-[תבנית קובץ האינדקס](../../skills/coding-standard/references/index-file-template.md) או עדכון במקום כדי להוסיף רשומת תבליט עם הכותרת של התקן, קישור יחסי למסמך הקנוני, ותיאור של 1-3 משפטים על מה הוא מכסה ומתי למשוך אותו; וידוא שפסקת המצביע של קובץ הזיכרון קיימת (מתווספת פעם אחת אם חסרה, לעולם לא ממנה תקנים בודדים); הוספת הצלבות בשני הכיוונים. במצב עדכון, הסקיל מבצע דלתא של רשומת התקן לרוחב קובצי האינדקס כשה-`paths:` שלו השתנה: מוסרת מדליים שכבר לא תואמים, מתווספת לדליים שתואמים מחדש, והתיאור מתעדכן במקום כשההיקף זז.
+8. **ביקורת הטיית אימוץ.** שש בדיקות מבניות מול החלה יתרה: נראות הנימוק העיקרי, עץ החלטה קרוב לראש, סעיף _When NOT to Apply_ מהותי, חריגים שמוצגים (ולא קבורים), הערות בדוגמאות קוד שתואמות לנימוק העיקרי, וצעד אימות לאימוצים הגנתיים.
+9. **סקירה אדוורסרית.** שיגור `junior-developer` לבדיקות עמימות והנחות ו-`information-architect` ליכולת מציאה ומבנה. החלת עריכות בנות-ביצוע.
+10. **אימות.** קריאה חוזרת של הקובץ, אישור המטא-דאטה, מבנה התבנית, frontmatter של `paths:`, חברוּת בקובצי האינדקס לרוחב כל דלי תואם (כשהקישור של הרשומה מתפענח בחזרה למסמך הקנוני והתיאור בצורת 1-3 המשפטים שנוקבת גם בכיסוי וגם במתי-למשוך), הפניות עמידות גם בגוף התקן וגם ברשומת האינדקס שלו (כדי לוודא שהפניות התקן לא יתיישנו בשינוי הקוד הבא), נתיבי קבצים אמיתיים בדוגמאות, דוגמאות נכון-מול-הימנעות מובחנות, שלא נוספה רשומה ממוספרת לקובץ הזיכרון, ושעריכות צעד 8 וצעד 9 הוחלו.
 
-11. **Readability pass.** Dispatch `readability-editor` to rewrite the standard's prose for the engineer who must follow
-    it, preserving every fact, rule, and example, then run a readability self-check before presenting.
+11. **מעבר קריאוּת.** שיגור `readability-editor` כדי לשכתב את הטקסט של התקן עבור המהנדס שחייב ללכת לפיו, תוך שמירה על כל עובדה, כלל ודוגמה, ואז הרצת בדיקה עצמית של קריאוּת לפני ההצגה.
 
 ## YAGNI
 
-A coding standard is justified only when the project does the thing the standard governs **today** and the standard
-solves a real, concrete problem the team is currently hitting. Standards about patterns the project doesn't use yet,
-_for future flexibility_, _best practice says we should…_, or symmetry with other standards (_"we have one for backend,
-so we should have one for frontend"_ when the frontend codebase is a single file) are YAGNI candidates. Acceptable
-evidence the standard is needed now: the pattern is used in the codebase today (cite at least three examples) and
-inconsistency between examples is causing real friction (review churn, bugs, onboarding cost), or a documented incident
-or recurring code-review finding the standard would prevent. Standards that fail the evidence test are deferred with a
-named _reopen-when_ trigger, not committed to the project.
+תקן קוד מוצדק רק כשהפרויקט עושה **היום** את הדבר שהתקן מסדיר, והתקן פותר בעיה אמיתית וקונקרטית שהצוות נתקל בה כרגע. תקנים על דפוסים שהפרויקט עדיין לא משתמש בהם, _לגמישות עתידית_, _best practice אומר שאנחנו צריכים…_, או סימטריה עם תקנים אחרים (_"יש לנו אחד ל-backend, אז צריך שיהיה אחד ל-frontend"_ כשבסיס הקוד של ה-frontend הוא קובץ יחיד) הם מועמדי YAGNI. ראיות קבילות לכך שהתקן נחוץ עכשיו: הדפוס בשימוש בבסיס הקוד היום (צטט לפחות שלוש דוגמאות) וחוסר עקביות בין הדוגמאות גורם לחיכוך אמיתי (סחרור בסקירות, באגים, עלות onboarding), או תקרית מתועדת או ממצא סקירה חוזר שהתקן היה מונע. תקנים שנכשלים במבחן הראיות נדחים עם טריגר _reopen-when_ נקוב, ולא מתחייבים אליהם בפרויקט.
 
-See [YAGNI](../../../docs/yagni.md) for the two gates, the acceptable-evidence list, and the named anti-patterns.
+ראה [YAGNI](../../../docs/yagni.md) לשני השערים, לרשימת הראיות הקבילות ולאנטי-דפוסים הנקובים בשם.
 
-The companion [evidence rule](../../../docs/evidence.md) applies to the citations that support the standard: name the trust
-class of each cited example (codebase, web, provided); apply the corroboration gate when the supporting evidence comes
-from outside the project; label claims with no evidence at any tier rather than presenting them as weak preferences.
+[כלל הראיות](../../../docs/evidence.md) הנלווה חל על הציטוטים שתומכים בתקן: נקוב במחלקת האמון של כל דוגמה מצוטטת (בסיס הקוד, רשת, סופק); החל את שער אימות-ההצלבה כשהראיות התומכות מגיעות מחוץ לפרויקט; תייג טענות בלי ראיות בשום דרג במקום להציג אותן כהעדפות חלשות.
 
-## Sources
+## מקורות
 
-The skill's practice is grounded in established engineering conventions and documentation norms.
+הפרקטיקה של הסקיל מעוגנת במוסכמות הנדסיות ובנורמות תיעוד מבוססות.
 
 ### Google Engineering Practices: Coding Standards and Code Review
 
-Google's publicly documented engineering-practices series separates automated tooling (linters, formatters) from
-narrative standards (when to prefer a pattern, what tradeoffs to consider). The skill's linter-first check reflects this
-separation directly. Tooling handles what tooling can, standards handle what tooling cannot.
+סדרת פרקטיקות ההנדסה המתועדת פומבית של Google מפרידה בין כלים אוטומטיים (linters, formatters) לבין תקנים נרטיביים (מתי להעדיף דפוס, אילו טרייד-אופים לשקול). בדיקת ה-linter-קודם של הסקיל משקפת את ההפרדה הזו ישירות. כלים מטפלים במה שכלים יכולים, תקנים מטפלים במה שכלים לא יכולים.
 
 URL: https://google.github.io/eng-practices/
 
 ### Amazon: Working Backwards (Written Docs Over Presentations)
 
-Amazon's long-form-doc culture (written standards and decisions as the unit of record, not slides) informs the skill's
-insistence on complete, self-contained standards that a reader can pick up cold. Every standard answers the rule, the
-rationale, the examples, and the scope without forcing the reader back into a meeting transcript.
+תרבות המסמכים הארוכים של Amazon (תקנים והחלטות כתובים כיחידת הרישום, לא שקפים) מיידעת את ההתעקשות של הסקיל על תקנים שלמים ועצמאיים שקורא יכול להרים מאפס. כל תקן עונה על הכלל, הנימוק, הדוגמאות וההיקף בלי לאלץ את הקורא לחזור לתמליל של פגישה.
 
 URL: https://www.aboutamazon.com/news/workplace/what-is-a-six-page-narrative
 
 ### O'Reilly: The Google SRE Book (Postmortems and Conventions)
 
-The SRE Book's treatment of postmortem and incident-review conventions (named, discoverable, reviewable documents)
-shaped the skill's bias toward hierarchically-named filenames that group related standards together and a reviewable
-metadata block.
+הטיפול של ספר ה-SRE במוסכמות של post-mortem ושל סקירת תקריות (מסמכים נקובים בשם, ניתנים למציאה וניתנים לסקירה) עיצב את ההטיה של הסקיל לכיוון שמות קבצים היררכיים שמקבצים תקנים קשורים יחד ולכיוון בלוק מטא-דאטה ניתן לסקירה.
 
 URL: https://sre.google/sre-book/
 
 ### Claude Code Memory: Path-Scoped Rules
 
-Anthropic's Claude Code memory documentation defines the `.claude/rules/` surface and the `paths:` YAML frontmatter that
-scopes a rule to file globs (`load_reason: path_glob_match`). The skill's integration step applies this model at two
-layers: a per-file-type index file under `.claude/rules/coding-standards/` is loaded only when Claude reads a file
-matching its globs, and the full text of each canonical standard in the project's `docs/coding-standards/` is loaded
-only when Claude decides the standard applies and opens it with the Read tool.
+תיעוד הזיכרון של Claude Code של Anthropic מגדיר את משטח ה-`.claude/rules/` ואת ה-frontmatter של `paths:` ב-YAML שמתחם כלל ל-globs של קבצים (`load_reason: path_glob_match`). צעד האינטגרציה של הסקיל מחיל את המודל הזה בשתי שכבות: קובץ אינדקס לפי סוג קובץ תחת `.claude/rules/coding-standards/` נטען רק כש-Claude קורא קובץ שתואם ל-globs שלו, והטקסט המלא של כל תקן קנוני ב-`docs/coding-standards/` של הפרויקט נטען רק כש-Claude מחליט שהתקן חל ופותח אותו עם כלי ה-Read.
 
 URL: https://code.claude.com/docs/en/memory
 
-## Related documentation
+## תיעוד קשור
 
-- [Plugin README](../../README.md). The plugin's front door: its skills, agents, and how they fit together.
-- [Repo root README](../../../README.md). The Han suite landing page. Start here if you arrived from outside the docs tree.
-- [YAGNI](../../../docs/yagni.md). The evidence-based "You Aren't Gonna Need It" rule this skill applies before committing
-  items. The two gates, the acceptable-evidence list, the named anti-patterns, and the deferral format.
-- [Evidence](../../../docs/evidence.md). The companion rule the skill applies to the standard's supporting evidence: trust
-  classes, the corroboration gate for web sources, and the no-evidence label.
-- [Skills Index](../../../docs/skills/README.md). All skills, grouped by purpose.
-- [`/architectural-decision-record`](../../../han-documentation/docs/skills/architectural-decision-record.md). For decisions rather than rules.
-  Link the standard to the ADR when the rule embeds a choice.
-- [`/project-documentation`](../../../han-documentation/docs/skills/project-documentation.md). For system and feature documentation that is not a
-  rule.
-- [`/code-review`](./code-review.md). Reads standards during every review. Violations become findings.
-- [`codebase-explorer`](../../../han-core/docs/agents/codebase-explorer.md),
-  [`junior-developer`](../../../han-core/docs/agents/junior-developer.md),
-  [`information-architect`](../../../han-core/docs/agents/information-architect.md). The agents this skill dispatches during
-  evidence gathering and adversarial review.
-- [`readability-editor`](../../../han-communication/docs/agents/readability-editor.md). Dispatched once the standard is final to
-  rewrite its prose for the engineer who must follow it, preserving every fact, rule, and example.
-- [`SKILL.md` for /coding-standard](../../skills/coding-standard/SKILL.md). The internal process
-  definition.
+- [README של הפלאגין](../../README.md). הדלת הקדמית של הפלאגין: הסקילים שלו, הסוכנים, ואיך הם משתלבים.
+- [README של שורש הריפו](../../../README.md). דף הנחיתה של חבילת Han. התחל כאן אם הגעת מחוץ לעץ התיעוד.
+- [YAGNI](../../../docs/yagni.md). כלל ה-"You Aren't Gonna Need It" מבוסס-הראיות שהסקיל הזה מחיל לפני שהוא מתחייב לפריטים. שני השערים, רשימת הראיות הקבילות, האנטי-דפוסים הנקובים בשם, ופורמט הדחייה.
+- [Evidence](../../../docs/evidence.md). הכלל הנלווה שהסקיל מחיל על הראיות התומכות של התקן: מחלקות אמון, שער אימות-ההצלבה למקורות מהרשת, ותווית היעדר-הראיות.
+- [אינדקס הסקילים](../../../docs/skills/README.md). כל הסקילים, מקובצים לפי מטרה.
+- [`/architectural-decision-record`](../../../han-documentation/docs/skills/architectural-decision-record.md). להחלטות ולא לכללים. קשר את התקן ל-ADR כשהכלל מכיל בחירה.
+- [`/project-documentation`](../../../han-documentation/docs/skills/project-documentation.md). לתיעוד מערכת ופיצ'רים שאינו כלל.
+- [`/code-review`](./code-review.md). קורא תקנים בכל סקירה. הפרות הופכות לממצאים.
+- [`codebase-explorer`](../../../han-core/docs/agents/codebase-explorer.md), [`junior-developer`](../../../han-core/docs/agents/junior-developer.md), [`information-architect`](../../../han-core/docs/agents/information-architect.md). הסוכנים שהסקיל הזה משגר במהלך איסוף הראיות והסקירה האדוורסרית.
+- [`readability-editor`](../../../han-communication/docs/agents/readability-editor.md). משוגר ברגע שהתקן סופי כדי לשכתב את הטקסט שלו עבור המהנדס שחייב ללכת לפיו, תוך שמירה על כל עובדה, כלל ודוגמה.
+- [`SKILL.md` של /coding-standard](../../skills/coding-standard/SKILL.md). הגדרת התהליך הפנימי.

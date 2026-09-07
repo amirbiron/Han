@@ -1,232 +1,141 @@
 # /automated-test-planning
 
-Operator documentation for the `/automated-test-planning` skill in the han plugin. This document helps you decide _when_ and _how_
-to use the skill. For what the skill does internally, read the skill definition at
-[`han-coding/skills/automated-test-planning/SKILL.md`](../../skills/automated-test-planning/SKILL.md).
+תיעוד מפעיל לסקיל `/automated-test-planning` בפלאגין. המסמך הזה עוזר לך להחליט _מתי_ ו*איך* להשתמש בסקיל. למה שהסקיל עושה בפנים, קרא את הגדרת הסקיל ב-[`han-coding/skills/automated-test-planning/SKILL.md`](../../skills/automated-test-planning/SKILL.md).
 
-> See also: [Plugin README](../../README.md) · [Repo root](../../../README.md) · [All skills](../../../docs/skills/README.md) ·
-> [All agents](../../../docs/agents/README.md) · [YAGNI](../../../docs/yagni.md)
+> ראה גם: [README של הפלאגין](../../README.md) · [שורש הריפו](../../../README.md) · [כל הסקילים](../../../docs/skills/README.md) · [כל הסוכנים](../../../docs/agents/README.md) · [YAGNI](../../../docs/yagni.md)
 
 ## TL;DR
 
-- **What it does.** Produces a standalone test plan by analyzing code for coverage gaps and edge cases, dispatching
-  `test-engineer` and `edge-case-explorer` in parallel (plus `concurrency-analyst` or `adversarial-security-analyst`
-  when the files touch those concerns) and merging all findings.
-- **When to use it.** You want a prioritized test plan for a branch, a directory, or specific files, without running a
-  full code review.
-- **What you get back.** A test plan that leads with plain language (a Summary, a What Needs Testing and Why section,
-  and a What Each Test Covers walkthrough), backed by a Technical Reference holding up to 40 items tagged CRIT /
-  HIGH / MED / LOW, each with `file:line` references, test approach, code paths, and risk assessment.
+- **מה הוא עושה.** מייצר תוכנית בדיקות עצמאית על ידי ניתוח הקוד לאיתור פערי כיסוי ומקרי קצה, משגר את `test-engineer` ואת `edge-case-explorer` במקביל (בתוספת `concurrency-analyst` או `adversarial-security-analyst` כשהקבצים נוגעים בסוגיות האלה) וממזג את כל הממצאים.
+- **מתי להשתמש בו.** אתה רוצה תוכנית בדיקות מתועדפת לענף, לתיקייה או לקבצים מסוימים, בלי להריץ סקירת קוד מלאה.
+- **מה אתה מקבל בחזרה.** תוכנית בדיקות שפותחת בשפה פשוטה (Summary, סעיף What Needs Testing and Why, והליכה של What Each Test Covers), שמגובה ב-Technical Reference שמחזיק עד 40 פריטים מתויגים CRIT / HIGH / MED / LOW, כל אחד עם הפניות `file:line`, גישת בדיקה, מסלולי קוד והערכת סיכון.
 
-## Key concepts
+## מושגי מפתח
 
-- **Behavioral tests only, at the public API.** Every recommended test verifies observable behavior at a public seam:
-  caller-supplied inputs, observed outputs and side effects, and interactions with the objects and services the unit
-  collaborates with. The skill does not recommend tests that reach into private methods, internal state, or
-  implementation structure: if two implementations would produce the same observable behavior, the test must pass for
-  both. It covers the critical behaviors a caller depends on and stops, rather than specifying a test for every branch,
-  helper, or intermediate value.
-- **Two always-on agents plus two conditional.** `test-engineer` analyzes coverage gaps (observable behaviors, inputs,
-  outputs, collaborator interactions). `edge-case-explorer` discovers boundary values, type coercion traps,
-  state-dependent failures, and error propagation gaps. `concurrency-analyst` joins when the files touch
-  threads/async/shared state, to surface race and lock-ordering tests. `adversarial-security-analyst` joins when the
-  files touch auth, input handling, isolation, crypto, uploads, or SQL/ORM, to surface negative security tests. Security
-  items land as CRIT and are exempt from the 40-item cap.
-- **Four-tier priority scheme.** CRIT (security, data integrity, auth), HIGH (business logic, error handling), MED, LOW.
-  Classification comes from both agents' rankings mapped into a unified scheme.
-- **Unified IDs with cross-reference.** `TP-001`, `TP-002`, … with the original agent ID recorded (for example, _"TP-001
-  (from T3)"_).
-- **Three review modes.** Mode A (full git context, branch vs default), Mode B (uncommitted/staged changes), Mode C (no
-  git, glob-discovered files).
-- **Plain-language spine, technical reference below.** The plan leads with a Summary, a What Needs Testing and Why
-  themes section, and a What Each Test Covers walkthrough, all in plain language. The per-item detail (test level, code
-  paths, approach, priority justification), deferred and dropped items, coverage counts, and scope sit below under a
-  `## Technical Reference` region for the reader who needs them.
-- **Output review pass.** After generating the plan, the skill dispatches `information-architect` and `junior-developer`
-  in parallel against it. The first confirms the plan leads with plain language and defers the implementation detail;
-  the second confirms the plain-language layer is comprehensible on its own. Actionable edits are applied before the
-  plan is finalized.
-- **A test that needs a code change first is not a test.** Before priorities are assigned, the skill sweeps every
-  recommendation for one that cannot be written until shipped code changes: an added `order` on a query, a new
-  validation, a changed return value. That item leaves the priority tiers for a Blocked by a Production Change section
-  recording the change, the file, and the file's other consumers. It exists because a CRIT label ranks how serious a
-  finding is and says nothing about whose ticket the fix belongs to, so an item carrying one can otherwise walk a
-  production change into the plan dressed as a test to write. The sweep applies to security items on the same terms as
-  every other.
-- **Plan, not test code.** The skill does not write tests. It produces a plan describing what to test, how, and at what
-  level.
+- **בדיקות התנהגותיות בלבד, ב-API הציבורי.** כל בדיקה מומלצת מאמתת התנהגות נצפית בתפר ציבורי: קלטים שהקורא סיפק, פלטים ותופעות לוואי נצפים, ואינטראקציות עם האובייקטים והשירותים שהיחידה משתפת איתם פעולה. הסקיל לא ממליץ על בדיקות שמושיטות יד לשיטות פרטיות, למצב פנימי או למבנה המימוש: אם שני מימושים היו מייצרים את אותה התנהגות נצפית, הבדיקה חייבת לעבור בשניהם. הוא מכסה את ההתנהגויות הקריטיות שקורא תלוי בהן ועוצר, במקום להגדיר בדיקה לכל ענף, helper או ערך ביניים.
+- **שני סוכנים תמיד-פעילים בתוספת שניים מותנים.** `test-engineer` מנתח פערי כיסוי (התנהגויות נצפות, קלטים, פלטים, אינטראקציות עם משתפי פעולה). `edge-case-explorer` מגלה ערכי גבול, מלכודות המרת טיפוסים, כשלים תלויי-מצב ופערים בהתפשטות שגיאות. `concurrency-analyst` מצטרף כשהקבצים נוגעים בתהליכונים/אסינכרוני/מצב משותף, כדי להעלות בדיקות מרוץ וסדר נעילות. `adversarial-security-analyst` מצטרף כשהקבצים נוגעים באימות, בטיפול בקלט, בבידוד, בהצפנה, בהעלאות או ב-SQL/ORM, כדי להעלות בדיקות אבטחה שליליות. פריטי אבטחה נוחתים כ-CRIT ופטורים מתקרת 40 הפריטים.
+- **סכמת עדיפות בת ארבעה דרגים.** CRIT (אבטחה, שלמות נתונים, אימות), HIGH (לוגיקה עסקית, טיפול בשגיאות), MED, LOW. הסיווג מגיע מהדירוגים של שני הסוכנים שממופים לסכמה מאוחדת.
+- **מזהים מאוחדים עם הצלבה.** `TP-001`, `TP-002`, … כשמזהה הסוכן המקורי מתועד (לדוגמה, _"TP-001 (from T3)"_).
+- **שלושה מצבי סקירה.** מצב A (הקשר git מלא, ענף מול ברירת המחדל), מצב B (שינויים שלא נכנסו לקומיט או ב-staging), מצב C (בלי git, קבצים שהתגלו ב-glob).
+- **שדרה בשפה פשוטה, ייחוס טכני מתחת.** התוכנית פותחת ב-Summary, בסעיף נושאים What Needs Testing and Why, ובהליכה של What Each Test Covers, הכול בשפה פשוטה. הפירוט לכל פריט (רמת בדיקה, מסלולי קוד, גישה, הצדקת עדיפות), פריטים דחויים ונזרקים, מספרי כיסוי והיקף, יושבים מתחת באזור `## Technical Reference` עבור הקורא שצריך אותם.
+- **מעבר סקירת פלט.** אחרי ייצור התוכנית, הסקיל משגר את `information-architect` ואת `junior-developer` במקביל מולה. הראשון מאשר שהתוכנית פותחת בשפה פשוטה ודוחה את פרטי המימוש; השני מאשר ששכבת השפה הפשוטה מובנת בפני עצמה. עריכות בנות-ביצוע מוחלות לפני שהתוכנית מסופקת.
+- **בדיקה שצריכה קודם שינוי בקוד אינה בדיקה.** לפני שהעדיפויות מוקצות, הסקיל סורק כל המלצה כדי לאתר אחת שלא ניתן לכתוב עד ששחרור קוד ישתנה: `order` שנוסף לשאילתה, אימות חדש, ערך החזרה שהשתנה. הפריט הזה עוזב את דרגי העדיפות לטובת סעיף Blocked by a Production Change שמתעד את השינוי, את הקובץ, ואת יתר הצרכנים של הקובץ. זה קיים מפני שתווית CRIT מדרגת כמה ממצא חמור ולא אומרת דבר על הכרטיס של מי התיקון שייך, ולכן פריט שנושא אחת יכול אחרת להכניס שינוי פרודקשן לתוכנית מחופש לבדיקה לכתוב. הסריקה חלה על פריטי אבטחה באותם תנאים כמו על כל פריט אחר.
+- **תוכנית, לא קוד בדיקות.** הסקיל לא כותב בדיקות. הוא מייצר תוכנית שמתארת מה לבדוק, איך, ובאיזו רמה.
 
-## When to use it
+## מתי להשתמש בו
 
-**Invoke when:**
+**הפעל כאשר:**
 
-- You want a prioritized test plan for a branch, a directory, or specific files, independent of a full code review.
-- You finished an implementation plan and want a test plan scoped to what you are about to build.
-- A code review flagged coverage gaps and you want those gaps expanded into a concrete list of tests to write.
-- You want the edge-case dimension covered specifically (boundary values, type coercion, error propagation) rather than
-  only the coverage dimension.
+- אתה רוצה תוכנית בדיקות מתועדפת לענף, לתיקייה או לקבצים מסוימים, בנפרד מסקירת קוד מלאה.
+- סיימת תוכנית מימוש ואתה רוצה תוכנית בדיקות מתוחמת למה שאתה עומד לבנות.
+- סקירת קוד סימנה פערי כיסוי ואתה רוצה שהפערים האלה יורחבו לרשימה קונקרטית של בדיקות לכתוב.
+- אתה רוצה שממד מקרי הקצה יכוסה באופן ספציפי (ערכי גבול, המרת טיפוסים, התפשטות שגיאות) ולא רק ממד הכיסוי.
 
-**Do not invoke for:**
+**אל תפעיל עבור:**
 
-- **Full code review.** Use [`/code-review`](./code-review.md) for correctness, testing, and compliance.
-- **A plan a person runs by hand.** Use [`/manual-test-planning`](./manual-test-planning.md) for a plain-language plan
-  with by-hand steps and expected outcomes.
-- **Iterating on an existing test plan.** Use [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md) for
-  multi-pass refinement of a written plan.
-- **Writing test code.** This skill produces a plan only. Write the tests separately.
-- **Architectural testability analysis.** Use [`/architectural-analysis`](./architectural-analysis.md) for
-  structural testability concerns.
-- **Diagnosing a bug or failing behavior.** Use [`/investigate`](./investigate.md) when something is broken; reach for
-  this skill when the gap is coverage, not a bug.
+- **סקירת קוד מלאה.** השתמש ב-[`/code-review`](./code-review.md) לנכונות, בדיקות וציות.
+- **תוכנית שאדם מריץ ידנית.** השתמש ב-[`/manual-test-planning`](./manual-test-planning.md) לתוכנית בשפה פשוטה עם שלבים ידניים ותוצאות צפויות.
+- **איטרציה על תוכנית בדיקות קיימת.** השתמש ב-[`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md) לזיקוק רב-מעברי של תוכנית כתובה.
+- **כתיבת קוד בדיקות.** הסקיל הזה מייצר תוכנית בלבד. כתוב את הבדיקות בנפרד.
+- **ניתוח בדיקתיות ארכיטקטונית.** השתמש ב-[`/architectural-analysis`](./architectural-analysis.md) לסוגיות בדיקתיות מבניות.
+- **אבחון באג או התנהגות כושלת.** השתמש ב-[`/investigate`](./investigate.md) כשמשהו שבור; פנה לסקיל הזה כשהפער הוא כיסוי ולא באג.
 
-## How to invoke it
+## איך להפעיל אותו
 
-Run `/automated-test-planning` in Claude Code. Optionally pass a scope or a focus description.
+הרץ `/automated-test-planning` ב-Claude Code. אופציונלית העבר היקף או תיאור מיקוד.
 
-Give it:
+תן לו:
 
-1. **Scope.** File paths, directories, or a description of what should be tested. Without arguments, the skill uses the
-   current branch's changed files (Mode A/B) or Glob-discovers source files (Mode C).
-2. **A focus description, optional.** _"Plan tests for the payment processing refactor I just finished."_ The
-   description reaches both agents and sharpens their analysis.
+1. **היקף.** נתיבי קבצים, תיקיות, או תיאור של מה שצריך להיבדק. בלי ארגומנטים, הסקיל משתמש בקבצים שהשתנו בענף הנוכחי (מצב A/B) או מגלה קובצי מקור ב-Glob (מצב C).
+2. **תיאור מיקוד, אופציונלי.** _"תתכנן בדיקות לריפקטור עיבוד התשלומים שסיימתי זה עתה."_ התיאור מגיע לשני הסוכנים ומחדד את הניתוח שלהם.
 
-Example prompts:
+פרומפטים לדוגמה:
 
-- `/automated-test-planning`. Create a test plan for the current branch's changes.
-- `/automated-test-planning src/auth/`. Create a test plan scoped to the auth directory.
-- `/automated-test-planning`. _"Plan tests for the payment processing refactor I just finished."_
-- `/automated-test-planning src/billing/invoice.ts src/billing/tax.ts`. Focus on two specific files.
+- `/automated-test-planning`. יצירת תוכנית בדיקות לשינויים בענף הנוכחי.
+- `/automated-test-planning src/auth/`. יצירת תוכנית בדיקות מתוחמת לתיקיית האימות.
+- `/automated-test-planning`. _"תתכנן בדיקות לריפקטור עיבוד התשלומים שסיימתי זה עתה."_
+- `/automated-test-planning src/billing/invoice.ts src/billing/tax.ts`. התמקדות בשני קבצים מסוימים.
 
-## What you get back
+## מה אתה מקבל בחזרה
 
-A structured test plan in-channel, leading with plain language and deferring the implementation detail:
+תוכנית בדיקות מובנית בערוץ, שפותחת בשפה פשוטה ודוחה את פרטי המימוש:
 
-- **Summary.** A plain-language paragraph for a reader who has not seen the code, covering what was analyzed, the
-  overall state of coverage, the biggest risk, and where to start, plus orienting bullets.
-- **What Needs Testing and Why.** The testing work grouped into 2-4 themes, each explained in everyday terms (what could
-  break, who is affected) and ending with the test IDs it covers.
-- **What Each Test Covers.** Every meaningful test as a plain-language line led by its TP-ID, stating what behavior it
-  protects and what would break untested.
-- **Technical Reference.** The implementation outline below the plain-language spine:
-  - **Test Plan.** Up to 40 items, grouped by priority tier (CRIT, HIGH, MED, LOW). Each item has a unified ID (TP-NNN),
-    the original agent cross-reference, a clear description of what to test, test approach, code paths, file:line
-    references, and risk assessment.
-  - **Deferred Tests.** Items `test-engineer` excluded because brittleness risk outweighed value, with reasons.
-  - **Dropped Edge Cases.** Items `edge-case-explorer` intentionally excluded, with reasons.
-  - **Blocked by a Production Change.** Items that cannot be tested until shipped code changes first, each with the
-    change it needs, the file that would carry it, and who else consumes that file. Separate work to ticket, not tests
-    to write. The Summary bullets carry the count so it does not sit unread beneath the priority tiers.
-  - **Coverage Summary.** Counts by priority tier.
-  - **Scope.** Scope type, file count, branch, language, test framework, file list.
+- **Summary.** פסקה בשפה פשוטה עבור קורא שלא ראה את הקוד, שמכסה מה נותח, את המצב הכולל של הכיסוי, את הסיכון הגדול ביותר, ואיפה להתחיל, בתוספת תבליטי התמצאות.
+- **What Needs Testing and Why.** עבודת הבדיקות מקובצת ל-2-4 נושאים, כל אחד מוסבר במונחי היומיום (מה יכול להישבר, מי מושפע) ומסתיים במזהי הבדיקות שהוא מכסה.
+- **What Each Test Covers.** כל בדיקה משמעותית כשורה בשפה פשוטה שמובלת על ידי ה-TP-ID שלה, ומציינת איזו התנהגות היא מגנה ומה היה נשבר בלי בדיקה.
+- **Technical Reference.** מתאר המימוש מתחת לשדרת השפה הפשוטה:
+  - **Test Plan.** עד 40 פריטים, מקובצים לפי דרג עדיפות (CRIT, HIGH, MED, LOW). לכל פריט יש מזהה מאוחד (TP-NNN), את ההצלבה לסוכן המקורי, תיאור ברור של מה לבדוק, גישת בדיקה, מסלולי קוד, הפניות file:line והערכת סיכון.
+  - **Deferred Tests.** פריטים ש-`test-engineer` הוציא מפני שסיכון השבירות גבר על הערך, עם סיבות.
+  - **Dropped Edge Cases.** פריטים ש-`edge-case-explorer` הוציא במכוון, עם סיבות.
+  - **Blocked by a Production Change.** פריטים שלא ניתן לבדוק עד ששחרור קוד ישתנה קודם, כל אחד עם השינוי שהוא צריך, הקובץ שהיה נושא אותו, ומי עוד צורך את הקובץ הזה. עבודה נפרדת לכרטוס, לא בדיקות לכתוב. תבליטי ה-Summary נושאים את המספר כדי שהוא לא יישב בלי שייקרא מתחת לדרגי העדיפות.
+  - **Coverage Summary.** מספרים לפי דרג עדיפות.
+  - **Scope.** סוג ההיקף, מספר קבצים, ענף, שפה, פריימוורק בדיקות, רשימת קבצים.
 
-If more than 40 items exist, the skill notes how many were omitted and recommends a re-run after the highest-priority
-items land.
+אם קיימים יותר מ-40 פריטים, הסקיל מציין כמה הושמטו וממליץ על הרצה חוזרת אחרי שהפריטים בעדיפות הגבוהה ביותר נוחתים.
 
-## How to get the most out of it
+## איך להפיק ממנו את המרב
 
-- **Scope narrowly.** A tightly scoped run produces sharper items than a broad sweep. For a medium branch, scoping to
-  specific files or subdirectories pays off.
-- **Run `/project-discovery` first.** The skill uses the discovery reference for test command, language, and test
-  framework. Without it, framework detection falls back to inference.
-- **Ask for exhaustive exploration if the risk is high.** Mention _"exhaustive edge-case exploration"_ in your prompt
-  and the `edge-case-explorer` agent shifts from focused to exhaustive mode. More items, deeper coverage, higher cost.
-- **Pair with `/code-review`** when you want coverage gaps _and_ correctness findings. `/code-review` dispatches the
-  same two agents plus `adversarial-security-analyst`, classified into the review output.
-- **Re-run after fixes.** Once high-priority items are addressed, re-run for the next batch.
+- **תחם בצמצום.** ריצה מתוחמת היטב מייצרת פריטים חדים יותר מסריקה רחבה. לענף בינוני, תיחום לקבצים או לתת-תיקיות מסוימות משתלם.
+- **הרץ `/project-discovery` קודם.** הסקיל משתמש בייחוס הגילוי עבור פקודת הבדיקה, השפה ופריימוורק הבדיקות. בלעדיו, זיהוי הפריימוורק נופל לאחור להסקה.
+- **בקש חקירה ממצה אם הסיכון גבוה.** הזכר _"exhaustive edge-case exploration"_ בפרומפט שלך והסוכן `edge-case-explorer` עובר ממצב ממוקד למצב ממצה. יותר פריטים, כיסוי עמוק יותר, עלות גבוהה יותר.
+- **צמד עם `/code-review`** כשאתה רוצה פערי כיסוי _וגם_ ממצאי נכונות. `/code-review` משגר את אותם שני סוכנים בתוספת `adversarial-security-analyst`, מסווגים לתוך פלט הסקירה.
+- **הרץ מחדש אחרי תיקונים.** ברגע שפריטים בעדיפות גבוהה טופלו, הרץ מחדש למנה הבאה.
 
-## Cost and latency
+## עלות וזמן תגובה
 
-The skill dispatches two always-on agents (`test-engineer`, `edge-case-explorer`) plus up to two conditional agents
-(`concurrency-analyst`, `adversarial-security-analyst`) in parallel, all on their default models. After the plan is
-generated, two reviewers (`information-architect`, `junior-developer`) run in parallel against it. Once the plan is
-final, the skill runs one `han-communication:readability-editor` rewrite of its prose, so expect one additional
-readability pass. Typical runs are a few minutes. The 40-item cap keeps non-security output bounded; security items are
-uncapped, and dropped items are surfaced explicitly so nothing is quietly omitted.
+הסקיל משגר שני סוכנים תמיד-פעילים (`test-engineer`, `edge-case-explorer`) בתוספת עד שני סוכנים מותנים (`concurrency-analyst`, `adversarial-security-analyst`) במקביל, כולם על מודלי ברירת המחדל שלהם. אחרי שהתוכנית נוצרת, שני סוקרים (`information-architect`, `junior-developer`) רצים במקביל מולה. ברגע שהתוכנית סופית, הסקיל מריץ שכתוב אחד של `han-communication:readability-editor` על הטקסט שלה, אז צפה למעבר קריאוּת נוסף אחד. ריצות טיפוסיות הן כמה דקות. תקרת 40 הפריטים שומרת על הפלט שאינו אבטחה תחום; פריטי אבטחה אינם מוגבלים, ופריטים שנזרקו מוצגים במפורש כך ששום דבר לא מושמט בשקט.
 
-## In more detail
+## בפירוט
 
-The skill walks a five-step process:
+הסקיל עובר תהליך של חמישה צעדים:
 
-1. **Determine scope.** Resolve project config; detect git mode (A/B/C) via `detect-test-context.sh`; build a file list.
-2. **Dispatch testing agents.** Launch `test-engineer` and `edge-case-explorer` always. Add `concurrency-analyst` when
-   the file list touches async or shared state. Add `adversarial-security-analyst` when it touches auth, input handling,
-   isolation, crypto, uploads, or SQL/ORM. All run in parallel in the background. The skill waits for every dispatched
-   agent.
-3. **Merge and prioritize.** Classify findings into the four-tier priority scheme (security items auto-CRIT). Sweep out
-   any item needing a production change before it can be tested, into Blocked by a Production Change. Assign unified
-   IDs. Interleave by priority. Cap non-security items at 40.
-4. **Generate output.** Fill the template at
-   [`references/template.md`](../../skills/automated-test-planning/references/template.md), leading with plain
-   language (Summary, What Needs Testing and Why, What Each Test Covers) before the Technical Reference region that
-   holds the per-item test plan, deferred, dropped, coverage summary, and scope.
-5. **Review the output.** Dispatch [`information-architect`](../../../han-core/docs/agents/information-architect.md) and
-   [`junior-developer`](../../../han-core/docs/agents/junior-developer.md) in parallel against the generated plan. The
-   information-architect confirms it leads with plain language and defers the implementation detail; the
-   junior-developer confirms the plain-language layer stands on its own for a reader who never opens the Technical
-   Reference. Apply every actionable edit; surface author-judgment findings with a recommended resolution. Once the plan
-   is final, the skill dispatches `readability-editor` to rewrite the test plan's prose for the engineer who will
-   implement the tests, preserving every fact and every test ID, then runs a readability self-check before presenting.
+1. **קביעת ההיקף.** פענוח קונפיגורציית הפרויקט; זיהוי מצב git (A/B/C) דרך `detect-test-context.sh`; בניית רשימת קבצים.
+2. **שיגור סוכני בדיקות.** הפעלת `test-engineer` ו-`edge-case-explorer` תמיד. הוספת `concurrency-analyst` כשרשימת הקבצים נוגעת באסינכרוני או במצב משותף. הוספת `adversarial-security-analyst` כשהיא נוגעת באימות, בטיפול בקלט, בבידוד, בהצפנה, בהעלאות או ב-SQL/ORM. כולם רצים במקביל ברקע. הסקיל מחכה לכל סוכן משוגר.
+3. **מיזוג ותעדוף.** סיווג הממצאים לסכמת העדיפות בת ארבעת הדרגים (פריטי אבטחה אוטומטית CRIT). סריקה החוצה של כל פריט שצריך שינוי פרודקשן לפני שניתן לבדוק אותו, אל Blocked by a Production Change. הקצאת מזהים מאוחדים. שזירה לפי עדיפות. הגבלת פריטים שאינם אבטחה ל-40.
+4. **ייצור הפלט.** מילוי התבנית ב-[`references/template.md`](../../skills/automated-test-planning/references/template.md), כשהיא פותחת בשפה פשוטה (Summary, What Needs Testing and Why, What Each Test Covers) לפני אזור ה-Technical Reference שמחזיק את תוכנית הבדיקות לכל פריט, את הדחויים, את הנזרקים, את סיכום הכיסוי ואת ההיקף.
+5. **סקירת הפלט.** שיגור [`information-architect`](../../../han-core/docs/agents/information-architect.md) ו-[`junior-developer`](../../../han-core/docs/agents/junior-developer.md) במקביל מול התוכנית שנוצרה. ה-information-architect מאשר שהיא פותחת בשפה פשוטה ודוחה את פרטי המימוש; ה-junior-developer מאשר ששכבת השפה הפשוטה עומדת בפני עצמה עבור קורא שלעולם לא פותח את ה-Technical Reference. החלת כל עריכה בת-ביצוע; הצגת ממצאים ששיקול הדעת של הכותב מכריע בהם, עם פתרון מומלץ. ברגע שהתוכנית סופית, הסקיל משגר את `readability-editor` כדי לשכתב את הטקסט של תוכנית הבדיקות עבור המהנדס שיממש את הבדיקות, תוך שמירה על כל עובדה ועל כל מזהה בדיקה, ואז מריץ בדיקה עצמית של קריאוּת לפני ההצגה.
 
 ## YAGNI
 
-A YAGNI sweep runs over the proposed test plan before it is committed. Tests for code paths that don't exist yet,
-hypothetical adversaries the change doesn't touch, branches that internal callers fully control, or coverage of all enum
-values when only one is reachable are YAGNI candidates and move to the plan's `### Deferred Tests` section (marked with
-the YAGNI reason), with dropped edge cases going to `### Dropped Edge Cases`, both under the `## Technical Reference`
-region. The Speculative Test rule (enforced by `test-engineer`) and the Speculative Edge Case rule (enforced by
-`edge-case-explorer`) catch the most common shapes: symmetry-driven coverage, defensive tests at trusted internal
-boundaries, and tests that exist only because _best practice says you should test that_.
+סריקת YAGNI רצה על תוכנית הבדיקות המוצעת לפני שמתחייבים אליה. בדיקות למסלולי קוד שעדיין לא קיימים, ליריבים היפותטיים שהשינוי לא נוגע בהם, לענפים שקוראים פנימיים שולטים בהם לחלוטין, או כיסוי של כל ערכי ה-enum כשרק אחד נגיש, הם מועמדי YAGNI ועוברים לסעיף `### Deferred Tests` של התוכנית (מסומנים עם סיבת ה-YAGNI), כשמקרי קצה שנזרקו הולכים ל-`### Dropped Edge Cases`, שניהם תחת אזור ה-`## Technical Reference`. כלל הבדיקה הספקולטיבית (שנאכף על ידי `test-engineer`) וכלל מקרה הקצה הספקולטיבי (שנאכף על ידי `edge-case-explorer`) תופסים את הצורות הנפוצות ביותר: כיסוי שמונע מסימטריה, בדיקות הגנתיות בגבולות פנימיים מהימנים, ובדיקות שקיימות רק מפני ש*best practice אומר שצריך לבדוק את זה*.
 
-See [YAGNI](../../../docs/yagni.md) for the two gates, the acceptable-evidence list, the named anti-patterns, and the deferral
-format.
+ראה [YAGNI](../../../docs/yagni.md) לשני השערים, לרשימת הראיות הקבילות, לאנטי-דפוסים הנקובים בשם, ולפורמט הדחייה.
 
-## Sources
+## מקורות
 
-The skill's practice is grounded in established testing-strategy and risk-based testing literature.
+הפרקטיקה של הסקיל מעוגנת בספרות מבוססת של אסטרטגיית בדיקות ובדיקות מבוססות-סיכון.
 
 ### Michael Feathers: Working Effectively with Legacy Code
 
-Feathers's work on seams and observable behavior underlies the `test-engineer` agent's orientation toward inputs,
-outputs, and collaborator interactions rather than internal code paths.
+העבודה של Feathers על תפרים ועל התנהגות נצפית עומדת בבסיס ההתמצאות של הסוכן `test-engineer` לכיוון קלטים, פלטים ואינטראקציות עם משתפי פעולה, ולא לכיוון מסלולי קוד פנימיים.
 
 URL: https://www.oreilly.com/library/view/working-effectively-with/0131177052/
 
 ### Kent Beck: Test-Driven Development: By Example
 
-Beck's work on test-driven design and the boundary between unit and collaborator tests grounds the skill's four-tier
-priority scheme. Critical-path behavior is tested first, error handling second, edge cases next, cosmetics last.
+העבודה של Beck על עיצוב מונחה-בדיקות ועל הגבול בין בדיקות יחידה לבדיקות משתפי פעולה מבססת את סכמת העדיפות בת ארבעת הדרגים של הסקיל. התנהגות במסלול הקריטי נבדקת ראשונה, טיפול בשגיאות שני, מקרי קצה אחר כך, וקוסמטיקה אחרונה.
 
 URL: https://www.pearson.com/en-us/subject-catalog/p/test-driven-development-by-example/P200000009421
 
-### Cem Kaner et al.: Testing Computer Software
+### Cem Kaner ואחרים: Testing Computer Software
 
-The classic taxonomy of boundary-value, equivalence-partition, and error-path testing underlies the `edge-case-explorer`
-agent's category rubric.
+הטקסונומיה הקלאסית של בדיקות ערכי גבול, חלוקה לשקילות ומסלולי שגיאה עומדת בבסיס רובריקת הקטגוריות של הסוכן `edge-case-explorer`.
 
 URL: https://www.wiley.com/en-us/Testing+Computer+Software%2C+2nd+Edition-p-9780471358466
 
-## Related documentation
+## תיעוד קשור
 
-- [Plugin README](../../README.md). The plugin's front door: its skills, agents, and how they fit together.
-- [Repo root README](../../../README.md). The Han suite landing page. Start here if you arrived from outside the docs tree.
-- [YAGNI](../../../docs/yagni.md). The evidence-based "You Aren't Gonna Need It" rule this skill applies before committing
-  items. The two gates, the acceptable-evidence list, the named anti-patterns, and the deferral format.
-- [Skills Index](../../../docs/skills/README.md). All skills, grouped by purpose.
-- [`/code-review`](./code-review.md). Dispatches the same agents plus `adversarial-security-analyst`. Use when you want
-  correctness findings too.
-- [`/architectural-analysis`](./architectural-analysis.md). For structural testability concerns.
-- [`/manual-test-planning`](./manual-test-planning.md). The by-hand sibling: plain-language tests with steps and
-  expected outcomes a person follows without reading code.
-- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). Use to stress-test an already-written test plan.
-- [`test-engineer`](../../../han-core/docs/agents/test-engineer.md),
-  [`edge-case-explorer`](../../../han-core/docs/agents/edge-case-explorer.md). Always dispatched.
-- [`concurrency-analyst`](../../../han-core/docs/agents/concurrency-analyst.md). Dispatched when the file list touches async,
-  threads, or shared state.
-- [`adversarial-security-analyst`](../../../han-core/docs/agents/adversarial-security-analyst.md). Dispatched when the file list
-  touches auth, input handling, isolation, crypto, uploads, or SQL/ORM.
-- [`information-architect`](../../../han-core/docs/agents/information-architect.md),
-  [`junior-developer`](../../../han-core/docs/agents/junior-developer.md). Review the generated plan for findability and
-  plain-language clarity before it is finalized.
-- [`readability-editor`](../../../han-communication/docs/agents/readability-editor.md). Dispatched once the plan is final to
-  rewrite its prose for the engineer who will implement the tests, preserving every fact and every test ID.
-- [`SKILL.md` for /automated-test-planning](../../skills/automated-test-planning/SKILL.md). The internal process definition.
+- [README של הפלאגין](../../README.md). הדלת הקדמית של הפלאגין: הסקילים שלו, הסוכנים, ואיך הם משתלבים.
+- [README של שורש הריפו](../../../README.md). דף הנחיתה של חבילת Han. התחל כאן אם הגעת מחוץ לעץ התיעוד.
+- [YAGNI](../../../docs/yagni.md). כלל ה-"You Aren't Gonna Need It" מבוסס-הראיות שהסקיל הזה מחיל לפני שהוא מתחייב לפריטים. שני השערים, רשימת הראיות הקבילות, האנטי-דפוסים הנקובים בשם, ופורמט הדחייה.
+- [אינדקס הסקילים](../../../docs/skills/README.md). כל הסקילים, מקובצים לפי מטרה.
+- [`/code-review`](./code-review.md). משגר את אותם סוכנים בתוספת `adversarial-security-analyst`. השתמש בו כשאתה רוצה גם ממצאי נכונות.
+- [`/architectural-analysis`](./architectural-analysis.md). לסוגיות בדיקתיות מבניות.
+- [`/manual-test-planning`](./manual-test-planning.md). האח הידני: בדיקות בשפה פשוטה עם שלבים ותוצאות צפויות שאדם הולך לפיהם בלי לקרוא קוד.
+- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). השתמש בו כדי לבחון בלחץ תוכנית בדיקות שכבר נכתבה.
+- [`test-engineer`](../../../han-core/docs/agents/test-engineer.md), [`edge-case-explorer`](../../../han-core/docs/agents/edge-case-explorer.md). משוגרים תמיד.
+- [`concurrency-analyst`](../../../han-core/docs/agents/concurrency-analyst.md). משוגר כשרשימת הקבצים נוגעת באסינכרוני, בתהליכונים או במצב משותף.
+- [`adversarial-security-analyst`](../../../han-core/docs/agents/adversarial-security-analyst.md). משוגר כשרשימת הקבצים נוגעת באימות, בטיפול בקלט, בבידוד, בהצפנה, בהעלאות או ב-SQL/ORM.
+- [`information-architect`](../../../han-core/docs/agents/information-architect.md), [`junior-developer`](../../../han-core/docs/agents/junior-developer.md). סוקרים את התוכנית שנוצרה לאיתור יכולת מציאה ובהירות בשפה פשוטה לפני שהיא מסופקת.
+- [`readability-editor`](../../../han-communication/docs/agents/readability-editor.md). משוגר ברגע שהתוכנית סופית כדי לשכתב את הטקסט שלה עבור המהנדס שיממש את הבדיקות, תוך שמירה על כל עובדה ועל כל מזהה בדיקה.
+- [`SKILL.md` של /automated-test-planning](../../skills/automated-test-planning/SKILL.md). הגדרת התהליך הפנימי.

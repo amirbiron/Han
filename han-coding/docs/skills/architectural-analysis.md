@@ -1,320 +1,188 @@
 # /architectural-analysis
 
-Operator documentation for the `/architectural-analysis` skill in the han plugin. This document helps you decide _when_
-and _how_ to use the skill. For what the skill does internally, read the skill definition at
-[`han-coding/skills/architectural-analysis/SKILL.md`](../../skills/architectural-analysis/SKILL.md).
+תיעוד מפעיל לסקיל `/architectural-analysis` בפלאגין. המסמך הזה עוזר לך להחליט _מתי_ ו*איך* להשתמש בסקיל. למה שהסקיל עושה בפנים, קרא את הגדרת הסקיל ב-[`han-coding/skills/architectural-analysis/SKILL.md`](../../skills/architectural-analysis/SKILL.md).
 
-> See also: [Plugin README](../../README.md) · [Repo root](../../../README.md) · [All skills](../../../docs/skills/README.md) ·
-> [All agents](../../../docs/agents/README.md) · [Sizing](../../../docs/sizing.md)
+> ראה גם: [README של הפלאגין](../../README.md) · [שורש הריפו](../../../README.md) · [כל הסקילים](../../../docs/skills/README.md) · [כל הסוכנים](../../../docs/agents/README.md) · [Sizing](../../../docs/sizing.md)
 
 ## TL;DR
 
-- **What it does.** Deep architectural analysis of a specified module, directory, or feature area: coupling, data flow,
-  concurrency, risk, and SOLID alignment, plus security, data, and operational structure when the focus area touches
-  them.
-- **When to use it.** You want to assess the architecture, design quality, coupling, or technical debt of an existing
-  part of the codebase. Before refactoring, during review, or to inform a decision.
-- **What you get back.** A unified report. A spine of four agents always runs (structural, behavioral, risk,
-  software-architecture synthesis). Additional specialists join the roster only when the focus area's signals call for
-  them, and the roster scales with the [size](../../../docs/sizing.md).
+- **מה הוא עושה.** ניתוח ארכיטקטוני עמוק של מודול, תיקייה או אזור פיצ'ר שצוינו: צימוד, זרימת נתונים, מקביליות, סיכון והתאמה ל-SOLID, בתוספת מבנה אבטחה, נתונים ותפעול כשאזור המיקוד נוגע בהם.
+- **מתי להשתמש בו.** אתה רוצה להעריך את הארכיטקטורה, את איכות העיצוב, את הצימוד או את החוב הטכני של חלק קיים בבסיס הקוד. לפני ריפקטורינג, במהלך סקירה, או כדי ליידע החלטה.
+- **מה אתה מקבל בחזרה.** דוח מאוחד. שדרה של ארבעה סוכנים תמיד רצה (מבנה, התנהגות, סיכון, סינתזת ארכיטקטורת תוכנה). מומחים נוספים מצטרפים למערך רק כשהאותות של אזור המיקוד מחייבים אותם, והמערך גדל עם [הגודל](../../../docs/sizing.md).
 
-## Key concepts
+## מושגי מפתח
 
-- **A focus area is required.** The skill must be pointed at a specific module, directory, or feature. _"Analyze the
-  whole codebase"_ is not a valid input. The skill asks you to narrow it before proceeding.
-- **The synthesis spine always runs.** `structural-analyst` and `behavioral-analyst` analyze the focus area in parallel,
-  `risk-analyst` scores their findings, and `software-architect` synthesizes intra-codebase recommendations. These four
-  run at every size because structure, runtime behavior, risk of inaction, and SOLID synthesis are the irreducible core
-  of an architectural read.
-- **Specialists are signal-selected.** `concurrency-analyst` joins when the code uses concurrency primitives.
-  `adversarial-security-analyst`, `data-engineer`, and `devops-engineer` join when the focus area touches auth/PII,
-  schemas/data contracts, or operational surface. `on-call-engineer` joins when application source in the focus area
-  shows on-call resilience signal (outbound calls, retry logic, queue/buffer handling, async/await code, error handling
-  on production paths, idempotency surfaces). `codebase-explorer` joins for large, unfamiliar areas. `system-architect`
-  joins at large size when the focus area crosses a service or bounded-context seam. An agent whose domain the code does
-  not touch is not dispatched, because that only burns tokens and dilutes the report.
-- **The roster scales with size.** Small runs the spine plus concurrency. Medium adds one or two of the security, data,
-  DevOps, and on-call specialists by signal. Large adds the rest, the codebase map, and the system architect when a
-  cross-service seam is present. The skill defaults to small and announces the chosen size and roster, with a one-line
-  justification, before dispatching.
-- **Numbered findings.** Each analyst returns findings with its own prefix: `S#` structural, `B#` behavioral, `C#`
-  concurrency, `SEC-###` security, `DOR-###` DevOps, `OCE-###` on-call, `R#` risk, `A#` software-architecture, `SA#`
-  system-architecture. Cross-references survive into the recommendations so every proposed change traces to the finding
-  that drove it.
-- **Recommendations, not refactors.** The skill does not modify code. `software-architect` (and `system-architect` when
-  dispatched) produce pseudocode sketches for proposed modules, interfaces, and boundaries. Implementation is a separate
-  step.
-- **The report is template-driven.** The output structure lives in
-  [`references/architectural-analysis-report-template.md`](../../skills/architectural-analysis/references/architectural-analysis-report-template.md).
-  Sections whose agent was not dispatched are removed from the rendered report rather than left empty.
+- **אזור מיקוד הוא חובה.** צריך לכוון את הסקיל למודול, לתיקייה או לפיצ'ר מסוימים. _"תנתח את כל בסיס הקוד"_ אינו קלט תקף. הסקיל מבקש ממך לצמצם לפני שהוא ממשיך.
+- **שדרת הסינתזה תמיד רצה.** `structural-analyst` ו-`behavioral-analyst` מנתחים את אזור המיקוד במקביל, `risk-analyst` מנקד את הממצאים שלהם, ו-`software-architect` מסנתז המלצות בתוך בסיס הקוד. הארבעה האלה רצים בכל גודל מפני שמבנה, התנהגות בזמן ריצה, סיכון של אי-פעולה, וסינתזת SOLID הם הליבה הבלתי ניתנת לצמצום של קריאה ארכיטקטונית.
+- **מומחים נבחרים לפי אות.** `concurrency-analyst` מצטרף כשהקוד משתמש בפרימיטיבים של מקביליות. `adversarial-security-analyst`, `data-engineer` ו-`devops-engineer` מצטרפים כשאזור המיקוד נוגע באימות/PII, בסכמות/חוזי נתונים, או במשטח תפעולי. `on-call-engineer` מצטרף כשקוד המקור של האפליקציה באזור המיקוד מראה אות של חוסן כוננות (קריאות יוצאות, לוגיקת retry, טיפול בתורים/חוצצים, קוד async/await, טיפול בשגיאות במסלולי פרודקשן, משטחי אידמפוטנטיות). `codebase-explorer` מצטרף לאזורים גדולים ולא מוכרים. `system-architect` מצטרף בגודל גדול כשאזור המיקוד חוצה תפר של שירות או של הקשר חסום. סוכן שהקוד לא נוגע בתחומו לא משוגר, מפני שזה רק שורף טוקנים ומדלל את הדוח.
+- **המערך גדל עם הגודל.** קטן מריץ את השדרה בתוספת מקביליות. בינוני מוסיף אחד או שניים ממומחי האבטחה, הנתונים, ה-DevOps והכוננות לפי אות. גדול מוסיף את השאר, את מפת בסיס הקוד, ואת ארכיטקט המערכת כשקיים תפר בין שירותים. הסקיל מוגדר כברירת מחדל לקטן ומכריז על הגודל ועל המערך שנבחרו, עם הצדקה בשורה אחת, לפני השיגור.
+- **ממצאים ממוספרים.** כל אנליסט מחזיר ממצאים עם הקידומת שלו: `S#` מבני, `B#` התנהגותי, `C#` מקביליות, `SEC-###` אבטחה, `DOR-###` DevOps, `OCE-###` כוננות, `R#` סיכון, `A#` ארכיטקטורת תוכנה, `SA#` ארכיטקטורת מערכת. ההצלבות שורדות לתוך ההמלצות, כך שכל שינוי מוצע מתחקה לממצא שהניע אותו.
+- **המלצות, לא ריפקטורים.** הסקיל לא משנה קוד. `software-architect` (ו-`system-architect` כשהוא משוגר) מייצרים סקיצות פסאודו-קוד למודולים, לממשקים ולגבולות מוצעים. המימוש הוא צעד נפרד.
+- **הדוח מונחה-תבנית.** מבנה הפלט חי ב-[`references/architectural-analysis-report-template.md`](../../skills/architectural-analysis/references/architectural-analysis-report-template.md). סעיפים שהסוכן שלהם לא שוגר מוסרים מהדוח המרונדר במקום להישאר ריקים.
 
-## When to use it
+## מתי להשתמש בו
 
-**Invoke when:**
+**הפעל כאשר:**
 
-- A module or subsystem has grown organically and you want a principled baseline before refactoring.
-- You are about to commit to a significant rewrite and want independent structural, behavioral, and concurrency analysis
-  feeding the decision.
-- Coupling, cohesion, or dependency direction feels wrong but you cannot point to the specific finding. The skill
-  surfaces them concretely.
-- A suspected concurrency issue exists somewhere in a module and needs multi-angle analysis (data flow plus shared state
-  plus async handling) in one pass.
-- You want SOLID-alignment recommendations with pseudocode sketches rather than prose generalities.
-- A specialist (`devops-engineer`, `data-engineer`, a security analyst) has flagged an architectural concern but you
-  want the architectural analysis done independently and cross-referenced.
+- מודול או תת-מערכת גדלו באופן אורגני ואתה רוצה קו בסיס עקרוני לפני ריפקטורינג.
+- אתה עומד להתחייב לשכתוב משמעותי ורוצה ניתוח מבני, התנהגותי ושל מקביליות בלתי תלוי שמזין את ההחלטה.
+- הצימוד, הלכידוּת או כיוון התלויות מרגישים שגויים אבל אתה לא יכול להצביע על הממצא הספציפי. הסקיל מעלה אותם באופן קונקרטי.
+- קיים חשד לבעיית מקביליות במקום כלשהו במודול והיא צריכה ניתוח מזוויות מרובות (זרימת נתונים בתוספת מצב משותף בתוספת טיפול אסינכרוני) במעבר אחד.
+- אתה רוצה המלצות התאמה ל-SOLID עם סקיצות פסאודו-קוד ולא הכללות בטקסט.
+- מומחה (`devops-engineer`, `data-engineer`, אנליסט אבטחה) סימן סוגיה ארכיטקטונית אבל אתה רוצה שהניתוח הארכיטקטוני ייעשה באופן בלתי תלוי ויוצלב.
 
-**Do not invoke for:**
+**אל תפעיל עבור:**
 
-- **Getting oriented in unfamiliar code.** Use [`/code-overview`](./code-overview.md) to understand what code does and
-  why before assessing whether its structure is sound.
-- **Investigating a specific bug.** Use [`/investigate`](./investigate.md) for evidence-based root-cause work.
-- **File-level correctness review.** Use [`/code-review`](./code-review.md) for per-file correctness, testing, and
-  compliance.
-- **Test planning.** Use [`/automated-test-planning`](./automated-test-planning.md) for a coverage-and-edge-case plan.
-- **Creating new project structures or scaffolding.** This skill analyzes existing code. It does not design from
-  scratch.
-- **Documenting an existing module.** Use [`/project-documentation`](../../../han-documentation/docs/skills/project-documentation.md).
-- **Architectural decision records.** Use
-  [`/architectural-decision-record`](../../../han-documentation/docs/skills/architectural-decision-record.md) to capture a decision the
-  architectural analysis motivated.
-- **Researching options or prior art.** Use [`/research`](../../../han-research/docs/skills/research.md) when the question is "what are the
-  options" or "how does X work", not "is this existing module sound".
+- **התמצאות בקוד לא מוכר.** השתמש ב-[`/code-overview`](./code-overview.md) כדי להבין מה הקוד עושה ולמה, לפני שאתה מעריך אם המבנה שלו תקין.
+- **חקירת באג מסוים.** השתמש ב-[`/investigate`](./investigate.md) לעבודת שורש בעיה מבוססת-ראיות.
+- **סקירת נכונות ברמת הקובץ.** השתמש ב-[`/code-review`](./code-review.md) לנכונות, לבדיקות ולציות לכל קובץ.
+- **תכנון בדיקות.** השתמש ב-[`/automated-test-planning`](./automated-test-planning.md) לתוכנית כיסוי ומקרי קצה.
+- **יצירת מבני פרויקט חדשים או פיגומים.** הסקיל הזה מנתח קוד קיים. הוא לא מעצב מאפס.
+- **תיעוד מודול קיים.** השתמש ב-[`/project-documentation`](../../../han-documentation/docs/skills/project-documentation.md).
+- **רשומות החלטה ארכיטקטונית.** השתמש ב-[`/architectural-decision-record`](../../../han-documentation/docs/skills/architectural-decision-record.md) כדי ללכוד החלטה שהניתוח הארכיטקטוני הניע.
+- **מחקר אפשרויות או מה שכבר נעשה.** השתמש ב-[`/research`](../../../han-research/docs/skills/research.md) כשהשאלה היא "מה האפשרויות" או "איך X עובד", ולא "האם המודול הקיים הזה תקין".
 
-## How to invoke it
+## איך להפעיל אותו
 
-Run `/architectural-analysis` in Claude Code with a focus area.
+הרץ `/architectural-analysis` ב-Claude Code עם אזור מיקוד.
 
-Give it:
+תן לו:
 
-1. **A focus area (required).** A module directory, a specific subsystem, or a set of related files. If you run the
-   skill without a focus area, it asks you to specify one before proceeding.
-2. **A size, optional.** Pass `small`, `medium`, `large`, or `dynamic` as the first positional argument to override the
-   auto-classification. The skill still selects specialists by signal, so a `large` override does not dispatch agents
-   whose domain the code never touches.
-3. **A driving concern, optional.** _"I suspect the auth service's session handling has a race,"_ or _"we want to split
-   this module and need to see where the coupling lives first."_ The concern biases every dispatched specialist's
-   attention without narrowing their scope.
+1. **אזור מיקוד (חובה).** תיקיית מודול, תת-מערכת מסוימת, או מקבץ קבצים קשורים. אם תריץ את הסקיל בלי אזור מיקוד, הוא יבקש ממך לציין אחד לפני שהוא ממשיך.
+2. **גודל, אופציונלי.** העבר `small`, `medium`, `large` או `dynamic` כארגומנט המיקומי הראשון כדי לעקוף את הסיווג האוטומטי. הסקיל עדיין בוחר מומחים לפי אות, ולכן עקיפה ל-`large` לא משגרת סוכנים שהקוד אף פעם לא נוגע בתחומם.
+3. **סוגיה מניעה, אופציונלי.** _"אני חושד שיש מרוץ בטיפול בסשנים של שירות האימות"_, או _"אנחנו רוצים לפצל את המודול הזה וצריכים לראות קודם איפה הצימוד יושב"_. הסוגיה מטה את תשומת הלב של כל מומחה משוגר בלי לצמצם את ההיקף שלו.
 
-Example prompts:
+פרומפטים לדוגמה:
 
-- `/architectural-analysis src/auth/`. Auto-classify and analyze the auth module.
-- `/architectural-analysis large packages/billing/`. Force a large run before splitting the billing package into two
-  services.
-- `/architectural-analysis`. _"Evaluate the coupling and cohesion of the payment processing system."_
-- `/architectural-analysis`. _"Check for architectural smells in the notification subsystem, particularly concurrency
-  patterns around the retry queue."_
+- `/architectural-analysis src/auth/`. סיווג אוטומטי וניתוח של מודול האימות.
+- `/architectural-analysis large packages/billing/`. כפיית ריצה גדולה לפני פיצול חבילת החיוב לשני שירותים.
+- `/architectural-analysis`. _"תעריך את הצימוד והלכידוּת של מערכת עיבוד התשלומים."_
+- `/architectural-analysis`. _"תבדוק ריחות ארכיטקטוניים בתת-מערכת ההתראות, במיוחד דפוסי מקביליות סביב תור ה-retry."_
 
-## Sizing
+## גודל
 
-Size sets how many specialists join the spine and how aggressively each agent calibrates its findings. The skill
-defaults to small and only escalates when concrete signals require it.
+הגודל קובע כמה מומחים מצטרפים לשדרה ובאיזו אגרסיביות כל סוכן מכייל את הממצאים שלו. הסקיל מוגדר כברירת מחדל לקטן ומסלים רק כשאותות קונקרטיים מחייבים זאת.
 
-| Size                  | Scope signals                                                                                                                                                                   | Roster                                                                                                                                                                                                                                             |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Small** _(default)_ | A single module or directory. No security, data, DevOps, or system-seam signal. Concurrency may or may not be present.                                                          | The spine (`structural-analyst`, `behavioral-analyst`, then `risk-analyst`, then `software-architect`) plus `concurrency-analyst` when concurrency primitives are present. 3–4 agents. Analysts escalate only the clearest high-impact findings.   |
-| **Medium**            | Two or three adjacent subsystems, or exactly one cross-cutting concern (one auth surface, one data contract, or one operational surface).                                       | The spine plus one or two of `adversarial-security-analyst` / `data-engineer` / `devops-engineer` / `on-call-engineer` whose signals fire, plus `concurrency-analyst` when present. 4–6 agents. Analysts surface high- and medium-impact findings. |
-| **Large**             | More than roughly a dozen files across multiple subsystems, two or more cross-cutting concerns together, a cross-service or bounded-context seam, or you explicitly request it. | The spine plus every signalled specialist, `codebase-explorer` when the area is large and unfamiliar, and `system-architect` when a system-seam signal is present. 6–9 agents. Analysts surface the full finding set.                              |
+| גודל                   | אותות היקף                                                                                                                                 | מערך                                                                                                                                                                                                                                        |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **קטן** _(ברירת מחדל)_ | מודול או תיקייה יחידים. בלי אות של אבטחה, נתונים, DevOps או תפר מערכת. מקביליות עשויה להיות נוכחת או לא.                                   | השדרה (`structural-analyst`, `behavioral-analyst`, ואז `risk-analyst`, ואז `software-architect`) בתוספת `concurrency-analyst` כשפרימיטיבים של מקביליות נוכחים. 3–4 סוכנים. אנליסטים מסלימים רק את הממצאים הברורים ביותר בעלי ההשפעה הגבוהה. |
+| **בינוני**             | שתיים או שלוש תת-מערכות סמוכות, או בדיוק סוגיה חוצה אחת (משטח אימות אחד, חוזה נתונים אחד, או משטח תפעולי אחד).                             | השדרה בתוספת אחד או שניים מ-`adversarial-security-analyst` / `data-engineer` / `devops-engineer` / `on-call-engineer` שהאותות שלהם נורים, בתוספת `concurrency-analyst` כשהוא נוכח. 4–6 סוכנים. אנליסטים מעלים ממצאים בהשפעה גבוהה ובינונית. |
+| **גדול**               | יותר מכתריסר קבצים בערך על פני כמה תת-מערכות, שתי סוגיות חוצות או יותר יחד, תפר בין שירותים או בין הקשרים חסומים, או שאתה מבקש זאת במפורש. | השדרה בתוספת כל מומחה שקיבל אות, `codebase-explorer` כשהאזור גדול ולא מוכר, ו-`system-architect` כשאות של תפר מערכת נוכח. 6–9 סוכנים. אנליסטים מעלים את מקבץ הממצאים המלא.                                                                  |
 
-How the size is chosen:
+איך הגודל נבחר:
 
-- **Default to small.** Unless the focus area's signals push it into medium or large, the skill stays at small.
-  Borderline signals stay at the smaller band.
-- **Signal-selected roster.** A specialist is dispatched only when the focus area exercises its domain. Larger sizes do
-  not force agents whose signals are absent. They only raise the cap and widen what each agent escalates.
-- **Calibration directive.** Every dispatched agent receives a directive scoped to the size. The smaller the size, the
-  narrower the severity bands the agent escalates, and the more aggressively benign-outcome concerns are dropped.
+- **ברירת מחדל לקטן.** אלא אם האותות של אזור המיקוד דוחפים אותו לבינוני או לגדול, הסקיל נשאר בקטן. אותות על הגבול נשארים ברצועה הקטנה יותר.
+- **מערך נבחר-אות.** מומחה משוגר רק כשאזור המיקוד מפעיל את התחום שלו. גדלים גדולים יותר לא כופים סוכנים שהאותות שלהם נעדרים. הם רק מעלים את התקרה ומרחיבים את מה שכל סוכן מסלים.
+- **הנחיית כיול.** כל סוכן משוגר מקבל הנחיה מתוחמת לגודל. ככל שהגודל קטן יותר, כך רצועות החומרה שהסוכן מסלים צרות יותר, וכך דאגות עם תוצאה שפירה נזרקות באגרסיביות רבה יותר.
 
-How to override the size:
+איך לעקוף את הגודל:
 
-- Pass `small`, `medium`, `large`, or `dynamic` as the first positional argument: `/architectural-analysis medium src/auth/`.
-- When the size is overridden, the skill announces the override and uses the chosen band for the roster cap and the
-  calibration directive. Specialists are still selected by signal.
-- Pass `dynamic` when a project or personal `.han/config.md` sets a default band and you want this one run sized from
-  the focus area's own signals instead.
-- Conversational overrides (_"run this as a large analysis"_) work as well and are equivalent.
+- העבר `small`, `medium`, `large` או `dynamic` כארגומנט המיקומי הראשון: `/architectural-analysis medium src/auth/`.
+- כשהגודל נעקף, הסקיל מכריז על העקיפה ומשתמש ברצועה שנבחרה עבור תקרת המערך ועבור הנחיית הכיול. המומחים עדיין נבחרים לפי אות.
+- העבר `dynamic` כשקונפיגורציית פרויקט או אישית ב-`.han/config.md` קובעת רצועת ברירת מחדל ואתה רוצה שהריצה הזו תקבל גודל מהאותות של אזור המיקוד עצמו.
+- עקיפות בשיחה (_"תריץ את זה כניתוח גדול"_) עובדות גם הן ושקולות.
 
-For the cross-skill sizing model and design principles, see [Sizing](../../../docs/sizing.md).
+למודל הגודל החוצה-סקילים ולעקרונות העיצוב, ראה [Sizing](../../../docs/sizing.md).
 
-## What you get back
+## מה אתה מקבל בחזרה
 
-A unified report presented in-channel, rendered from
-[`references/architectural-analysis-report-template.md`](../../skills/architectural-analysis/references/architectural-analysis-report-template.md).
-Sections whose agent was not dispatched are removed, not left empty. The full set:
+דוח מאוחד שמוצג בערוץ, מרונדר מ-[`references/architectural-analysis-report-template.md`](../../skills/architectural-analysis/references/architectural-analysis-report-template.md). סעיפים שהסוכן שלהם לא שוגר מוסרים, ולא נשארים ריקים. המקבץ המלא:
 
-- **Executive Summary.** The focus area and chosen size, the three to five most critical findings across dispatched
-  dimensions, the highest-impact recommendations, and an explicit note on any dimension that was clean or any signalled
-  domain the band cap omitted. This is the only synthesized prose.
-- **Structural Analysis.** Verbatim `structural-analyst` output. `S#` findings on module boundaries, coupling,
-  dependency direction, abstractions, and duplication.
-- **Behavioral Analysis.** Verbatim `behavioral-analyst` output. `B#` findings on data flow, error propagation, state
-  management, and integration boundaries.
-- **Concurrency Analysis** _(when concurrency primitives are present)._ Verbatim `concurrency-analyst` output. `C#`
-  findings, or its explicit "no concurrency patterns found" statement carried verbatim.
-- **Security Analysis** _(when the security signal fires)._ Verbatim `adversarial-security-analyst` output. `SEC-###`
-  findings, each with a demonstrated exploit path or CVE reference.
-- **Data-Engineering Analysis** _(when the data signal fires)._ Verbatim `data-engineer` output on schema, migrations,
-  access patterns, and data contracts.
-- **DevOps Readiness** _(when the DevOps signal fires)._ Verbatim `devops-engineer` output. `DOR-###` findings on
-  operability, rollout, observability, and scale.
-- **On-Call Resilience** _(when the on-call signal fires)._ Verbatim `on-call-engineer` output. `OCE-###` findings at
-  the application source line, naming the code-level resilience anti-pattern, the production failure mode it leads to,
-  and the impact. Application source only; infrastructure and pipeline concerns live in DevOps Readiness.
-- **Codebase Map** _(large, unfamiliar areas)._ Verbatim `codebase-explorer` output: the discovery map the analysts and
-  architects worked from.
-- **Risk Assessment.** Verbatim `risk-analyst` output. `R#` items scoring the `S`/`B`/`C` findings by likelihood,
-  severity, blast radius, and reversibility.
-- **Software-Architecture Recommendations.** Verbatim `software-architect` output. `A#` recommendations aligned with
-  high cohesion, loose coupling, and SOLID, with pseudocode sketches, each tracing back to the findings that drove it.
-- **System-Architecture Recommendations** _(when `system-architect` was dispatched)._ Verbatim `system-architect`
-  output. `SA#` cross-service / bounded-context recommendations and a context-map sketch.
-- **System-level concerns deferred** _(when `system-architect` was not dispatched)._ The boundary-crossing findings
-  `software-architect` flagged as out of its altitude, with a note that you can dispatch `system-architect` separately
-  or re-run at large size.
+- **Executive Summary.** אזור המיקוד והגודל שנבחר, שלושת עד חמשת הממצאים הקריטיים ביותר לרוחב הממדים המשוגרים, ההמלצות בעלות ההשפעה הגבוהה ביותר, והערה מפורשת על כל ממד שהיה נקי או על כל תחום שקיבל אות ותקרת הרצועה השמיטה. זה הטקסט המסונתז היחיד.
+- **Structural Analysis.** פלט מילולי של `structural-analyst`. ממצאי `S#` על גבולות מודולים, צימוד, כיוון תלויות, הפשטות וכפילויות.
+- **Behavioral Analysis.** פלט מילולי של `behavioral-analyst`. ממצאי `B#` על זרימת נתונים, התפשטות שגיאות, ניהול מצב וגבולות אינטגרציה.
+- **Concurrency Analysis** _(כשפרימיטיבים של מקביליות נוכחים)._ פלט מילולי של `concurrency-analyst`. ממצאי `C#`, או האמירה המפורשת שלו "no concurrency patterns found" שנישאת מילולית.
+- **Security Analysis** _(כשאות האבטחה נורה)._ פלט מילולי של `adversarial-security-analyst`. ממצאי `SEC-###`, כל אחד עם מסלול ניצול מודגם או הפניה ל-CVE.
+- **Data-Engineering Analysis** _(כשאות הנתונים נורה)._ פלט מילולי של `data-engineer` על סכמה, מיגרציות, דפוסי גישה וחוזי נתונים.
+- **DevOps Readiness** _(כשאות ה-DevOps נורה)._ פלט מילולי של `devops-engineer`. ממצאי `DOR-###` על הפעלתיות, השקה, תצפיתיות וקנה מידה.
+- **On-Call Resilience** _(כשאות הכוננות נורה)._ פלט מילולי של `on-call-engineer`. ממצאי `OCE-###` בשורת קוד המקור של האפליקציה, שנוקבים באנטי-דפוס החוסן ברמת הקוד, במצב הכשל בפרודקשן שהוא מוביל אליו, ובהשפעה. קוד מקור של אפליקציה בלבד; סוגיות תשתית וצינורות חיות ב-DevOps Readiness.
+- **Codebase Map** _(אזורים גדולים ולא מוכרים)._ פלט מילולי של `codebase-explorer`: מפת הגילוי שהאנליסטים והארכיטקטים עבדו ממנה.
+- **Risk Assessment.** פלט מילולי של `risk-analyst`. פריטי `R#` שמנקדים את ממצאי ה-`S`/`B`/`C` לפי סבירות, חומרה, רדיוס פגיעה והפיכוּת.
+- **Software-Architecture Recommendations.** פלט מילולי של `software-architect`. המלצות `A#` שמתאימות ללכידוּת גבוהה, לצימוד רופף ול-SOLID, עם סקיצות פסאודו-קוד, כשכל אחת מתחקה בחזרה לממצאים שהניעו אותה.
+- **System-Architecture Recommendations** _(כש-`system-architect` שוגר)._ פלט מילולי של `system-architect`. המלצות `SA#` חוצות-שירותים / הקשרים חסומים וסקיצת מפת הקשר.
+- **System-level concerns deferred** _(כש-`system-architect` לא שוגר)._ הממצאים חוצי-הגבולות ש-`software-architect` סימן כמחוץ לגובה שלו, עם הערה שאתה יכול לשגר את `system-architect` בנפרד או להריץ מחדש בגודל גדול.
 
-Every finding is tied to a specific file. Every recommendation traces to one or more findings. If a dimension is
-genuinely clear (no concurrency in a pure-functional module), the skill reports that. It does not fabricate findings to
-fill space.
+כל ממצא קשור לקובץ מסוים. כל המלצה מתחקה לממצא אחד או יותר. אם ממד באמת נקי (אין מקביליות במודול פונקציונלי טהור), הסקיל מדווח על כך. הוא לא ממציא ממצאים כדי למלא מקום.
 
-## How to get the most out of it
+## איך להפיק ממנו את המרב
 
-- **Scope narrowly.** Analyzing a single module pays off. Analyzing "the whole codebase" flattens into shallow findings.
-  If you have a large area, split it and run the skill on each subsystem.
-- **Name the driving concern.** _"Concurrency around the retry queue"_ focuses every dispatched specialist without
-  constraining their analyses.
-- **Trust the default size, override when you know better.** Auto-classification is conservative by design. If you
-  already know the focus area crosses a service seam or carries a security surface, pass `large` so the right
-  specialists join on the first run.
-- **Run `/project-discovery` first.** The skill uses project config (CLAUDE.md, project-discovery.md) to resolve
-  conventions. Without discovery, the analysts fall back to surrounding-code inference.
-- **Pair with `/architectural-decision-record`.** The recommendations often capture architectural decisions worth
-  recording. Run `/architectural-decision-record` next to capture the rationale, alternatives considered, and the
-  decision made.
-- **Pair with `/investigate`** if an analyst finding reveals a concrete runtime bug worth rooting out.
-- **Pair with `/iterative-plan-review`** after you draft the refactoring plan. The architectural analysis produces
-  recommendations; the plan review stress-tests the plan that implements them.
-- **Re-run after structural changes.** If you split a module or extract a service, re-run the skill against the new
-  boundaries. Coupling and duplication findings frequently migrate, and the signal set that selects the roster may
-  change with them.
+- **תחם בצמצום.** ניתוח של מודול יחיד משתלם. ניתוח של "כל בסיס הקוד" משתטח לממצאים רדודים. אם יש לך אזור גדול, פצל אותו והרץ את הסקיל על כל תת-מערכת.
+- **נקוב בסוגיה המניעה.** _"מקביליות סביב תור ה-retry"_ ממקד כל מומחה משוגר בלי להגביל את הניתוחים שלהם.
+- **סמוך על גודל ברירת המחדל, ועקוף כשאתה יודע טוב יותר.** הסיווג האוטומטי שמרני בכוונה. אם אתה כבר יודע שאזור המיקוד חוצה תפר שירות או נושא משטח אבטחה, העבר `large` כדי שהמומחים הנכונים יצטרפו בריצה הראשונה.
+- **הרץ `/project-discovery` קודם.** הסקיל משתמש בקונפיגורציית הפרויקט (CLAUDE.md, project-discovery.md) כדי לפענח מוסכמות. בלי הגילוי, האנליסטים נופלים לאחור להסקה מהקוד הסובב.
+- **צמד עם `/architectural-decision-record`.** ההמלצות לוכדות לעיתים קרובות החלטות ארכיטקטוניות שראוי לתעד. הרץ את `/architectural-decision-record` אחריו כדי ללכוד את הנימוק, את החלופות שנשקלו ואת ההחלטה שהתקבלה.
+- **צמד עם `/investigate`** אם ממצא של אנליסט חושף באג ריצה קונקרטי שראוי לעקור.
+- **צמד עם `/iterative-plan-review`** אחרי שאתה מנסח את תוכנית הריפקטורינג. הניתוח הארכיטקטוני מייצר המלצות; סקירת התוכנית בוחנת בלחץ את התוכנית שמממשת אותן.
+- **הרץ מחדש אחרי שינויים מבניים.** אם פיצלת מודול או חילצת שירות, הרץ מחדש את הסקיל מול הגבולות החדשים. ממצאי צימוד וכפילות נודדים לעיתים קרובות, ומקבץ האותות שבוחר את המערך עשוי להשתנות איתם.
 
-## Cost and latency
+## עלות וזמן תגובה
 
-The skill dispatches a variable roster. A small run is the spine of four agents (`structural-analyst` and
-`behavioral-analyst` in parallel, then `risk-analyst`, then `software-architect`), plus `concurrency-analyst` when
-concurrency is present. A large run can reach nine agents. The discovery wave runs in parallel; `risk-analyst` runs next
-consuming the `S`/`B`/`C` findings; `software-architect` (and `system-architect` when on the roster) run last consuming
-all upstream output. `software-architect` and `system-architect` run on Opus; the discovery and risk analysts run on
-Sonnet. After synthesis, one `han-communication:readability-editor` rewrites the report's synthesized prose (the
-Executive Summary, the "How to Read" frame, and the section prefaces) against the readability standard, leaving each
-analysis section's verbatim agent output unchanged. For a medium-size module (a few thousand lines), expect a few
-minutes for the parallel pass plus sequential time for risk and synthesis. The skill is built for infrequent high-signal
-runs (refactoring decisions, architectural check-ins, pre-rewrite baselines), not for tight-loop iteration. It is a
-single fan-out / fan-in pass with no iteration round. If a band proves too small, re-run at a larger size.
+הסקיל משגר מערך משתנה. ריצה קטנה היא שדרה של ארבעה סוכנים (`structural-analyst` ו-`behavioral-analyst` במקביל, ואז `risk-analyst`, ואז `software-architect`), בתוספת `concurrency-analyst` כשמקביליות נוכחת. ריצה גדולה יכולה להגיע לתשעה סוכנים. גל הגילוי רץ במקביל; `risk-analyst` רץ אחריו וצורך את ממצאי ה-`S`/`B`/`C`; `software-architect` (ו-`system-architect` כשהוא במערך) רצים אחרונים וצורכים את כל הפלט שבמעלה הזרם. `software-architect` ו-`system-architect` רצים על Opus; אנליסטי הגילוי והסיכון רצים על Sonnet. אחרי הסינתזה, `han-communication:readability-editor` אחד משכתב את הטקסט המסונתז של הדוח (ה-Executive Summary, מסגרת ה-"How to Read", והקדמות הסעיפים) מול תקן הקריאוּת, ומשאיר את הפלט המילולי של כל סעיף ניתוח ללא שינוי. למודול בגודל בינוני (כמה אלפי שורות), צפה לכמה דקות למעבר המקבילי בתוספת זמן סדרתי לסיכון ולסינתזה. הסקיל בנוי לריצות נדירות בעלות אות גבוה (החלטות ריפקטורינג, בדיקות ארכיטקטוניות תקופתיות, קווי בסיס לפני שכתוב), לא לאיטרציה בלולאה צמודה. זה מעבר יחיד של התפרשות / התכנסות בלי סבב איטרציה. אם רצועה מתבררת כקטנה מדי, הרץ מחדש בגודל גדול יותר.
 
-## In more detail
+## בפירוט
 
-The skill walks an eleven-step process:
+הסקיל עובר תהליך של אחד-עשר צעדים:
 
-1. **Validate the focus area and resolve project context.** Bind `$size` if it was passed. Confirm the focus area
-   resolves to real files and identify its boundary. Read CLAUDE.md / project-discovery.md for conventions. Note git
-   availability. If the focus area does not resolve, stop and ask you to clarify.
-2. **Detect signals and classify size.** Grep and Glob the focus area for concurrency, security, data, DevOps, and
-   system-seam signals. Default to small and escalate only on clear higher-band signals. A passed `$size` overrides the
-   classification but not the signal-based specialist selection.
-3. **Build the roster and announce it.** Assemble the spine plus the signalled specialists within the band cap, and
-   state the size, roster, and per-specialist justification in one line before dispatching. The analysis is read-only,
-   so there is no blocking gate.
-4. **Dispatch the discovery wave in parallel.** `structural-analyst`, `behavioral-analyst`, and any signalled discovery
-   specialists run concurrently. Each receives a brief carrying the focus area, the driving concern, project
-   conventions, git availability, and a size-scoped calibration directive.
-5. **Compile the discovery findings.** Collect verbatim output from every discovery agent, preserving every numbered
-   item and prefix. A "no concurrency patterns found" result is kept verbatim.
-6. **Dispatch the risk analyst.** Pass `risk-analyst` the verbatim `S`/`B`/`C` findings (its documented input contract).
-   It produces `R#` items cross-referencing the upstream findings.
-7. **Dispatch the synthesis architects.** `software-architect` always runs, consuming all discovery output plus the `R#`
-   items. `system-architect` runs only when it is on the roster, consuming the same plus the DevOps and data findings as
-   its documented optional inputs.
-8. **Render the report.** Read the template, fill it, and drop the sections whose agent was not dispatched. Write the
-   Executive Summary last.
-9. **Rewrite the report for readability.** Dispatch `readability-editor` over the finished draft so the prose meets the
-   shared readability standard, with every finding, cross-reference, and code excerpt preserved.
-10. **Run the readability self-check.** Confirm the rewritten report satisfies each criterion before it reaches you.
-11. **Present the report.** Share it in-channel with a short closing summary of size, roster, finding counts, and open
-    items.
+1. **אימות אזור המיקוד ופענוח הקשר הפרויקט.** קישור `$size` אם הועבר. אישור שאזור המיקוד מתפענח לקבצים אמיתיים וזיהוי הגבול שלו. קריאת CLAUDE.md / project-discovery.md למוסכמות. ציון זמינות git. אם אזור המיקוד לא מתפענח, עצירה ובקשה ממך להבהיר.
+2. **זיהוי אותות וסיווג גודל.** Grep ו-Glob על אזור המיקוד לאיתור אותות של מקביליות, אבטחה, נתונים, DevOps ותפר מערכת. ברירת מחדל לקטן והסלמה רק על אותות ברורים של רצועה גבוהה יותר. `$size` שהועבר עוקף את הסיווג אבל לא את בחירת המומחים מבוססת-האותות.
+3. **בניית המערך והכרזה עליו.** הרכבת השדרה בתוספת המומחים שקיבלו אות בתוך תקרת הרצועה, וציון הגודל, המערך וההצדקה לכל מומחה בשורה אחת לפני השיגור. הניתוח קריאה-בלבד, ולכן אין שער חוסם.
+4. **שיגור גל הגילוי במקביל.** `structural-analyst`, `behavioral-analyst`, וכל מומחה גילוי שקיבל אות רצים במקביל. כל אחד מקבל תדריך שנושא את אזור המיקוד, את הסוגיה המניעה, את מוסכמות הפרויקט, את זמינות ה-git, והנחיית כיול מתוחמת לגודל.
+5. **הרכבת ממצאי הגילוי.** איסוף פלט מילולי מכל סוכן גילוי, תוך שמירה על כל פריט ממוספר ועל כל קידומת. תוצאה של "no concurrency patterns found" נשמרת מילולית.
+6. **שיגור אנליסט הסיכון.** העברת ממצאי ה-`S`/`B`/`C` המילוליים ל-`risk-analyst` (חוזה הקלט המתועד שלו). הוא מייצר פריטי `R#` שמצליבים את הממצאים שבמעלה הזרם.
+7. **שיגור ארכיטקטי הסינתזה.** `software-architect` תמיד רץ, וצורך את כל פלט הגילוי בתוספת פריטי ה-`R#`. `system-architect` רץ רק כשהוא במערך, וצורך את אותו הדבר בתוספת ממצאי ה-DevOps והנתונים כקלטים האופציונליים המתועדים שלו.
+8. **רינדור הדוח.** קריאת התבנית, מילויה, וזריקת הסעיפים שהסוכן שלהם לא שוגר. כתיבת ה-Executive Summary אחרונה.
+9. **שכתוב הדוח לקריאוּת.** שיגור `readability-editor` על הטיוטה הגמורה כך שהטקסט יעמוד בתקן הקריאוּת המשותף, כשכל ממצא, הצלבה וקטע קוד נשמרים.
+10. **הרצת הבדיקה העצמית של הקריאוּת.** אישור שהדוח המשוכתב מספק כל קריטריון לפני שהוא מגיע אליך.
+11. **הצגת הדוח.** שיתופו בערוץ עם סיכום סוגר קצר של הגודל, המערך, מספרי הממצאים והפריטים הפתוחים.
 
-## Sources
+## מקורות
 
-The skill's protocols are grounded in established architectural analysis and synthesis practice.
+הפרוטוקולים של הסקיל מעוגנים בפרקטיקה מבוססת של ניתוח וסינתזה ארכיטקטוניים.
 
 ### Robert C. Martin: Clean Architecture and SOLID
 
-Martin's SOLID principles (Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency
-Inversion) and the dependency rule of Clean Architecture are the citable framework for `software-architect`'s
-recommendations. Every proposed interface or boundary references the SOLID principle it upholds.
+עקרונות ה-SOLID של Martin (אחריות יחידה, פתוח/סגור, החלפת Liskov, הפרדת ממשקים, היפוך תלויות) וכלל התלויות של Clean Architecture הם המסגרת בת-הציטוט להמלצות של `software-architect`. כל ממשק או גבול מוצעים מפנים לעיקרון ה-SOLID שהם מקיימים.
 
 URL: https://cleancoders.com/
 
 ### Gregor Hohpe: Enterprise Integration Patterns
 
-Hohpe and Woolf's catalogue of integration patterns (Message Channel, Router, Translator, Endpoint) frames the
-behavioral-analyst's integration-boundary findings. When the skill recommends an integration change, it names the
-pattern being introduced or replaced.
+הקטלוג של Hohpe ו-Woolf לדפוסי אינטגרציה (Message Channel, Router, Translator, Endpoint) ממסגר את ממצאי גבול האינטגרציה של ה-behavioral-analyst. כשהסקיל ממליץ על שינוי אינטגרציה, הוא נוקב בדפוס שמוכנס או מוחלף.
 
 URL: https://www.enterpriseintegrationpatterns.com/
 
 ### Doug Lea: Concurrent Programming in Java
 
-Lea's _Concurrent Programming in Java_ established the taxonomy for shared-state concurrency hazards: races, deadlocks,
-starvation, live-lock, priority inversion. The concurrency-analyst names the specific hazard class in every finding.
+_Concurrent Programming in Java_ של Lea ביסס את הטקסונומיה לסכנות מקביליות של מצב משותף: מרוצים, קיפאונות, הרעבה, live-lock, היפוך עדיפויות. ה-concurrency-analyst נוקב במחלקת הסכנה הספציפית בכל ממצא.
 
 URL: https://gee.cs.oswego.edu/dl/cpj/
 
 ### Sam Newman: Building Microservices
 
-Newman's work on service boundaries, bounded contexts, and distributed-system failure modes informs the
-structural-analyst's module-boundary and coupling findings when the focus area crosses services.
+העבודה של Newman על גבולות שירות, הקשרים חסומים ומצבי כשל של מערכות מבוזרות מיידעת את ממצאי גבול המודול והצימוד של ה-structural-analyst כשאזור המיקוד חוצה שירותים.
 
 URL: https://samnewman.io/books/building_microservices_2nd_edition/
 
 ### Eric Evans: Domain-Driven Design
 
-Evans's ubiquitous-language and bounded-context framings are cited when a structural finding turns on a domain-model
-boundary. Tactical DDD patterns (aggregate, entity, value object, repository) appear in `software-architect`
-recommendations inside a single context. Strategic DDD patterns (context maps, integration relationships) appear in
-`system-architect` recommendations when the focus area crosses a context seam.
+המסגורים של Evans לשפה נפוצה ולהקשר חסום מצוטטים כשממצא מבני תלוי בגבול של מודל תחום. דפוסי DDD טקטיים (aggregate, entity, value object, repository) מופיעים בהמלצות של `software-architect` בתוך הקשר יחיד. דפוסי DDD אסטרטגיים (מפות הקשר, יחסי אינטגרציה) מופיעים בהמלצות של `system-architect` כשאזור המיקוד חוצה תפר של הקשר.
 
 URL: https://www.domainlanguage.com/ddd/
 
-## Related documentation
+## תיעוד קשור
 
-- [Plugin README](../../README.md). The plugin's front door: its skills, agents, and how they fit together.
-- [Repo root README](../../../README.md). The Han suite landing page. Start here if you arrived from outside the docs tree.
-- [Skills Index](../../../docs/skills/README.md). All skills, grouped by purpose.
-- [Sizing](../../../docs/sizing.md). The small / medium / large dispatch model this skill shares with the other swarming skills.
-- [`structural-analyst`](../../../han-core/docs/agents/structural-analyst.md),
-  [`behavioral-analyst`](../../../han-core/docs/agents/behavioral-analyst.md),
-  [`concurrency-analyst`](../../../han-core/docs/agents/concurrency-analyst.md). The discovery analysts.
-- [`adversarial-security-analyst`](../../../han-core/docs/agents/adversarial-security-analyst.md),
-  [`data-engineer`](../../../han-core/docs/agents/data-engineer.md),
-  [`devops-engineer`](../../../han-core/docs/agents/devops-engineer.md),
-  [`on-call-engineer`](../../../han-core/docs/agents/on-call-engineer.md),
-  [`codebase-explorer`](../../../han-core/docs/agents/codebase-explorer.md). The signal-selected specialists added at medium and
-  large.
-- [`risk-analyst`](../../../han-core/docs/agents/risk-analyst.md). The agent that scores the analysts' findings by likelihood,
-  severity, blast radius, and reversibility.
-- [`software-architect`](../../../han-core/docs/agents/software-architect.md). The adversarial synthesis agent that produces
-  intra-codebase recommendations and pseudocode sketches (always dispatched by this skill).
-- [`system-architect`](../../../han-core/docs/agents/system-architect.md). The adversarial synthesis agent that produces
-  cross-service / bounded-context recommendations (dispatched at large size when a system-seam signal is present;
-  otherwise dispatch separately).
-- [`readability-editor`](../../../han-communication/docs/agents/readability-editor.md). Dispatched after synthesis to rewrite
-  the report's synthesized prose against the shared readability standard, leaving each analysis section's verbatim agent
-  output unchanged.
-- [`/architectural-decision-record`](../../../han-documentation/docs/skills/architectural-decision-record.md). Record the architectural decisions
-  the analysis motivates.
-- [`/investigate`](./investigate.md). Run when a finding reveals a concrete runtime bug.
-- [`/design-an-api`](./design-an-api.md). Run after this skill when the finding is a contract to redesign. This skill
-  judges the structure that exists; that one designs the interface that comes next.
-- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). Stress-test the refactoring plan that implements
-  the recommendations.
-- [`SKILL.md` for /architectural-analysis](../../skills/architectural-analysis/SKILL.md). The internal
-  process definition.
+- [README של הפלאגין](../../README.md). הדלת הקדמית של הפלאגין: הסקילים שלו, הסוכנים, ואיך הם משתלבים.
+- [README של שורש הריפו](../../../README.md). דף הנחיתה של חבילת Han. התחל כאן אם הגעת מחוץ לעץ התיעוד.
+- [אינדקס הסקילים](../../../docs/skills/README.md). כל הסקילים, מקובצים לפי מטרה.
+- [Sizing](../../../docs/sizing.md). מודל השיגור קטן / בינוני / גדול שהסקיל הזה חולק עם יתר הסקילים המשגרים.
+- [`structural-analyst`](../../../han-core/docs/agents/structural-analyst.md), [`behavioral-analyst`](../../../han-core/docs/agents/behavioral-analyst.md), [`concurrency-analyst`](../../../han-core/docs/agents/concurrency-analyst.md). אנליסטי הגילוי.
+- [`adversarial-security-analyst`](../../../han-core/docs/agents/adversarial-security-analyst.md), [`data-engineer`](../../../han-core/docs/agents/data-engineer.md), [`devops-engineer`](../../../han-core/docs/agents/devops-engineer.md), [`on-call-engineer`](../../../han-core/docs/agents/on-call-engineer.md), [`codebase-explorer`](../../../han-core/docs/agents/codebase-explorer.md). המומחים הנבחרים-לפי-אות שמתווספים בבינוני ובגדול.
+- [`risk-analyst`](../../../han-core/docs/agents/risk-analyst.md). הסוכן שמנקד את ממצאי האנליסטים לפי סבירות, חומרה, רדיוס פגיעה והפיכוּת.
+- [`software-architect`](../../../han-core/docs/agents/software-architect.md). סוכן הסינתזה האדוורסרי שמייצר המלצות בתוך בסיס הקוד וסקיצות פסאודו-קוד (משוגר תמיד על ידי הסקיל הזה).
+- [`system-architect`](../../../han-core/docs/agents/system-architect.md). סוכן הסינתזה האדוורסרי שמייצר המלצות חוצות-שירותים / הקשרים חסומים (משוגר בגודל גדול כשאות של תפר מערכת נוכח; אחרת שגר בנפרד).
+- [`readability-editor`](../../../han-communication/docs/agents/readability-editor.md). משוגר אחרי הסינתזה כדי לשכתב את הטקסט המסונתז של הדוח מול תקן הקריאוּת המשותף, ומשאיר את הפלט המילולי של כל סעיף ניתוח ללא שינוי.
+- [`/architectural-decision-record`](../../../han-documentation/docs/skills/architectural-decision-record.md). תעד את ההחלטות הארכיטקטוניות שהניתוח מניע.
+- [`/investigate`](./investigate.md). הרץ כשממצא חושף באג ריצה קונקרטי.
+- [`/design-an-api`](./design-an-api.md). הרץ אחרי הסקיל הזה כשהממצא הוא חוזה לעצב מחדש. הסקיל הזה שופט את המבנה שקיים; זה מעצב את הממשק שבא אחר כך.
+- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). בחן בלחץ את תוכנית הריפקטורינג שמממשת את ההמלצות.
+- [`SKILL.md` של /architectural-analysis](../../skills/architectural-analysis/SKILL.md). הגדרת התהליך הפנימי.
