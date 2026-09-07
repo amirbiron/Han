@@ -100,7 +100,7 @@ grep -rnP 'מקומט|לקמט|קמטים|לנקד|מנקד|(?<!יו)ניקוד'
 2. בלוקי הקוד זהים בתוכן ובמספר.
 3. העוגנים מתפענחים: `python3 scripts/check-translation-anchors.py` עובר על כל הריפו.
 4. `npx prettier --check <file>` עובר.
-5. מפת התרגום מעודכנת: `python3 scripts/translation-status.py` מייצר מחדש את [`docs/translation-status.md`](./translation-status.md), ו-`--check` נכשל כשהיא מפגרת אחרי הדיסק.
+5. מפת התרגום מעודכנת: `python3 scripts/translation-status.py` מייצר מחדש את [`docs/translation-status.md`](./translation-status.md), ו-`--check` נכשל כשהמפה כבר לא תואמת לקבצים בעותק העבודה.
 
 ## למה בעברית אין שבירת שורות
 
