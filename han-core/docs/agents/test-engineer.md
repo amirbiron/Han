@@ -1,153 +1,114 @@
 # test-engineer
 
-Operator documentation for the `test-engineer` agent in the han plugin. This document helps you decide _when_ and _how_
-to dispatch the agent. For what the agent does internally, read the agent definition at
-[`han-core/agents/test-engineer.md`](../../agents/test-engineer.md).
+תיעוד מפעיל לסוכן `test-engineer` בפלאגין. המסמך הזה עוזר לך להחליט _מתי_ ו*איך* לשגר את הסוכן. למה שהסוכן עושה בפנים, קרא את הגדרת הסוכן ב-[`han-core/agents/test-engineer.md`](../../agents/test-engineer.md).
 
-> See also: [Plugin README](../../README.md) · [Repo root](../../../README.md) · [All agents](../../../docs/agents/README.md) ·
-> [All skills](../../../docs/skills/README.md) · [YAGNI](../../../docs/yagni.md)
+> ראה גם: [README של הפלאגין](../../README.md) · [שורש הריפו](../../../README.md) · [כל הסוכנים](../../../docs/agents/README.md) · [כל הסקילים](../../../docs/skills/README.md) · [YAGNI](../../../docs/yagni.md)
 
 ## TL;DR
 
-- **What it does.** Examines code and plans tests focused on observable behavior (inputs, outputs, collaborator
-  interactions). Recommends test doubles (stubs for queries, mock expectations for commands) for isolation. Produces a
-  prioritized test plan tied to specific entry points.
-- **When to dispatch it.** You want a prioritized test plan for new or existing code. Always dispatched by
-  `/automated-test-planning`. Conditionally dispatched by `/plan-a-feature` as part of the spec-stage team when the feature
-  commits to observable behaviors worth making testable. Conditionally dispatched by `/code-review` when the file list
-  suggests coverage gaps. Conditionally dispatched by `/plan-implementation` for the implementation plan's testing
-  strategy. Available as a specialist in `/iterative-plan-review` spec mode.
-- **What you get back.** A `test-plan.md` with `T#` recommendations, each citing an entry point with `file:line`, a test
-  level (unit / integration / end-to-end), test approach (behavior, stubs, input/action, expected output, expected
-  commands), and a brittleness assessment. Plus a Deferred section for tests where brittleness outweighs value.
+- **מה הוא עושה.** בוחן קוד ומתכנן בדיקות שמתמקדות בהתנהגות נצפית (קלטים, פלטים, אינטראקציות עם משתפי פעולה). ממליץ על test doubles (stubs לשאילתות, ציפיות mock לפקודות) לצורך בידוד. מייצר תוכנית בדיקות מתועדפת שקשורה לנקודות כניסה ספציפיות.
+- **מתי לשגר אותו.** אתה רוצה תוכנית בדיקות מתועדפת לקוד חדש או קיים. תמיד משוגר על ידי `/automated-test-planning`. משוגר באופן מותנה על ידי `/plan-a-feature` כחלק מצוות שלב המפרט, כשהפיצ'ר מתחייב להתנהגויות נצפות שראוי להפוך לניתנות לבדיקה. משוגר באופן מותנה על ידי `/code-review` כשרשימת הקבצים מרמזת על פערי כיסוי. משוגר באופן מותנה על ידי `/plan-implementation` עבור אסטרטגיית הבדיקות של תוכנית המימוש. זמין כמומחה במצב המפרט של `/iterative-plan-review`.
+- **מה אתה מקבל בחזרה.** קובץ `test-plan.md` עם המלצות `T#`, כל אחת מצטטת נקודת כניסה עם `file:line`, רמת בדיקה (יחידה / אינטגרציה / קצה-לקצה), גישת בדיקה (התנהגות, stubs, קלט/פעולה, פלט צפוי, פקודות צפויות), והערכת שבירות. בתוספת סעיף דחויים לבדיקות שהשבירות בהן גוברת על הערך.
 
-## Key concepts
+## מושגי מפתח
 
-- **Behavioral testing is the default, not a preference.** Tests verify observable behavior through inputs/outputs and
-  collaborator interactions, not internal code paths.
-- **Command-query separation drives doubles.** Stub queries (dependencies that return values). Mock expectations on
-  commands (collaborators that receive side effects). The agent classifies each interaction explicitly.
-- **Entry point per recommendation.** Every test recommendation references a specific function, method, or endpoint with
-  `file:line`. No vague suggestions.
-- **Brittleness has a cost.** Tests that break on every refactor and catch bugs rarely are net-negative. The agent
-  defers tests when the brittleness risk outweighs the value.
-- **Existing patterns first.** New tests must match the project's existing framework, naming, and helper conventions. If
-  no tests exist, the agent recommends the framework and structure based on the project's language and ecosystem before
-  listing test cases.
+- **בדיקה התנהגותית היא ברירת המחדל, לא העדפה.** בדיקות מאמתות התנהגות נצפית דרך קלטים/פלטים ואינטראקציות עם משתפי פעולה, ולא מסלולי קוד פנימיים.
+- **הפרדת פקודה-משאילתה מכתיבה את ה-doubles.** stub לשאילתות (תלויות שמחזירות ערכים). ציפיות mock על פקודות (משתפי פעולה שמקבלים תופעות לוואי). הסוכן מסווג כל אינטראקציה במפורש.
+- **נקודת כניסה לכל המלצה.** כל המלצת בדיקה מפנה לפונקציה, לשיטה או לנקודת קצה ספציפיות עם `file:line`. בלי הצעות מעורפלות.
+- **לשבירות יש מחיר.** בדיקות שנשברות בכל ריפקטור ותופסות באגים לעיתים רחוקות הן נטו-שליליות. הסוכן דוחה בדיקות כשסיכון השבירות גובר על הערך.
+- **דפוסים קיימים קודם.** בדיקות חדשות חייבות להתאים לפריימוורק, לשמות ולמוסכמות ה-helpers הקיימים של הפרויקט. אם אין בדיקות, הסוכן ממליץ על הפריימוורק ועל המבנה לפי השפה והאקוסיסטם של הפרויקט לפני שהוא מפרט מקרי בדיקה.
 
-## When to use it
+## מתי להשתמש בו
 
-**Dispatch when:**
+**שגר כאשר:**
 
-- `/automated-test-planning` is running. The skill always dispatches this agent.
-- `/code-review` flags coverage gaps in the changed files. The skill dispatches this agent.
-- `/plan-implementation` is producing the implementation plan's testing strategy. The skill dispatches this agent.
-- `/plan-a-feature` is assembling its spec-stage team and the feature commits to observable behaviors worth making
-  testable.
-- `/iterative-plan-review` is running in spec mode. The agent is available as a specialist.
-- You want a structured test plan for a single module or feature without running a full review.
+- `/automated-test-planning` רץ. הסקיל תמיד משגר את הסוכן הזה.
+- `/code-review` מסמן פערי כיסוי בקבצים שהשתנו. הסקיל משגר את הסוכן הזה.
+- `/plan-implementation` מייצר את אסטרטגיית הבדיקות של תוכנית המימוש. הסקיל משגר את הסוכן הזה.
+- `/plan-a-feature` מרכיב את צוות שלב המפרט שלו והפיצ'ר מתחייב להתנהגויות נצפות שראוי להפוך לניתנות לבדיקה.
+- `/iterative-plan-review` רץ במצב מפרט. הסוכן זמין כמומחה.
+- אתה רוצה תוכנית בדיקות מובנית למודול או לפיצ'ר יחיד בלי להריץ סקירה מלאה.
 
-**Do not dispatch for:**
+**אל תשגר עבור:**
 
-- Deep edge-case exploration (boundary values, type-coercion traps, state-dependent failures). Use `edge-case-explorer`.
-- Architectural testability concerns. Use `/architectural-analysis`.
-- Writing test code. The agent produces a plan only.
-- Bug investigation. Use `evidence-based-investigator` or `/investigate`.
+- חקירה עמוקה של מקרי קצה (ערכי גבול, מלכודות המרת טיפוסים, כשלים תלויי-מצב). השתמש ב-`edge-case-explorer`.
+- סוגיות בדיקתיות ארכיטקטוניות. השתמש ב-`/architectural-analysis`.
+- כתיבת קוד בדיקות. הסוכן מייצר תוכנית בלבד.
+- חקירת באג. השתמש ב-`evidence-based-investigator` או ב-`/investigate`.
 
-## How to invoke it
+## איך להפעיל אותו
 
-Dispatch via the `Agent` tool with `subagent_type: han-core:test-engineer`. Give it:
+שגר דרך כלי ה-`Agent` עם `subagent_type: han-core:test-engineer`. תן לו:
 
-1. **A focus area.** Files, a directory, or a feature description. The narrower the scope, the sharper the plan.
-2. **Project context, optional.** If the project's test framework and conventions are not obvious from the existing
-   tests, mention them.
-3. **An output path, optional.** Default filename is `test-plan.md`.
+1. **אזור מיקוד.** קבצים, תיקייה או תיאור של פיצ'ר. ככל שההיקף צר יותר, כך התוכנית חדה יותר.
+2. **הקשר פרויקט, אופציונלי.** אם פריימוורק הבדיקות והמוסכמות של הפרויקט לא ברורים מהבדיקות הקיימות, הזכר אותם.
+3. **נתיב פלט, אופציונלי.** שם ברירת המחדל הוא `test-plan.md`.
 
-Example prompts:
+פרומפטים לדוגמה:
 
-- _"Plan tests for `src/billing/invoice.ts`. We recently refactored the proration logic and added a credit-application
-  path."_
-- _"Audit test coverage in `packages/auth/` and recommend new tests. Focus on the OAuth-state validation we recently
-  added."_
+- _"תתכנן בדיקות ל-`src/billing/invoice.ts`. עשינו לאחרונה ריפקטורינג ללוגיקת הפרו-רטה והוספנו מסלול של החלת קרדיט."_
+- _"תבקר את כיסוי הבדיקות ב-`packages/auth/` ותמליץ על בדיקות חדשות. התמקד באימות ה-state של OAuth שהוספנו לאחרונה."_
 
-## What you get back
+## מה אתה מקבל בחזרה
 
-- A `test-plan.md` file on disk with:
-  - **Scope.** Files and areas analyzed.
-  - **Summary.** Same text returned to the caller.
-  - **Coverage Assessment.** Qualitative summary of current behavioral coverage.
-  - **Findings.** `T#` recommendations ordered by priority. Each includes priority, test level (unit / integration /
-    end-to-end), entry point with `file:line`, and gap type (Untested / Partially tested). It also includes the full
-    test approach (behavior, stubs, input/action, expected output, expected commands) and a brittleness assessment.
-  - **Deferred / Skipped Tests.** `S#` entries explaining why brittleness outweighs value.
-  - **Coverage Estimate.** Expected behavioral coverage after recommended tests are written.
-- An in-channel summary with priority counts and the path to the file.
+- קובץ `test-plan.md` על הדיסק שכולל:
+  - **Scope.** הקבצים והאזורים שנותחו.
+  - **Summary.** אותו טקסט שהוחזר לקורא.
+  - **Coverage Assessment.** סיכום איכותני של הכיסוי ההתנהגותי הנוכחי.
+  - **Findings.** המלצות `T#` מסודרות לפי עדיפות. כל אחת כוללת עדיפות, רמת בדיקה (יחידה / אינטגרציה / קצה-לקצה), נקודת כניסה עם `file:line`, וסוג הפער (לא נבדק / נבדק חלקית). היא כוללת גם את גישת הבדיקה המלאה (התנהגות, stubs, קלט/פעולה, פלט צפוי, פקודות צפויות) והערכת שבירות.
+  - **Deferred / Skipped Tests.** רשומות `S#` שמסבירות למה השבירות גוברת על הערך.
+  - **Coverage Estimate.** הכיסוי ההתנהגותי הצפוי אחרי שהבדיקות המומלצות ייכתבו.
+- סיכום בערוץ עם מספרים לפי עדיפות והנתיב לקובץ.
 
-## How to get the most out of it
+## איך להפיק ממנו את המרב
 
-- **Provide focus.** The agent's test plans are sharper on a narrow scope. _"The proration refactor"_ beats _"the
-  billing module."_
-- **Point at the existing tests.** Even one example test file is enough to lock in the project's conventions. The agent
-  prefers to match the existing pattern.
-- **Read the Deferred section.** The skipped tests are first-class output. They tell you what brittleness risk the agent
-  saw and avoided.
-- **Pair with `edge-case-explorer`** when boundary values and failure modes matter. `/automated-test-planning` runs both in
-  parallel.
-- **Re-run after the first wave of tests lands.** The agent is cheap to re-dispatch. Once the high-priority items are
-  tested, the next pass surfaces what remained partially covered.
+- **ספק מיקוד.** תוכניות הבדיקות של הסוכן חדות יותר בהיקף צר. _"ריפקטור הפרו-רטה"_ מנצח _"מודול החיוב"_.
+- **הפנה אותו לבדיקות הקיימות.** אפילו קובץ בדיקה אחד לדוגמה מספיק כדי לקבע את המוסכמות של הפרויקט. הסוכן מעדיף להתאים לדפוס הקיים.
+- **קרא את סעיף הדחויים.** הבדיקות שדולגו הן פלט מדרגה ראשונה. הן אומרות לך איזה סיכון שבירות הסוכן ראה ונמנע ממנו.
+- **צמד עם `edge-case-explorer`** כשערכי גבול ומצבי כשל משנים. `/automated-test-planning` מריץ את שניהם במקביל.
+- **הרץ מחדש אחרי שהגל הראשון של הבדיקות נוחת.** הסוכן זול לשיגור חוזר. ברגע שהפריטים בעדיפות גבוהה נבדקו, המעבר הבא מעלה את מה שנשאר מכוסה חלקית.
 
-## Cost and latency
+## עלות וזמן תגובה
 
-The agent runs on `sonnet`. A focused test-planning pass runs in a few minutes. Cost scales with the size of the
-existing test suite (the agent reads it to learn conventions).
+הסוכן רץ על `sonnet`. מעבר תכנון בדיקות ממוקד רץ בכמה דקות. העלות גדלה עם גודל חבילת הבדיקות הקיימת (הסוכן קורא אותה כדי ללמוד מוסכמות).
 
 ## YAGNI
 
-The agent enforces the **Speculative Test** rule. These are YAGNI candidates: tests for code paths that don't exist yet,
-hypothetical adversaries the change does not touch, and branches that internal callers fully control. So is
-symmetry/completeness coverage (_"we tested create, so we should test delete"_ when delete isn't implemented). They move
-to Deferred / Skipped Tests with a named _reopen-when_ trigger. When many speculative low-level tests can be replaced by
-one durable behavioral test that catches the same realistic failure modes, the agent recommends the single test.
+הסוכן אוכף את כלל **הבדיקה הספקולטיבית**. אלה מועמדי YAGNI: בדיקות למסלולי קוד שעדיין לא קיימים, ליריבים היפותטיים שהשינוי לא נוגע בהם, ולענפים שקוראים פנימיים שולטים בהם לחלוטין. וכך גם כיסוי של סימטריה/שלמות (_"בדקנו create, אז צריך לבדוק delete"_ כש-delete לא ממומש). הם עוברים ל-Deferred / Skipped Tests עם טריגר _reopen-when_ נקוב. כשהרבה בדיקות ספקולטיביות ברמה נמוכה ניתנות להחלפה בבדיקה התנהגותית עמידה אחת שתופסת את אותם מצבי כשל ריאליים, הסוכן ממליץ על הבדיקה היחידה.
 
-See [YAGNI](../../../docs/yagni.md) for the two gates, the acceptable-evidence list, and the named anti-patterns.
+ראה [YAGNI](../../../docs/yagni.md) לשני השערים, לרשימת הראיות הקבילות ולאנטי-דפוסים הנקובים בשם.
 
-## Sources
+## מקורות
 
-The agent's posture is grounded in behavioral testing practice.
+העמדה של הסוכן מעוגנת בפרקטיקה של בדיקות התנהגותיות.
 
 ### Michael Feathers: Working Effectively with Legacy Code
 
-Feathers's framing of seams and observable behavior underpins the agent's bias toward testing inputs, outputs, and
-collaborator interactions rather than internal paths.
+המסגור של Feathers לתפרים ולהתנהגות נצפית עומד בבסיס ההטיה של הסוכן לכיוון בדיקת קלטים, פלטים ואינטראקציות עם משתפי פעולה, ולא מסלולים פנימיים.
 
 URL: https://www.oreilly.com/library/view/working-effectively-with/0131177052/
 
 ### Kent Beck: Test-Driven Development: By Example
 
-Beck's TDD framing and his distinction between unit and collaborator tests inform the agent's test-level selection.
+מסגור ה-TDD של Beck וההבחנה שלו בין בדיקות יחידה לבדיקות משתפי פעולה מיידעים את בחירת רמת הבדיקה של הסוכן.
 
 URL: https://www.pearson.com/en-us/subject-catalog/p/test-driven-development-by-example/P200000009421
 
 ### Steve Freeman, Nat Pryce: Growing Object-Oriented Software, Guided by Tests
 
-The London-school testing tradition (test doubles by command-query separation, mock expectations on commands, stubs on
-queries) is the agent's vocabulary for isolation.
+מסורת הבדיקות של אסכולת לונדון (test doubles לפי הפרדת פקודה-משאילתה, ציפיות mock על פקודות, stubs על שאילתות) היא אוצר המילים של הסוכן לבידוד.
 
 URL: http://www.growing-object-oriented-software.com/
 
-## Related documentation
+## תיעוד קשור
 
-- [Plugin README](../../README.md). The plugin's front door: its skills, agents, and how they fit together.
-- [Repo root README](../../../README.md). The Han suite landing page. Start here if you arrived from outside the docs tree.
-- [YAGNI](../../../docs/yagni.md). The Speculative Test rule.
-- [Agents Index](../../../docs/agents/README.md). All agents, grouped by role.
-- [`edge-case-explorer`](./edge-case-explorer.md). Sibling agent for boundary values and failure modes. `/automated-test-planning`
-  runs both in parallel.
-- [`/automated-test-planning`](../../../han-coding/docs/skills/automated-test-planning.md). Always dispatches this agent.
-- [`/code-review`](../../../han-coding/docs/skills/code-review.md). Conditionally dispatches this agent.
-- [`/plan-implementation`](../../../han-planning/docs/skills/plan-implementation.md). Dispatches this agent for the
-  implementation plan's testing strategy.
-- [`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md). Conditionally dispatches this agent into the
-  spec-stage team when the feature commits to observable behaviors worth making testable.
-- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). Makes this agent available as a
-  specialist in spec mode.
+- [README של הפלאגין](../../README.md). הדלת הקדמית של הפלאגין: הסקילים שלו, הסוכנים, ואיך הם משתלבים.
+- [README של שורש הריפו](../../../README.md). דף הנחיתה של חבילת Han. התחל כאן אם הגעת מחוץ לעץ התיעוד.
+- [YAGNI](../../../docs/yagni.md). כלל הבדיקה הספקולטיבית.
+- [אינדקס הסוכנים](../../../docs/agents/README.md). כל הסוכנים, מקובצים לפי תפקיד.
+- [`edge-case-explorer`](./edge-case-explorer.md). הסוכן האח לערכי גבול ולמצבי כשל. `/automated-test-planning` מריץ את שניהם במקביל.
+- [`/automated-test-planning`](../../../han-coding/docs/skills/automated-test-planning.md). תמיד משגר את הסוכן הזה.
+- [`/code-review`](../../../han-coding/docs/skills/code-review.md). משגר את הסוכן הזה באופן מותנה.
+- [`/plan-implementation`](../../../han-planning/docs/skills/plan-implementation.md). משגר את הסוכן הזה עבור אסטרטגיית הבדיקות של תוכנית המימוש.
+- [`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md). משגר את הסוכן הזה באופן מותנה לצוות שלב המפרט, כשהפיצ'ר מתחייב להתנהגויות נצפות שראוי להפוך לניתנות לבדיקה.
+- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). הופך את הסוכן הזה לזמין כמומחה במצב מפרט.

@@ -1,183 +1,114 @@
 # adversarial-validator
 
-Operator documentation for the `adversarial-validator` agent in the han plugin. This document helps you decide _when_
-and _how_ to dispatch the agent. For what the agent does internally, read the agent definition at
-[`han-core/agents/adversarial-validator.md`](../../agents/adversarial-validator.md).
+תיעוד מפעיל לסוכן `adversarial-validator` בפלאגין. המסמך הזה עוזר לך להחליט _מתי_ ו*איך* לשגר את הסוכן. למה שהסוכן עושה בפנים, קרא את הגדרת הסוכן ב-[`han-core/agents/adversarial-validator.md`](../../agents/adversarial-validator.md).
 
-> See also: [Plugin README](../../README.md) · [Repo root](../../../README.md) · [All agents](../../../docs/agents/README.md) ·
-> [All skills](../../../docs/skills/README.md)
+> ראה גם: [README של הפלאגין](../../README.md) · [שורש הריפו](../../../README.md) · [כל הסוכנים](../../../docs/agents/README.md) · [כל הסקילים](../../../docs/skills/README.md)
 
 ## TL;DR
 
-- **What it does.** Assumes investigation evidence is wrong and the planned fix will fail. Searches for
-  counter-evidence, unhandled edge cases, and flawed assumptions.
-- **When to dispatch it.** An investigation has produced a root cause and a fix plan, and you want the analysis
-  adversarially validated before code lands. Always dispatched by `/investigate` and by `/research` (the
-  adversarial-validation step at the end of every research pass). Required by `/gap-analysis` swarms at every size
-  (which run by default) and by `/iterative-plan-review` team mode. Also dispatched by `/code-overview`, where it
-  re-reads the code to verify a drafted overview's claims for accuracy rather than to validate a fix. `/code-review`
-  also dispatches it, at Step 7.4, to re-read the change and confirm, demote, or drop each finding on the consolidated
-  finding list. `/manual-test-planning` dispatches it against the drafted plan to disprove steps and expected outcomes
-  the supplied context does not promise, before the file is written. `/design-an-api` runs it in its four-agent spine,
-  at every size, to attack the amended design and the evidence under it.
-- **What you get back.** Numbered `V#` validation items, each with a strategy, hypothesis, investigation steps, result
-  (Confirmed / Refuted / Partially Refuted), and an impact statement. Plus a confidence assessment and remaining risks.
+- **מה הוא עושה.** מניח שראיות החקירה שגויות ושהתיקון המתוכנן ייכשל. מחפש ראיות-נגד, מקרי קצה שלא טופלו, והנחות פגומות.
+- **מתי לשגר אותו.** חקירה ייצרה שורש בעיה ותוכנית תיקון, ואתה רוצה שהניתוח יאומת אדוורסרית לפני שהקוד נוחת. תמיד משוגר על ידי `/investigate` ועל ידי `/research` (שלב האימות האדוורסרי בסוף כל מעבר מחקר). נדרש ב-swarms של `/gap-analysis` בכל גודל (והם רצים כברירת מחדל) ובמצב הצוות של `/iterative-plan-review`. משוגר גם על ידי `/code-overview`, שם הוא קורא מחדש את הקוד כדי לאמת את הטענות של סקירת-על מנוסחת לצורך דיוק, ולא כדי לאמת תיקון. גם `/code-review` משגר אותו, בצעד 7.4, כדי לקרוא מחדש את השינוי ולאשר, להוריד דרגה או לזרוק כל ממצא ברשימת הממצאים המאוחדת. `/manual-test-planning` משגר אותו מול התוכנית המנוסחת כדי להפריך שלבים ותוצאות צפויות שההקשר שסופק לא מבטיח, לפני שהקובץ נכתב. `/design-an-api` מריץ אותו בשדרת ארבעת הסוכנים שלו, בכל גודל, כדי לתקוף את העיצוב המתוקן ואת הראיות שמתחתיו.
+- **מה אתה מקבל בחזרה.** פריטי אימות ממוספרים `V#`, כל אחד עם אסטרטגיה, השערה, שלבי חקירה, תוצאה (אושר / הופרך / הופרך חלקית) והצהרת השפעה. בתוספת הערכת ביטחון וסיכונים שנותרו.
 
-## Key concepts
+## מושגי מפתח
 
-- **Default posture: everything is wrong until proven right.** The agent assumes the investigation reached the wrong
-  conclusion and the fix will fail. The work is to _try to disprove_ the analysis, not confirm it.
-- **Four strategies, three always required.** The agent must always attempt three strategies: challenge the evidence,
-  challenge the fix, and challenge the assumptions. A fourth strategy, challenge the evidence-gathering integrity,
-  applies whenever the inputs include gathered evidence, external sources, or research artifacts. That is always the
-  case for an investigation evidence summary or a research run. It asks whether any item was planted, injected,
-  astroturfed, stale, or single-sourced. Skipping an applicable strategy makes the validation incomplete.
-- **Counter-evidence has the same rigor as evidence.** A refutation requires the same `file_path:line_number` plus
-  snippet plus reasoning that the original investigation required. _"Looks wrong"_ is not a refutation.
-- **Stale-evidence check is mandatory.** The agent verifies that cited files and line numbers still match the codebase.
-  Evidence from an old branch is not evidence.
-- **Confidence assessment is not optional.** Every run closes with a High / Medium / Low confidence level and a
-  rationale grounded in what the validation found.
+- **עמדת ברירת מחדל: הכול שגוי עד שיוכח נכון.** הסוכן מניח שהחקירה הגיעה למסקנה השגויה ושהתיקון ייכשל. העבודה היא _לנסות להפריך_ את הניתוח, לא לאשר אותו.
+- **ארבע אסטרטגיות, שלוש תמיד נדרשות.** הסוכן חייב תמיד לנסות שלוש אסטרטגיות: לאתגר את הראיות, לאתגר את התיקון, ולאתגר את ההנחות. אסטרטגיה רביעית, לאתגר את שלמות איסוף הראיות, חלה בכל פעם שהקלטים כוללים ראיות שנאספו, מקורות חיצוניים או תוצרי מחקר. זה תמיד המצב עבור סיכום ראיות של חקירה או עבור ריצת מחקר. היא שואלת אם פריט כלשהו הושתל, הוזרק, זויף בהמון מלאכותי, התיישן, או הגיע ממקור יחיד. דילוג על אסטרטגיה שחלה הופך את האימות ללא שלם.
+- **לראיות-נגד יש אותה קפדנות כמו לראיות.** הפרכה דורשת את אותו `file_path:line_number` בתוספת קטע קוד בתוספת נימוק שהחקירה המקורית דרשה. _"נראה שגוי"_ אינה הפרכה.
+- **בדיקת ראיות מיושנות היא חובה.** הסוכן מוודא שהקבצים ומספרי השורות שצוטטו עדיין תואמים לבסיס הקוד. ראיה מענף ישן אינה ראיה.
+- **הערכת הביטחון אינה אופציונלית.** כל ריצה נסגרת ברמת ביטחון גבוהה / בינונית / נמוכה ובנימוק שמעוגן במה שהאימות מצא.
 
-## When to use it
+## מתי להשתמש בו
 
-**Dispatch when:**
+**שגר כאשר:**
 
-- An investigation has produced a root cause analysis and a planned fix, and you want it challenged before code is
-  written. `/investigate` dispatches this agent automatically.
-- A research pass has reached a recommendation and you want its reasoning and sources attacked at the synthesis layer
-  before the recommendation is trusted. `/research` always dispatches this agent as the adversarial-validation step at
-  the end of every pass.
-- A gap analysis has produced gaps with claimed evidence and you want each gap challenged for confirmability.
-  `/gap-analysis` dispatches this agent by default at every swarm size.
-- An iterative plan review is in team mode and you want the plan's assumptions attacked. `/iterative-plan-review`
-  dispatches this agent in team mode.
-- A code overview has been drafted and you want its claims checked against the code before a reader trusts them.
-  `/code-overview` dispatches this agent to validate the overview's accuracy, the stated _why_ most of all, never to
-  judge the code's quality.
-- A code review has produced a finding list and you want each finding re-attacked against the code before a human reads
-  it. `/code-review` dispatches this agent at Step 7.4 to confirm, demote, or (with concrete counter-evidence) drop each
-  finding, judging the finding's reasoning against the change rather than trusting the producing agent.
-- A team member has proposed a fix or change and you want a second adversarial opinion before merging.
-- A high-stakes incident response is winding down and you want to confirm the post-mortem's root cause and remediation
-  hold up under challenge.
+- חקירה ייצרה ניתוח שורש בעיה ותיקון מתוכנן, ואתה רוצה שהוא יאותגר לפני שנכתב קוד. `/investigate` משגר את הסוכן הזה אוטומטית.
+- מעבר מחקר הגיע להמלצה ואתה רוצה שההיגיון והמקורות שלו יותקפו בשכבת הסינתזה לפני שסומכים על ההמלצה. `/research` תמיד משגר את הסוכן הזה כשלב האימות האדוורסרי בסוף כל מעבר.
+- ניתוח פערים ייצר פערים עם ראיות נטענות ואתה רוצה שכל פער יאותגר על יכולת האישור שלו. `/gap-analysis` משגר את הסוכן הזה כברירת מחדל בכל גודל swarm.
+- סקירת תוכנית איטרטיבית נמצאת במצב צוות ואתה רוצה שההנחות של התוכנית יותקפו. `/iterative-plan-review` משגר את הסוכן הזה במצב צוות.
+- סקירת-על של קוד נוסחה ואתה רוצה שהטענות שלה ייבדקו מול הקוד לפני שקורא סומך עליהן. `/code-overview` משגר את הסוכן הזה כדי לאמת את הדיוק של סקירת-העל, ובראש ובראשונה את ה*למה* המוצהר, לעולם לא כדי לשפוט את איכות הקוד.
+- סקירת קוד ייצרה רשימת ממצאים ואתה רוצה שכל ממצא יותקף מחדש מול הקוד לפני שאדם קורא אותו. `/code-review` משגר את הסוכן הזה בצעד 7.4 כדי לאשר, להוריד דרגה, או (עם ראיות-נגד קונקרטיות) לזרוק כל ממצא, כשהוא שופט את ההיגיון של הממצא מול השינוי ולא בוטח בסוכן שייצר אותו.
+- חבר צוות הציע תיקון או שינוי ואתה רוצה חוות דעת אדוורסרית שנייה לפני מיזוג.
+- תגובה לתקרית בעלת סיכון גבוה מסתיימת ואתה רוצה לאשר ששורש הבעיה וההסדרה ב-post-mortem מחזיקים תחת אתגור.
 
-**Do not dispatch for:**
+**אל תשגר עבור:**
 
-- Discovering the root cause in the first place. Use `evidence-based-investigator` or `/investigate`.
-- Drafting a fix or plan. Use `/plan-implementation` or write the plan yourself; this agent validates plans, it does not
-  write them.
-- Performing the code review itself. Use `/code-review` for correctness, style, and compliance. It dispatches this
-  validator internally at Step 7.4 to re-check its finding list. But the validator judges whether a finding's
-  _reasoning_ holds against the code, not whether the code is clean.
-- Architectural assessment. Use `/architectural-analysis`. The validator does not synthesize architectural
-  recommendations.
-- Self-evaluation of an agent's own output. The validator must run against another agent's output, not its own.
+- גילוי שורש הבעיה מלכתחילה. השתמש ב-`evidence-based-investigator` או ב-`/investigate`.
+- ניסוח תיקון או תוכנית. השתמש ב-`/plan-implementation` או כתוב את התוכנית בעצמך; הסוכן הזה מאמת תוכניות, הוא לא כותב אותן.
+- ביצוע סקירת הקוד עצמה. השתמש ב-`/code-review` לנכונות, לסגנון ולציות. הוא משגר את המאמת הזה בפנים בצעד 7.4 כדי לבדוק מחדש את רשימת הממצאים שלו. אבל המאמת שופט אם ה*היגיון* של ממצא מחזיק מול הקוד, ולא אם הקוד נקי.
+- הערכה ארכיטקטונית. השתמש ב-`/architectural-analysis`. המאמת לא מסנתז המלצות ארכיטקטוניות.
+- הערכה עצמית של הפלט של סוכן עצמו. המאמת חייב לרוץ מול הפלט של סוכן אחר, לא של עצמו.
 
-## How to invoke it
+## איך להפעיל אותו
 
-Dispatch via the `Agent` tool with `subagent_type: han-core:adversarial-validator`. Give it:
+שגר דרך כלי ה-`Agent` עם `subagent_type: han-core:adversarial-validator`. תן לו:
 
-1. **The evidence summary.** The full numbered evidence list from the investigation (`E1, E2, …`) or the gap list from a
-   gap analysis (`G-NNN`).
-2. **The root cause analysis.** A short statement of the root cause the investigation reached.
-3. **The planned fix.** Per-file changes, function signatures, logic adjustments. Without a planned fix the agent cannot
-   attack what is going to ship.
-4. **Project context, optional.** Coding standards, ADRs, framework conventions the fix should respect.
+1. **את סיכום הראיות.** רשימת הראיות הממוספרת המלאה מהחקירה (`E1, E2, …`) או רשימת הפערים מניתוח פערים (`G-NNN`).
+2. **את ניתוח שורש הבעיה.** הצהרה קצרה על שורש הבעיה שהחקירה הגיעה אליו.
+3. **את התיקון המתוכנן.** שינויים לכל קובץ, חתימות פונקציות, התאמות לוגיקה. בלי תיקון מתוכנן הסוכן לא יכול לתקוף את מה שעומד להישלח.
+4. **הקשר פרויקט, אופציונלי.** תקני קוד, ADRs, מוסכמות פריימוורק שהתיקון אמור לכבד.
 
-Example prompts:
+פרומפטים לדוגמה:
 
-- _"Validate this investigation: [paste evidence summary, root cause, and planned fix]. Try to break the fix and find
-  unhandled edge cases."_
-- _"Adversarially validate the gap analysis at `gap-analysis-source.md`. For each gap, search the current state for
-  counter-evidence."_
-- _"The team is about to ship this auth-rotation plan. Challenge the assumptions before we commit."_
+- _"תאמת את החקירה הזו: [הדבק סיכום ראיות, שורש בעיה ותיקון מתוכנן]. תנסה לשבור את התיקון ולמצוא מקרי קצה שלא טופלו."_
+- _"תאמת אדוורסרית את ניתוח הפערים ב-`gap-analysis-source.md`. עבור כל פער, חפש ראיות-נגד במצב הנוכחי."_
+- _"הצוות עומד לשלוח את תוכנית רוטציית האימות הזו. תאתגר את ההנחות לפני שנתחייב."_
 
-## What you get back
+## מה אתה מקבל בחזרה
 
-- A minimum of 5 numbered `V#` validation items spread across the applicable strategies: Challenge the Evidence,
-  Challenge the Fix, and Challenge the Assumptions. When the inputs include gathered or external evidence, items also
-  cover Challenge the Evidence-Gathering Integrity. Each item names the strategy, the hypothesis under test, what was
-  investigated (files read, commands run, greps performed), the result (Confirmed / Refuted / Partially Refuted), and
-  the impact.
-- A **Confidence Assessment** (High / Medium / Low) with a rationale that points at the validation items behind the
-  call.
-- A **Remaining Risks** section listing known unknowns, areas not fully validated, and assumptions the agent could not
-  verify.
+- מינימום של 5 פריטי אימות ממוספרים `V#` שפרושים על פני האסטרטגיות שחלות: אתגור הראיות, אתגור התיקון, ואתגור ההנחות. כשהקלטים כוללים ראיות שנאספו או ראיות חיצוניות, הפריטים מכסים גם את אתגור שלמות איסוף הראיות. כל פריט נוקב באסטרטגיה, בהשערה שנבדקת, במה שנחקר (קבצים שנקראו, פקודות שרצו, greps שבוצעו), בתוצאה (אושר / הופרך / הופרך חלקית) ובהשפעה.
+- **הערכת ביטחון** (גבוהה / בינונית / נמוכה) עם נימוק שמצביע על פריטי האימות שמאחורי ההכרעה.
+- סעיף **סיכונים שנותרו** שמפרט נעלמים ידועים, אזורים שלא אומתו במלואם, והנחות שהסוכן לא הצליח לאמת.
 
-Every refutation includes counter-evidence at the same rigor as the original investigation. Every confirmation includes
-what was checked and why it supports the finding.
+כל הפרכה כוללת ראיות-נגד באותה קפדנות כמו החקירה המקורית. כל אישור כולל את מה שנבדק ולמה זה תומך בממצא.
 
-## How to get the most out of it
+## איך להפיק ממנו את המרב
 
-- **Feed it the full evidence list, not a summary.** The agent attacks evidence item by item. A summary collapses the
-  attack surface.
-- **Include the planned fix in detail.** Without per-file changes and signatures the agent cannot run the
-  fix-blast-radius checks (searching for callers, hunting for race conditions, verifying error paths).
-- **Run it before, not after, implementation.** The whole point is to catch flawed reasoning before code lands.
-  Re-running it after a fix has shipped is a different exercise (post-mortem confirmation).
-- **Take refutations seriously.** A refuted evidence item is the most valuable output the agent produces. It means the
-  original investigation was wrong at that point and the fix likely would have shipped a wrong answer.
-- **Honor the confidence level.** When confidence is Medium or Low, the agent has flagged that something is unresolved.
-  Push back on the original investigation rather than overriding the validator.
+- **הזן לו את רשימת הראיות המלאה, לא סיכום.** הסוכן תוקף ראיה אחרי ראיה. סיכום מקפל את משטח ההתקפה.
+- **כלול את התיקון המתוכנן בפירוט.** בלי שינויים לכל קובץ ובלי חתימות, הסוכן לא יכול להריץ את בדיקות רדיוס הפגיעה של התיקון (חיפוש קוראים, ציד מצבי מרוץ, אימות מסלולי שגיאה).
+- **הרץ אותו לפני המימוש, לא אחריו.** כל הנקודה היא לתפוס היגיון פגום לפני שהקוד נוחת. הרצה מחדש אחרי שתיקון שוחרר היא תרגיל אחר (אישור post-mortem).
+- **קח הפרכות ברצינות.** פריט ראיה שהופרך הוא הפלט הבעל-ערך ביותר שהסוכן מייצר. זה אומר שהחקירה המקורית טעתה בנקודה הזו ושהתיקון כנראה היה שולח תשובה שגויה.
+- **כבד את רמת הביטחון.** כשהביטחון בינוני או נמוך, הסוכן סימן שמשהו לא נפתר. דחוף חזרה על החקירה המקורית במקום לעקוף את המאמת.
 
-## Cost and latency
+## עלות וזמן תגובה
 
-The agent runs on `sonnet`. A single validation pass typically runs in a few minutes (scope-dependent). The agent is
-designed to run once per investigation or gap analysis, not iteratively. If validation surfaces a refutation, fix the
-underlying investigation and re-run end-to-end rather than asking the validator to re-validate its own findings.
+הסוכן רץ על `sonnet`. מעבר אימות בודד רץ בדרך כלל בכמה דקות (תלוי היקף). הסוכן מתוכנן לרוץ פעם אחת לכל חקירה או ניתוח פערים, לא באיטרציות. אם האימות מעלה הפרכה, תקן את החקירה הבסיסית והרץ מחדש מקצה לקצה במקום לבקש מהמאמת לאמת מחדש את הממצאים של עצמו.
 
-## Sources
+## מקורות
 
-The agent's posture and protocols draw on falsification-first scientific method and the broader red-team / pre-mortem
-tradition.
+העמדה והפרוטוקולים של הסוכן נשענים על שיטה מדעית שמעמידה הפרכה בראש, ועל מסורת ה-red-team וה-pre-mortem הרחבה יותר.
 
 ### Karl Popper: Falsificationism
 
-Popper's argument that scientific claims are only meaningful if they can be falsified shapes the agent's posture. The
-agent's job is to attempt falsification of every claim, not to gather confirmation.
+הטיעון של Popper שטענות מדעיות משמעותיות רק אם ניתן להפריך אותן מעצב את עמדת הסוכן. העבודה של הסוכן היא לנסות להפריך כל טענה, לא לאסוף אישוש.
 
 URL: https://plato.stanford.edu/entries/popper/
 
 ### Gary Klein: Pre-Mortem
 
-Klein's pre-mortem technique (imagining the plan has failed and asking why, before it ships) maps directly to the
-agent's `Challenge the Fix` strategy. Assume the fix will fail; hunt for why.
+טכניקת ה-pre-mortem של Klein (לדמיין שהתוכנית נכשלה ולשאול למה, לפני שהיא משוחררת) ממופה ישירות לאסטרטגיית `Challenge the Fix` של הסוכן. הנח שהתיקון ייכשל; צוד את הסיבה.
 
 URL: https://hbr.org/2007/09/performing-a-project-premortem
 
 ### Red Teaming
 
-The military and intelligence tradition of red teaming (deliberately assigning the role of "the case against" to a
-reviewer) underpins the agent's structural opposition to whatever it is reviewing. Adversarial review is a discipline,
-not an attitude.
+המסורת הצבאית והמודיעינית של red teaming (הקצאה מכוונת של תפקיד "הטיעון שכנגד" לסוקר) עומדת בבסיס ההתנגדות המבנית של הסוכן לכל מה שהוא סוקר. סקירה אדוורסרית היא דיסציפלינה, לא גישה.
 
 URL: https://en.wikipedia.org/wiki/Red_team
 
-## Related documentation
+## תיעוד קשור
 
-- [Plugin README](../../README.md). The plugin's front door: its skills, agents, and how they fit together.
-- [Repo root README](../../../README.md). The Han suite landing page. Start here if you arrived from outside the docs tree.
-- [Agents Index](../../../docs/agents/README.md). All agents, grouped by role.
-- [`evidence-based-investigator`](./evidence-based-investigator.md). The sibling agent the validator usually attacks.
-  Investigators gather, validators falsify.
-- [`/investigate`](../../../han-coding/docs/skills/investigate.md). Always dispatches this agent after the fix plan is drafted.
-- [`/research`](../../../han-research/docs/skills/research.md). Always dispatches this agent as the adversarial-validation step at
-  the end of every research pass, attacking the recommendation and its sources.
-- [`/gap-analysis`](../../../han-research/docs/skills/gap-analysis.md). Required swarm role at every size. The swarm runs by
-  default.
-- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). Dispatches this agent in team mode.
-- [`/code-overview`](../../../han-coding/docs/skills/code-overview.md). Dispatches this agent to validate a drafted overview's
-  accuracy against the code before the reader sees it.
-- [`/code-review`](../../../han-coding/docs/skills/code-review.md). Dispatches this agent at Step 7.4 to re-attack the
-  consolidated finding list against the code, confirming, demoting, or dropping each finding before a human reads the
-  review.
-- [`/manual-test-planning`](../../../han-coding/docs/skills/manual-test-planning.md). Dispatches this agent against the
-  drafted manual test plan to disprove steps and expected outcomes the supplied context does not promise, before the
-  file is written.
-- [`/design-an-api`](../../../han-coding/docs/skills/design-an-api.md). Dispatches this agent in its four-agent
-  spine, at every size, to attack the amended design and the evidence under it.
-- [agent-domain-focus.md](../../../han-plugin-builder/skills/guidance/references/agent-building-guidelines/agent-domain-focus.md).
-  Why the agent uses precise falsification vocabulary and named anti-patterns.
-- [multi-agent-economics.md](../../../han-plugin-builder/skills/guidance/references/agent-building-guidelines/multi-agent-economics.md).
-  Why this agent is the canonical second-opinion pattern across the plugin.
+- [README של הפלאגין](../../README.md). הדלת הקדמית של הפלאגין: הסקילים שלו, הסוכנים, ואיך הם משתלבים.
+- [README של שורש הריפו](../../../README.md). דף הנחיתה של חבילת Han. התחל כאן אם הגעת מחוץ לעץ התיעוד.
+- [אינדקס הסוכנים](../../../docs/agents/README.md). כל הסוכנים, מקובצים לפי תפקיד.
+- [`evidence-based-investigator`](./evidence-based-investigator.md). הסוכן האח שהמאמת בדרך כלל תוקף. החוקרים אוספים, המאמתים מפריכים.
+- [`/investigate`](../../../han-coding/docs/skills/investigate.md). תמיד משגר את הסוכן הזה אחרי שתוכנית התיקון מנוסחת.
+- [`/research`](../../../han-research/docs/skills/research.md). תמיד משגר את הסוכן הזה כשלב האימות האדוורסרי בסוף כל מעבר מחקר, ותוקף את ההמלצה ואת המקורות שלה.
+- [`/gap-analysis`](../../../han-research/docs/skills/gap-analysis.md). תפקיד נדרש ב-swarm בכל גודל. ה-swarm רץ כברירת מחדל.
+- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). משגר את הסוכן הזה במצב צוות.
+- [`/code-overview`](../../../han-coding/docs/skills/code-overview.md). משגר את הסוכן הזה כדי לאמת את הדיוק של סקירת-על מנוסחת מול הקוד לפני שהקורא רואה אותה.
+- [`/code-review`](../../../han-coding/docs/skills/code-review.md). משגר את הסוכן הזה בצעד 7.4 כדי לתקוף מחדש את רשימת הממצאים המאוחדת מול הקוד, ולאשר, להוריד דרגה או לזרוק כל ממצא לפני שאדם קורא את הסקירה.
+- [`/manual-test-planning`](../../../han-coding/docs/skills/manual-test-planning.md). משגר את הסוכן הזה מול תוכנית הבדיקות הידנית המנוסחת כדי להפריך שלבים ותוצאות צפויות שההקשר שסופק לא מבטיח, לפני שהקובץ נכתב.
+- [`/design-an-api`](../../../han-coding/docs/skills/design-an-api.md). משגר את הסוכן הזה בשדרת ארבעת הסוכנים שלו, בכל גודל, כדי לתקוף את העיצוב המתוקן ואת הראיות שמתחתיו.
+- [agent-domain-focus.md](../../../han-plugin-builder/skills/guidance/references/agent-building-guidelines/agent-domain-focus.md). למה הסוכן משתמש באוצר מילים מדויק של הפרכה ובאנטי-דפוסים נקובים בשם.
+- [multi-agent-economics.md](../../../han-plugin-builder/skills/guidance/references/agent-building-guidelines/multi-agent-economics.md). למה הסוכן הזה הוא דפוס חוות-הדעת-השנייה הקנוני לרוחב הפלאגין.

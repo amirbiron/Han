@@ -1,166 +1,123 @@
 # edge-case-explorer
 
-Operator documentation for the `edge-case-explorer` agent in the han plugin. This document helps you decide _when_ and
-_how_ to dispatch the agent. For what the agent does internally, read the agent definition at
-[`han-core/agents/edge-case-explorer.md`](../../agents/edge-case-explorer.md).
+תיעוד מפעיל לסוכן `edge-case-explorer` בפלאגין. המסמך הזה עוזר לך להחליט _מתי_ ו*איך* לשגר את הסוכן. למה שהסוכן עושה בפנים, קרא את הגדרת הסוכן ב-[`han-core/agents/edge-case-explorer.md`](../../agents/edge-case-explorer.md).
 
-> See also: [Plugin README](../../README.md) · [Repo root](../../../README.md) · [All agents](../../../docs/agents/README.md) ·
-> [All skills](../../../docs/skills/README.md) · [YAGNI](../../../docs/yagni.md)
+> ראה גם: [README של הפלאגין](../../README.md) · [שורש הריפו](../../../README.md) · [כל הסוכנים](../../../docs/agents/README.md) · [כל הסקילים](../../../docs/skills/README.md) · [YAGNI](../../../docs/yagni.md)
 
 ## TL;DR
 
-- **What it does.** Systematically discovers edge cases that should be tested. Traces input sources, call chains, and
-  integration boundaries. Catalogs boundary values, type coercion traps, external input messiness, state-dependent
-  failures, and error-propagation gaps.
-- **When to dispatch it.** You want a structured edge-case catalog for code, either before writing tests or as part of a
-  broader test-planning pass. Always dispatched by `/automated-test-planning`. Conditionally dispatched by `/code-review` for
-  changes that introduce new entry points or external-data handling, by `/plan-a-feature` as part of the spec-stage team
-  covering Outcome / Primary Flow / Alternate Flows / Edge Cases, by `/plan-implementation` as part of the
-  implementation team, and by `/iterative-plan-review` in team mode.
-- **What you get back.** An `edge-case-analysis.md` file with `EC#` items grouped by priority (Critical / High / Medium
-  / Low), each tied to a specific input, code location, current handling state, and the risk if unhandled. Plus a
-  Dropped Edge Cases section.
+- **מה הוא עושה.** מגלה באופן שיטתי מקרי קצה שראוי לבדוק. עוקב אחרי מקורות קלט, שרשראות קריאה וגבולות אינטגרציה. מקטלג ערכי גבול, מלכודות המרת טיפוסים, בלגן של קלט חיצוני, כשלים תלויי-מצב ופערים בהתפשטות שגיאות.
+- **מתי לשגר אותו.** אתה רוצה קטלוג מובנה של מקרי קצה עבור קוד, לפני כתיבת בדיקות או כחלק ממעבר רחב יותר של תכנון בדיקות. תמיד משוגר על ידי `/automated-test-planning`. משוגר באופן מותנה על ידי `/code-review` בשינויים שמכניסים נקודות כניסה חדשות או טיפול בנתונים חיצוניים, על ידי `/plan-a-feature` כחלק מצוות שלב המפרט שמכסה תוצאה / זרימה ראשית / זרימות חלופיות / מקרי קצה, על ידי `/plan-implementation` כחלק מצוות המימוש, ועל ידי `/iterative-plan-review` במצב צוות.
+- **מה אתה מקבל בחזרה.** קובץ `edge-case-analysis.md` עם פריטי `EC#` מקובצים לפי עדיפות (קריטי / גבוה / בינוני / נמוך), כל אחד קשור לקלט ספציפי, למיקום בקוד, למצב הטיפול הנוכחי ולסיכון אם לא יטופל. בתוספת סעיף מקרי קצה שנשמטו.
 
-## Key concepts
+## מושגי מפתח
 
-- **Focused mode by default.** The agent invests investigation time in edge cases likely to cause crashes, data
-  corruption, or systemic failures. Lower-severity items get noted in passing but not hunted. Request _"exhaustive
-  exploration"_ to flip into full-mode discovery across all six dimensions.
-- **Six dimensions, used as a menu.** Boundary Values, External Input Messiness, Integration Boundaries, Type Coercion
-  and Format, State Dependencies, Error Propagation. In focused mode, the agent picks dimensions that fit the code. In
-  exhaustive mode, the agent walks all six against every input.
-- **Trace inputs to the immediate caller, deeper at boundaries.** Internal function-to-function chains are trusted
-  unless a clear external-data or type-coercion signal appears. Exhaustive mode traces to origin.
-- **Code location per finding.** Every `EC#` cites the affected `file:line` and references the input it touches.
-  Untraceable edge cases are dropped.
-- **Discovers and catalogs, does not write tests.** Output is a prioritization plan. `test-engineer` or your team writes
-  the tests.
-- **`/code-review` adds a failure-mode-target dispatcher directive at Step 3.5.** When dispatched from `/code-review`,
-  the skill appends an instruction that findings must ultimately trace to a failure mode in code on the scoped file
-  list. That holds even when callers outside the file list provide the evidence for that failure mode. The agent's
-  Protocol 1 caller-read still applies; the file-list scope is on the failure-mode target, not the evidence source. This
-  is `/code-review`'s tailoring; the agent's general behavior outside `/code-review` is unchanged.
+- **מצב ממוקד כברירת מחדל.** הסוכן משקיע את זמן החקירה במקרי קצה שסביר שיגרמו לקריסות, לשחיתות נתונים או לכשלים מערכתיים. פריטים בחומרה נמוכה יותר נרשמים אגב אורחא אבל לא נצודים. בקש _"חקירה ממצה"_ כדי לעבור לגילוי במצב מלא על פני כל שישה הממדים.
+- **שישה ממדים, בשימוש כתפריט.** ערכי גבול, בלגן של קלט חיצוני, גבולות אינטגרציה, המרת טיפוסים ופורמט, תלויות מצב, התפשטות שגיאות. במצב ממוקד הסוכן בוחר ממדים שמתאימים לקוד. במצב ממצה הסוכן עובר על כל השישה מול כל קלט.
+- **מעקב קלטים עד הקורא המיידי, ועמוק יותר בגבולות.** שרשראות פנימיות מפונקציה לפונקציה נחשבות מהימנות, אלא אם מופיע אות ברור של נתונים חיצוניים או של המרת טיפוסים. מצב ממצה עוקב עד המקור.
+- **מיקום בקוד לכל ממצא.** כל `EC#` מצטט את ה-`file:line` המושפע ומפנה לקלט שהוא נוגע בו. מקרי קצה שלא ניתן לעקוב אחריהם נשמטים.
+- **מגלה ומקטלג, לא כותב בדיקות.** הפלט הוא תוכנית תיעדוף. `test-engineer` או הצוות שלך כותבים את הבדיקות.
+- **`/code-review` מוסיף הנחיית משגר של יעד-מצב-כשל בשלב 3.5.** כשהוא משוגר מ-`/code-review`, הסקיל מצרף הנחיה שממצאים חייבים בסופו של דבר להתחקות למצב כשל בקוד שברשימת הקבצים שבהיקף. זה נכון גם כשקוראים מחוץ לרשימת הקבצים מספקים את הראיה למצב הכשל הזה. קריאת-הקורא של פרוטוקול 1 של הסוכן עדיין חלה; היקף רשימת הקבצים חל על יעד מצב הכשל, לא על מקור הראיה. זו ההתאמה של `/code-review`; ההתנהגות הכללית של הסוכן מחוץ ל-`/code-review` אינה משתנה.
 
-## When to use it
+## מתי להשתמש בו
 
-**Dispatch when:**
+**שגר כאשר:**
 
-- `/automated-test-planning` is running. The skill always dispatches this agent.
-- `/code-review` flags changes that introduce new entry points, accept external input, or handle integration responses.
-  The skill conditionally dispatches this agent.
-- `/plan-a-feature` is assembling its spec-stage team, covering Outcome / Primary Flow / Alternate Flows / Edge Cases.
-- `/plan-implementation` is assembling its implementation team.
-- `/iterative-plan-review` is running in team mode.
-- You want a structured pass to find what can go wrong with a specific function, endpoint, or integration before writing
-  tests.
-- A recently shipped feature is producing unexpected production behavior and you want to systematically catalog the
-  input shapes that could trigger it.
+- `/automated-test-planning` רץ. הסקיל תמיד משגר את הסוכן הזה.
+- `/code-review` מסמן שינויים שמכניסים נקודות כניסה חדשות, מקבלים קלט חיצוני, או מטפלים בתגובות אינטגרציה. הסקיל משגר את הסוכן הזה באופן מותנה.
+- `/plan-a-feature` מרכיב את צוות שלב המפרט שלו, ומכסה תוצאה / זרימה ראשית / זרימות חלופיות / מקרי קצה.
+- `/plan-implementation` מרכיב את צוות המימוש שלו.
+- `/iterative-plan-review` רץ במצב צוות.
+- אתה רוצה מעבר מובנה כדי למצוא מה יכול להשתבש בפונקציה, בנקודת קצה או באינטגרציה ספציפית לפני כתיבת בדיקות.
+- פיצ'ר שנשלח לאחרונה מייצר התנהגות לא צפויה בפרודקשן, ואתה רוצה לקטלג באופן שיטתי את צורות הקלט שעלולות להפעיל אותה.
 
-**Do not dispatch for:**
+**אל תשגר עבור:**
 
-- Overall test coverage planning. Use `test-engineer`. The edge-case explorer focuses on inputs and failure modes;
-  `test-engineer` plans the test pyramid.
-- Writing test code.
-- Bug root-cause investigation. Use `evidence-based-investigator` or `/investigate`.
-- Architectural analysis. Use the architectural analysts.
+- תכנון כיסוי בדיקות כולל. השתמש ב-`test-engineer`. חוקר מקרי הקצה מתמקד בקלטים ובמצבי כשל; `test-engineer` מתכנן את פירמידת הבדיקות.
+- כתיבת קוד בדיקות.
+- חקירת שורש של באג. השתמש ב-`evidence-based-investigator` או ב-`/investigate`.
+- ניתוח ארכיטקטוני. השתמש באנליסטים הארכיטקטוניים.
 
-## How to invoke it
+## איך להפעיל אותו
 
-Dispatch via the `Agent` tool with `subagent_type: han-core:edge-case-explorer`. Give it:
+שגר דרך כלי ה-`Agent` עם `subagent_type: han-core:edge-case-explorer`. תן לו:
 
-1. **A focus area.** Files, a function, an endpoint, or a small module. The narrower the scope, the sharper the edge
-   cases.
-2. **Exploration mode, optional.** Default is focused. Request _"exhaustive exploration"_ explicitly to flip into
-   full-mode discovery (more items, deeper coverage, higher cost).
-3. **An output path, optional.** Default filename is `edge-case-analysis.md`.
+1. **אזור מיקוד.** קבצים, פונקציה, נקודת קצה או מודול קטן. ככל שההיקף צר יותר, כך מקרי הקצה חדים יותר.
+2. **מצב חקירה, אופציונלי.** ברירת המחדל היא ממוקד. בקש _"חקירה ממצה"_ במפורש כדי לעבור לגילוי במצב מלא (יותר פריטים, כיסוי עמוק יותר, עלות גבוהה יותר).
+3. **נתיב פלט, אופציונלי.** שם ברירת המחדל הוא `edge-case-analysis.md`.
 
-Example prompts:
+פרומפטים לדוגמה:
 
-- _"Find edge cases for the new `/api/uploads` endpoint. It accepts multipart form data and writes to S3."_
-- _"Exhaustive exploration of `src/parse/csv.ts`. We are about to ship this in production and want everything the parser
-  could choke on."_
+- _"תמצא מקרי קצה לנקודת הקצה החדשה `/api/uploads`. היא מקבלת multipart form data וכותבת ל-S3."_
+- _"חקירה ממצה של `src/parse/csv.ts`. אנחנו עומדים לשלוח את זה לפרודקשן ורוצים כל דבר שהפרסר עלול להיחנק ממנו."_
 
-## What you get back
+## מה אתה מקבל בחזרה
 
-- An `edge-case-analysis.md` file on disk with:
-  - **Scope.** Files and areas analyzed.
-  - **Summary.** Same text returned to the caller.
-  - **Input Source Map.** Table of inputs, origins, types, and validation status.
-  - **Findings.** `EC#` items grouped by priority. Each includes priority, dimension, input, scenario, code location,
-    current handling, expected behavior, and risk.
-  - **Coverage Summary.** Totals, edge cases tested, edge cases handled but untested, edge cases with no handling and no
-    tests, and dimensions that did not apply.
-  - **Dropped Edge Cases.** Items explicitly excluded with reasons (often because they are physically impossible or
-    framework-guaranteed).
-- An in-channel summary with priority counts and the path to the file.
+- קובץ `edge-case-analysis.md` על הדיסק שכולל:
+  - **Scope.** הקבצים והאזורים שנותחו.
+  - **Summary.** אותו טקסט שהוחזר לקורא.
+  - **Input Source Map.** טבלה של קלטים, מקורות, טיפוסים ומצב ולידציה.
+  - **Findings.** פריטי `EC#` מקובצים לפי עדיפות. כל אחד כולל עדיפות, ממד, קלט, תרחיש, מיקום בקוד, טיפול נוכחי, התנהגות צפויה וסיכון.
+  - **Coverage Summary.** סיכומים, מקרי קצה שנבדקו, מקרי קצה שמטופלים אבל לא נבדקו, מקרי קצה בלי טיפול ובלי בדיקות, וממדים שלא היו רלוונטיים.
+  - **Dropped Edge Cases.** פריטים שהוחרגו במפורש עם נימוקים (לרוב מפני שהם בלתי אפשריים פיזית או מובטחים על ידי הפריימוורק).
+- סיכום בערוץ עם מספרים לפי עדיפות והנתיב לקובץ.
 
-## How to get the most out of it
+## איך להפיק ממנו את המרב
 
-- **Pick the mode deliberately.** Focused mode is the default and the right choice for routine planning. Exhaustive mode
-  is appropriate when production risk is high (parsers, security-sensitive endpoints, integrations with untrusted
-  services).
-- **Provide the input shape context.** If you know that a particular input is user-supplied vs. internal vs. from a
-  trusted upstream service, say so. The Input Source Map sharpens.
-- **Read the Dropped Edge Cases section.** It tells you what the agent considered and rejected. That signal often
-  reveals where the agent was uncertain about the input space.
-- **Pair with `test-engineer`.** Edge cases become test recommendations. `/automated-test-planning` runs both in parallel.
+- **בחר את המצב במודע.** מצב ממוקד הוא ברירת המחדל והבחירה הנכונה לתכנון שגרתי. מצב ממצה מתאים כשסיכון הפרודקשן גבוה (פרסרים, נקודות קצה רגישות-אבטחה, אינטגרציות עם שירותים לא מהימנים).
+- **ספק את ההקשר של צורת הקלט.** אם אתה יודע שקלט מסוים מגיע מהמשתמש לעומת פנימי לעומת שירות upstream מהימן, אמור זאת. מפת מקורות הקלט מתחדדת.
+- **קרא את סעיף מקרי הקצה שנשמטו.** הוא אומר לך מה הסוכן שקל ודחה. האות הזה חושף לעיתים קרובות איפה הסוכן לא היה בטוח לגבי מרחב הקלט.
+- **צמד עם `test-engineer`.** מקרי קצה הופכים להמלצות בדיקה. `/automated-test-planning` מריץ את שניהם במקביל.
 
-## Cost and latency
+## עלות וזמן תגובה
 
-The agent runs on `sonnet`. Focused mode runs in a couple of minutes for a focused scope. Exhaustive mode takes longer
-and produces a much larger output (often 2-3x the finding count). Use exhaustive mode deliberately.
+הסוכן רץ על `sonnet`. מצב ממוקד רץ בכמה דקות בהיקף ממוקד. מצב ממצה לוקח יותר זמן ומייצר פלט גדול בהרבה (לעיתים קרובות פי 2-3 במספר הממצאים). השתמש במצב ממצה במודע.
 
 ## YAGNI
 
-The agent enforces the **Speculative Edge Case** rule. These are YAGNI candidates:
+הסוכן אוכף את כלל **מקרה הקצה הספקולטיבי**. אלה מועמדי YAGNI:
 
-- Edge cases for input shapes no real upstream produces.
-- Code paths that don't exist yet.
-- Hypothetical adversaries the code does not face.
-- Boundary conditions only symmetry would surface (_"we covered the lower bound, so we should cover the upper bound"_
-  when only one bound is reachable).
+- מקרי קצה לצורות קלט ששום upstream אמיתי לא מייצר.
+- מסלולי קוד שעדיין לא קיימים.
+- יריבים היפותטיים שהקוד לא מתמודד מולם.
+- תנאי גבול שרק סימטריה הייתה מעלה (_"כיסינו את הגבול התחתון, אז צריך לכסות את הגבול העליון"_ כשרק גבול אחד בר-השגה).
 
-They move to Dropped Edge Cases with a named _reopen-when_ trigger. When many speculative low-bound/high-bound items can
-be replaced by one durable boundary test that catches the realistic failure modes, the agent recommends the single test.
+הם עוברים ל-Dropped Edge Cases עם טריגר _reopen-when_ נקוב. כשהרבה פריטים ספקולטיביים של גבול-תחתון/גבול-עליון ניתנים להחלפה בבדיקת גבול עמידה אחת שתופסת את מצבי הכשל הריאליים, הסוכן ממליץ על הבדיקה היחידה.
 
-See [YAGNI](../../../docs/yagni.md) for the two gates, the acceptable-evidence list, and the named anti-patterns.
+ראה [YAGNI](../../../docs/yagni.md) לשני השערים, לרשימת הראיות הקבילות ולאנטי-דפוסים הנקובים בשם.
 
-## Sources
+## מקורות
 
-The agent's dimensions and vocabulary are grounded in software-testing literature.
+הממדים ואוצר המילים של הסוכן מעוגנים בספרות של בדיקות תוכנה.
 
 ### Cem Kaner et al.: Testing Computer Software
 
-The classic taxonomy of boundary-value, equivalence-partition, and error-path testing underpins the agent's six
-dimensions.
+הטקסונומיה הקלאסית של בדיקת ערכי גבול, מחלקות שקילות ומסלולי שגיאה עומדת בבסיס שישה הממדים של הסוכן.
 
 URL: https://www.wiley.com/en-us/Testing+Computer+Software%2C+2nd+Edition-p-9780471358466
 
 ### Glenford Myers: The Art of Software Testing
 
-Myers's framing of equivalence partitioning and boundary-value analysis is the citable reference for Dimension 3A.
+המסגור של Myers לחלוקה למחלקות שקילות ולניתוח ערכי גבול הוא ההפניה בת-הציטוט לממד 3A.
 
 URL: https://www.wiley.com/en-us/The+Art+of+Software+Testing%2C+3rd+Edition-p-9781118031964
 
 ### Joel Spolsky: The Joel Test (and Unicode)
 
-Spolsky's article on Unicode and character encoding mistakes underpins the agent's type-coercion and
-serialization-round-trip checks.
+המאמר של Spolsky על יוניקוד ועל טעויות בקידוד תווים עומד בבסיס בדיקות המרת הטיפוסים ובדיקות הלוך-ושוב של הסריאליזציה של הסוכן.
 
 URL:
 https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/
 
-## Related documentation
+## תיעוד קשור
 
-- [Plugin README](../../README.md). The plugin's front door: its skills, agents, and how they fit together.
-- [Repo root README](../../../README.md). The Han suite landing page. Start here if you arrived from outside the docs tree.
-- [YAGNI](../../../docs/yagni.md). The Speculative Edge Case rule.
-- [Agents Index](../../../docs/agents/README.md). All agents, grouped by role.
-- [`test-engineer`](./test-engineer.md). Sibling agent. `/automated-test-planning` runs both in parallel.
-- [`/automated-test-planning`](../../../han-coding/docs/skills/automated-test-planning.md). Always dispatches this agent.
-- [`/code-review`](../../../han-coding/docs/skills/code-review.md). Conditionally dispatches this agent.
-- [`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md). Dispatches this agent as part of the spec-stage
-  team, covering Outcome / Primary Flow / Alternate Flows / Edge Cases.
-- [`/plan-implementation`](../../../han-planning/docs/skills/plan-implementation.md). Dispatches this agent as part of the
-  implementation team.
-- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). Dispatches this agent in team mode.
+- [README של הפלאגין](../../README.md). הדלת הקדמית של הפלאגין: הסקילים שלו, הסוכנים, ואיך הם משתלבים.
+- [README של שורש הריפו](../../../README.md). דף הנחיתה של חבילת Han. התחל כאן אם הגעת מחוץ לעץ התיעוד.
+- [YAGNI](../../../docs/yagni.md). כלל מקרה הקצה הספקולטיבי.
+- [אינדקס הסוכנים](../../../docs/agents/README.md). כל הסוכנים, מקובצים לפי תפקיד.
+- [`test-engineer`](./test-engineer.md). סוכן אח. `/automated-test-planning` מריץ את שניהם במקביל.
+- [`/automated-test-planning`](../../../han-coding/docs/skills/automated-test-planning.md). תמיד משגר את הסוכן הזה.
+- [`/code-review`](../../../han-coding/docs/skills/code-review.md). משגר את הסוכן הזה באופן מותנה.
+- [`/plan-a-feature`](../../../han-planning/docs/skills/plan-a-feature.md). משגר את הסוכן הזה כחלק מצוות שלב המפרט, ומכסה תוצאה / זרימה ראשית / זרימות חלופיות / מקרי קצה.
+- [`/plan-implementation`](../../../han-planning/docs/skills/plan-implementation.md). משגר את הסוכן הזה כחלק מצוות המימוש.
+- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). משגר את הסוכן הזה במצב צוות.

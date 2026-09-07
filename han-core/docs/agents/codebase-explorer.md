@@ -1,146 +1,106 @@
 # codebase-explorer
 
-Operator documentation for the `codebase-explorer` agent in the han plugin. This document helps you decide _when_ and
-_how_ to dispatch the agent. For what the agent does internally, read the agent definition at
-[`han-core/agents/codebase-explorer.md`](../../agents/codebase-explorer.md).
+תיעוד מפעיל לסוכן `codebase-explorer` בפלאגין. המסמך הזה עוזר לך להחליט _מתי_ ו*איך* לשגר את הסוכן. למה שהסוכן עושה בפנים, קרא את הגדרת הסוכן ב-[`han-core/agents/codebase-explorer.md`](../../agents/codebase-explorer.md).
 
-> See also: [Plugin README](../../README.md) · [Repo root](../../../README.md) · [All agents](../../../docs/agents/README.md) ·
-> [All skills](../../../docs/skills/README.md)
+> ראה גם: [README של הפלאגין](../../README.md) · [שורש הריפו](../../../README.md) · [כל הסוכנים](../../../docs/agents/README.md) · [כל הסקילים](../../../docs/skills/README.md)
 
 ## TL;DR
 
-- **What it does.** Thoroughly discovers implementation details for a specific feature or system: entry points, core
-  logic, data models, configuration, tests, and feature-type-specific artifacts.
-- **When to dispatch it.** A feature, subsystem, or capability needs structured codebase discovery. Often dispatched two
-  or three in parallel from a different angle each. Always dispatched by `/project-documentation`. Dispatched by
-  `/coding-standard` for pattern discovery and by `/architectural-decision-record` for context gathering. Also
-  dispatched by `/research` on codebase-bearing questions. Dispatched by `/architectural-analysis` for a large or
-  unfamiliar focus area. Dispatched by `/code-overview` to discover entry points, context, uses, and flow for an
-  understand-now overview. Dispatched by `/gap-analysis` to map an unfamiliar current state. Dispatched by
-  `/iterative-plan-review` for unfamiliar code regions.
-- **What you get back.** Numbered `D#` discovery items, each with category (Entry point / Core logic / Data model /
-  Config / Test / Docs / Feature-specific), a file path with line number, a brief verbatim snippet of key definitions,
-  and connections to other files.
+- **מה הוא עושה.** מגלה ביסודיות פרטי מימוש עבור פיצ'ר או מערכת ספציפיים: נקודות כניסה, לוגיקת ליבה, מודלי נתונים, קונפיגורציה, בדיקות, ופריטים ייחודיים לסוג הפיצ'ר.
+- **מתי לשגר אותו.** פיצ'ר, תת-מערכת או יכולת זקוקים לגילוי מובנה בבסיס הקוד. לעיתים קרובות משוגרים שניים או שלושה במקביל, כל אחד מזווית אחרת. תמיד משוגר על ידי `/project-documentation`. משוגר על ידי `/coding-standard` לגילוי דפוסים ועל ידי `/architectural-decision-record` לאיסוף הקשר. משוגר גם על ידי `/research` בשאלות שנשענות על בסיס הקוד. משוגר על ידי `/architectural-analysis` עבור אזור מיקוד גדול או לא מוכר. משוגר על ידי `/code-overview` כדי לגלות נקודות כניסה, הקשר, שימושים וזרימה לסקירה של הבנה-עכשיו. משוגר על ידי `/gap-analysis` כדי למפות מצב נוכחי לא מוכר. משוגר על ידי `/iterative-plan-review` עבור אזורי קוד לא מוכרים.
+- **מה אתה מקבל בחזרה.** פריטי גילוי `D#` ממוספרים, כל אחד עם קטגוריה (נקודת כניסה / לוגיקת ליבה / מודל נתונים / קונפיגורציה / בדיקה / תיעוד / ייחודי-לפיצ'ר), נתיב קובץ עם מספר שורה, קטע קצר מילה במילה של הגדרות מפתח, וקשרים לקבצים אחרים.
 
-## Key concepts
+## מושגי מפתח
 
-- **Adapt the search.** Single-pattern glob runs are anti-pattern. The agent tries multiple patterns, follows imports,
-  and reads files to build a connected picture rather than a flat list.
-- **Feature-type-specific checklists.** API services, event-driven systems, data layers, UI features, external
-  integrations, and infrastructure each have their own extra checklist beyond the universal one (entry points, core
-  logic, data model, config, tests, docs).
-- **Connections, not islands.** Every discovery item names which other files it connects to (imports, callers,
-  dependents). The result is a graph, not a directory listing.
-- **Negative results count.** When a pattern was tried and found nothing, the agent reports that. Often more useful than
-  a positive result, because it tells you what the codebase does not have.
-- **Discovers, does not document.** The agent's output is the raw material for `/project-documentation` or
-  `/coding-standard`. It does not write the doc itself.
+- **התאם את החיפוש.** ריצות glob של דפוס יחיד הן אנטי-דפוס. הסוכן מנסה דפוסים מרובים, עוקב אחרי ייבואים, וקורא קבצים כדי לבנות תמונה מקושרת ולא רשימה שטוחה.
+- **צ'ק-ליסטים ייחודיים לסוג הפיצ'ר.** לשירותי API, למערכות מונחות-אירועים, לשכבות נתונים, לפיצ'רים של UI, לאינטגרציות חיצוניות ולתשתית יש כל אחד צ'ק-ליסט נוסף משלו מעבר לצ'ק-ליסט האוניברסלי (נקודות כניסה, לוגיקת ליבה, מודל נתונים, קונפיגורציה, בדיקות, תיעוד).
+- **קשרים, לא איים.** כל פריט גילוי נוקב באילו קבצים אחרים הוא מתחבר אליהם (ייבואים, קוראים, תלויים). התוצאה היא גרף, לא רשימת תיקיות.
+- **תוצאות שליליות נספרות.** כשדפוס נוסה ולא מצא דבר, הסוכן מדווח על כך. לעיתים קרובות זה שימושי יותר מתוצאה חיובית, כי זה אומר לך מה בסיס הקוד לא כולל.
+- **מגלה, לא מתעד.** הפלט של הסוכן הוא חומר הגלם ל-`/project-documentation` או ל-`/coding-standard`. הוא לא כותב את המסמך עצמו.
 
-## When to use it
+## מתי להשתמש בו
 
-**Dispatch when:**
+**שגר כאשר:**
 
-- `/project-documentation` is running. The skill always dispatches two or three of these agents in parallel from
-  different angles.
-- `/coding-standard` is gathering evidence for the standard. The skill dispatches two of these in parallel: one for
-  implementation patterns, one for existing standards and ADRs.
-- `/architectural-decision-record` is creating a new ADR with sparse context. The skill dispatches one or two of these
-  to gather supporting evidence.
-- `/research` is answering a codebase-bearing question and needs structured discovery of the relevant implementation.
-- `/architectural-analysis` is analyzing a large or unfamiliar focus area and needs a discovery pass before the
-  structural analysts run.
-- `/code-overview` is building an understand-now overview of unfamiliar code or a PR's changes. The skill dispatches one
-  to five of these, scaled to size, to discover entry points, context, uses, and flow.
-- `/gap-analysis` is mapping an unfamiliar current state before comparing it against the desired state.
-- `/iterative-plan-review` is reviewing a plan that touches unfamiliar code regions and needs them discovered first.
-- You want a structured discovery pass on a feature before writing or refactoring it.
+- `/project-documentation` רץ. הסקיל תמיד משגר שניים או שלושה מהסוכנים האלה במקביל מזוויות שונות.
+- `/coding-standard` אוסף ראיות עבור התקן. הסקיל משגר שניים מאלה במקביל: אחד לדפוסי מימוש, אחד לתקנים קיימים ול-ADRs.
+- `/architectural-decision-record` יוצר ADR חדש עם הקשר דל. הסקיל משגר אחד או שניים מאלה כדי לאסוף ראיות תומכות.
+- `/research` עונה על שאלה שנשענת על בסיס הקוד וזקוק לגילוי מובנה של המימוש הרלוונטי.
+- `/architectural-analysis` מנתח אזור מיקוד גדול או לא מוכר וזקוק למעבר גילוי לפני שהאנליסטים המבניים רצים.
+- `/code-overview` בונה סקירה של הבנה-עכשיו לקוד לא מוכר או לשינויים ב-PR. הסקיל משגר בין אחד לחמישה מאלה, בהתאמה לגודל, כדי לגלות נקודות כניסה, הקשר, שימושים וזרימה.
+- `/gap-analysis` ממפה מצב נוכחי לא מוכר לפני השוואתו למצב הרצוי.
+- `/iterative-plan-review` סוקר תוכנית שנוגעת באזורי קוד לא מוכרים שצריך לגלות קודם.
+- אתה רוצה מעבר גילוי מובנה על פיצ'ר לפני כתיבתו או ריפקטור שלו.
 
-**Do not dispatch for:**
+**אל תשגר עבור:**
 
-- Bug investigation. Use `evidence-based-investigator`, which is focused on symptoms-to-cause tracing.
-- Architectural analysis (coupling, behavior, concurrency). Use the architectural analysts.
-- Stack and tooling detection. Use `project-scanner`.
-- Writing documentation. The agent discovers; `/project-documentation` writes.
-- Researching options or prior art from the open web. Use `research-analyst`.
+- חקירת באג. השתמש ב-`evidence-based-investigator`, שממוקד במעקב מסימפטום לסיבה.
+- ניתוח ארכיטקטוני (צימוד, התנהגות, מקביליות). השתמש באנליסטים הארכיטקטוניים.
+- זיהוי סטאק וכלים. השתמש ב-`project-scanner`.
+- כתיבת תיעוד. הסוכן מגלה; `/project-documentation` כותב.
+- מחקר של אפשרויות או של עבודה קודמת מהרשת הפתוחה. השתמש ב-`research-analyst`.
 
-## How to invoke it
+## איך להפעיל אותו
 
-Dispatch via the `Agent` tool with `subagent_type: han-core:codebase-explorer`. Give it:
+שגר דרך כלי ה-`Agent` עם `subagent_type: han-core:codebase-explorer`. תן לו:
 
-1. **Feature name.** What you're exploring.
-2. **Feature type.** API, event-driven, data layer, UI, integration, infrastructure, or cross-cutting.
-3. **Layers.** Backend, frontend, both, or infrastructure.
-4. **Focus area.** Your specific angle (_"entry points and core logic"_, _"data models and schemas"_, _"existing tests
-   and patterns"_). This is how multiple explorers in parallel avoid stepping on each other.
-5. **Known file paths, optional.** Starting points if you have them.
+1. **שם הפיצ'ר.** מה אתה חוקר.
+2. **סוג הפיצ'ר.** API, מונחה-אירועים, שכבת נתונים, UI, אינטגרציה, תשתית או חוצה-רוחב.
+3. **שכבות.** בקאנד, פרונטאנד, שניהם, או תשתית.
+4. **אזור מיקוד.** הזווית הספציפית שלך (_"נקודות כניסה ולוגיקת ליבה"_, _"מודלי נתונים וסכמות"_, _"בדיקות ודפוסים קיימים"_). כך חוקרים מרובים במקביל נמנעים מלדרוך זה על זה.
+5. **נתיבי קבצים ידועים, אופציונלי.** נקודות התחלה אם יש לך.
 
-Example prompts:
+פרומפטים לדוגמה:
 
-- _"Explore the auth system. Feature type: cross-cutting. Layers: both. Focus area: entry points and core logic. Known
-  starting points: `src/auth/middleware.ts`."_
-- _"Discover the notification feature. Feature type: event-driven. Focus area: publishers, subscribers, and
-  message-queue configuration."_
+- _"תחקור את מערכת האימות. סוג הפיצ'ר: חוצה-רוחב. שכבות: שתיהן. אזור מיקוד: נקודות כניסה ולוגיקת ליבה. נקודות התחלה ידועות: `src/auth/middleware.ts`."_
+- _"תגלה את פיצ'ר ההתראות. סוג הפיצ'ר: מונחה-אירועים. אזור מיקוד: מפרסמים, מנויים, וקונפיגורציה של תור ההודעות."_
 
-## What you get back
+## מה אתה מקבל בחזרה
 
-- Numbered `D#` discovery items, each with: category, file path with line number, a brief verbatim snippet for key
-  definitions, and a `Connections` field listing related files.
-- An **Exploration Summary** with total files discovered, areas well-covered vs. areas where searches found nothing, and
-  suggested follow-up searches.
+- פריטי גילוי `D#` ממוספרים, כל אחד עם: קטגוריה, נתיב קובץ עם מספר שורה, קטע קצר מילה במילה להגדרות מפתח, ושדה `Connections` שמפרט קבצים קשורים.
+- **Exploration Summary** עם סך הקבצים שהתגלו, אזורים שכוסו היטב לעומת אזורים שבהם החיפושים לא מצאו דבר, וחיפושי המשך מוצעים.
 
-## How to get the most out of it
+## איך להפיק ממנו את המרב
 
-- **Dispatch multiple in parallel.** Different focus areas surface different parts of the codebase.
-  `/project-documentation` runs two or three at once.
-- **Name the focus area precisely.** Two parallel agents with the same focus area do duplicate work. Split by angle: one
-  for entry points, one for data, one for tests.
-- **Provide starting points.** Even one known file path massively accelerates the search.
-- **Read the negative results.** _"Tried `**/*notification*`, `**/*alert*`, and `**/*email*` patterns, found no event
-  subscribers"_ is real signal. It usually means the feature uses unfamiliar naming.
+- **שגר כמה במקביל.** אזורי מיקוד שונים מעלים חלקים שונים של בסיס הקוד. `/project-documentation` מריץ שניים או שלושה בבת אחת.
+- **נקוב באזור המיקוד בדיוק.** שני סוכנים מקבילים עם אותו אזור מיקוד עושים עבודה כפולה. פצל לפי זווית: אחד לנקודות כניסה, אחד לנתונים, אחד לבדיקות.
+- **ספק נקודות התחלה.** אפילו נתיב קובץ ידוע אחד מאיץ את החיפוש באופן משמעותי.
+- **קרא את התוצאות השליליות.** _"ניסיתי את הדפוסים `**/*notification*`, `**/*alert*` ו-`**/*email*`, לא נמצאו מנויי אירועים"_ הוא אות אמיתי. לרוב זה אומר שהפיצ'ר משתמש בשמות לא מוכרים.
 
-## Cost and latency
+## עלות וזמן תגובה
 
-The agent runs on `haiku` (cheap, fast). A focused exploration runs in under a minute. Cost scales with the number of
-parallel dispatches.
+הסוכן רץ על `haiku` (זול, מהיר). חקירה ממוקדת רצה בפחות מדקה. העלות גדלה עם מספר השיגורים המקבילים.
 
-## Sources
+## מקורות
 
-The agent's exploration discipline is grounded in practical codebase-archaeology technique.
+משמעת החקירה של הסוכן מעוגנת בטכניקה מעשית של ארכיאולוגיית בסיס קוד.
 
 ### Michael Feathers: Working Effectively with Legacy Code
 
-Feathers's framing of seams and characterization tests informs the agent's bias toward following imports and reading
-code rather than guessing from filenames.
+המסגור של Feathers לתפרים ולבדיקות אפיון מיידע את ההטיה של הסוכן לעקוב אחרי ייבואים ולקרוא קוד ולא לנחש משמות קבצים.
 
 URL: https://www.oreilly.com/library/view/working-effectively-with/0131177052/
 
 ### Adam Tornhill: Software Design X-Rays
 
-Tornhill's work on hotspot analysis and software-design archaeology underpins the agent's use of git history and
-module-connection tracing.
+עבודתו של Tornhill על ניתוח נקודות חמות ועל ארכיאולוגיה של עיצוב תוכנה עומדת בבסיס השימוש של הסוכן בהיסטוריית git ובמעקב אחרי קשרים בין מודולים.
 
 URL: https://pragprog.com/titles/atevol/software-design-x-rays/
 
-## Related documentation
+## תיעוד קשור
 
-- [Plugin README](../../README.md). The plugin's front door: its skills, agents, and how they fit together.
-- [Repo root README](../../../README.md). The Han suite landing page. Start here if you arrived from outside the docs tree.
-- [Agents Index](../../../docs/agents/README.md). All agents, grouped by role.
-- [`evidence-based-investigator`](./evidence-based-investigator.md). Sibling for bug-focused investigation.
-- [`project-scanner`](./project-scanner.md). Sibling for stack and tooling detection.
-- [`/project-documentation`](../../../han-documentation/docs/skills/project-documentation.md). Always dispatches this agent.
-- [`/coding-standard`](../../../han-coding/docs/skills/coding-standard.md). Dispatches this agent for pattern discovery.
-- [`/architectural-decision-record`](../../../han-documentation/docs/skills/architectural-decision-record.md). Dispatches this agent in
-  create-new mode.
-- [`/research`](../../../han-research/docs/skills/research.md). Dispatches this agent on codebase-bearing questions.
-- [`/architectural-analysis`](../../../han-coding/docs/skills/architectural-analysis.md). Dispatches this agent for a large or
-  unfamiliar focus area.
-- [`/code-overview`](../../../han-coding/docs/skills/code-overview.md). Dispatches this agent, scaled to size, to discover entry
-  points, context, uses, and flow for an understand-now overview.
-- [`/gap-analysis`](../../../han-research/docs/skills/gap-analysis.md). Dispatches this agent to map an unfamiliar current state.
-- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). Dispatches this agent for unfamiliar
-  code regions.
-- [`/design-an-api`](../../../han-coding/docs/skills/design-an-api.md). Dispatches this agent in its four-agent
-  spine, at every size, to discover the current surface, its consumers, and the constraints the design must live inside.
-- [`/code-walkthrough`](../../../han-coding/docs/skills/code-walkthrough.md). Dispatches this agent, scaled to the
-  band, to trace the flow and entry points the walkthrough itinerary is built from.
+- [README של הפלאגין](../../README.md). הדלת הקדמית של הפלאגין: הסקילים שלו, הסוכנים, ואיך הם משתלבים.
+- [README של שורש הריפו](../../../README.md). דף הנחיתה של חבילת Han. התחל כאן אם הגעת מחוץ לעץ התיעוד.
+- [אינדקס הסוכנים](../../../docs/agents/README.md). כל הסוכנים, מקובצים לפי תפקיד.
+- [`evidence-based-investigator`](./evidence-based-investigator.md). סוכן אח לחקירה ממוקדת-באגים.
+- [`project-scanner`](./project-scanner.md). סוכן אח לזיהוי סטאק וכלים.
+- [`/project-documentation`](../../../han-documentation/docs/skills/project-documentation.md). תמיד משגר את הסוכן הזה.
+- [`/coding-standard`](../../../han-coding/docs/skills/coding-standard.md). משגר את הסוכן הזה לגילוי דפוסים.
+- [`/architectural-decision-record`](../../../han-documentation/docs/skills/architectural-decision-record.md). משגר את הסוכן הזה במצב יצירה-חדשה.
+- [`/research`](../../../han-research/docs/skills/research.md). משגר את הסוכן הזה בשאלות שנשענות על בסיס הקוד.
+- [`/architectural-analysis`](../../../han-coding/docs/skills/architectural-analysis.md). משגר את הסוכן הזה עבור אזור מיקוד גדול או לא מוכר.
+- [`/code-overview`](../../../han-coding/docs/skills/code-overview.md). משגר את הסוכן הזה, בהתאמה לגודל, כדי לגלות נקודות כניסה, הקשר, שימושים וזרימה לסקירה של הבנה-עכשיו.
+- [`/gap-analysis`](../../../han-research/docs/skills/gap-analysis.md). משגר את הסוכן הזה כדי למפות מצב נוכחי לא מוכר.
+- [`/iterative-plan-review`](../../../han-planning/docs/skills/iterative-plan-review.md). משגר את הסוכן הזה עבור אזורי קוד לא מוכרים.
+- [`/design-an-api`](../../../han-coding/docs/skills/design-an-api.md). משגר את הסוכן הזה בשדרת ארבעת הסוכנים שלו, בכל גודל, כדי לגלות את המשטח הנוכחי, את הצרכנים שלו, ואת האילוצים שהעיצוב חייב לחיות בתוכם.
+- [`/code-walkthrough`](../../../han-coding/docs/skills/code-walkthrough.md). משגר את הסוכן הזה, בהתאמה לרצועה, כדי לעקוב אחרי הזרימה ונקודות הכניסה שמסלול ההדרכה נבנה מהן.
