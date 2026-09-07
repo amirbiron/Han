@@ -15,8 +15,17 @@ from pathlib import Path
 
 
 def slug(heading):
-    """מחשב את מזהה העוגן שגיטהאב מייצר מכותרת."""
-    text = re.sub(r"[`*_]", "", heading).strip().lower()
+    """מחשב את מזהה העוגן שגיטהאב מייצר מכותרת.
+
+    גיטהאב מייצר את המזהה מהטקסט אחרי הרינדור, ולכן סימני הדגשה נעלמים אבל קו
+    תחתון בתוך מילה נשאר. לכן `_Clean Architecture_` מאבד את שני הקווים
+    התחתונים, ואילו `feature_name` שומר על שלו: CommonMark לא מתייחס לקו תחתון
+    בתוך מילה כהדגשה. מחיקה גורפת של קו תחתון הייתה שוברת את כל כותרות הציטוט
+    בסגנון `_שם הספר_`.
+    """
+    text = re.sub(r"[`*]", "", heading)
+    text = re.sub(r"(?<![A-Za-z0-9])_|_(?![A-Za-z0-9])", "", text)
+    text = text.strip().lower()
     text = "".join(c for c in text if c.isalnum() or c in " -_")
     return text.replace(" ", "-")
 

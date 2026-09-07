@@ -105,7 +105,7 @@
 ארבעת סוכני השדרה רצים בכל גודל:
 
 - [`codebase-explorer`](../../../han-core/docs/agents/codebase-explorer.md). מגלה את המשטח הנוכחי, את הצרכנים שלו, ואת האילוצים שהעיצוב צריך לחיות בתוכם.
-- [`software-architect`](../../../han-core/docs/agents/software-architect.md). מייצר את האפשרויות ואת כל תיקון.
+- [`software-architect`](../../../han-core/docs/agents/software-architect.md). מייצר את האפשרויות ואת כל התיקונים.
 - [`junior-developer`](../../../han-core/docs/agents/junior-developer.md). שואל על האפשרות שנבחרה כגנרליסט שלא היה בחדר.
 - [`adversarial-validator`](../../../han-core/docs/agents/adversarial-validator.md). תוקף את העיצוב המתוקן ואת הראיות שמתחתיו.
 
