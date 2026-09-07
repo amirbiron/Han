@@ -22,6 +22,12 @@ def slug(heading):
 
 
 def headings(path):
+    """כל מזהי העוגן שגיטהאב מייצר לקובץ, בסדר המקור.
+
+    כותרת שחוזרת מקבלת סיומת מונה: הראשונה היא הבסיס, ואחריה base-1, base-2.
+    הסיומת עצמה יכולה להתנגש בכותרת קיימת, ולכן כל מזהה שנפלט נשמר והחיפוש
+    ממשיך למונה הפנוי הבא.
+    """
     try:
         body = path.read_text(encoding="utf-8")
     except OSError:
@@ -31,7 +37,12 @@ def headings(path):
         if line.startswith("```"):
             in_fence = not in_fence
         elif not in_fence and re.match(r"^#{1,6}\s", line):
-            found.add(slug(line.split(None, 1)[1]))
+            base = slug(line.split(None, 1)[1])
+            anchor, counter = base, 0
+            while anchor in found:
+                counter += 1
+                anchor = f"{base}-{counter}"
+            found.add(anchor)
     return found
 
 
@@ -52,20 +63,28 @@ def main():
     for md in sorted(Path(".").rglob("*.md")):
         if not in_scope(md):
             continue
-        for match in re.finditer(r"\]\(([^)\s]*?)#([^)\s]+)\)", md.read_text(encoding="utf-8")):
-            target, anchor = match.group(1), match.group(2)
-            if target.startswith(("http://", "https://")):
+        in_fence = False
+        for line in md.read_text(encoding="utf-8").splitlines():
+            if line.startswith("```"):
+                in_fence = not in_fence
                 continue
-            # תוצרים שסקיל מייצר בזמן ריצה, לא קבצים בריפו.
-            if target.startswith("artifacts/"):
+            if in_fence:
+                # קישור בתוך בלוק קוד הוא דוגמה מוצגת, לא קישור חי.
                 continue
-            available = headings((md.parent / target).resolve() if target else md)
-            if available is None:
-                print(f"❌ {md}: קובץ היעד לא קיים -> {target}")
-                broken += 1
-            elif anchor not in available:
-                print(f"❌ {md}: עוגן שבור -> {target}#{anchor}")
-                broken += 1
+            for match in re.finditer(r"\]\(([^)\s]*?)#([^)\s]+)\)", line):
+                target, anchor = match.group(1), match.group(2)
+                if target.startswith(("http://", "https://")):
+                    continue
+                # תוצרים שסקיל מייצר בזמן ריצה, לא קבצים בריפו.
+                if target.startswith("artifacts/"):
+                    continue
+                available = headings((md.parent / target).resolve() if target else md)
+                if available is None:
+                    print(f"❌ {md}: קובץ היעד לא קיים -> {target}")
+                    broken += 1
+                elif anchor not in available:
+                    print(f"❌ {md}: עוגן שבור -> {target}#{anchor}")
+                    broken += 1
     print("✅ כל העוגנים במשטחים המתורגמים מתפענחים" if not broken else f"❌ {broken} עוגנים שבורים")
     return 1 if broken else 0
 
