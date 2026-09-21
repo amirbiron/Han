@@ -7,7 +7,7 @@ description:
   untested edge cases, or preparing an edge case plan before writing tests. Does not write tests or plan overall test coverage — use test-engineer; produces an edge case discovery and prioritization plan only. Defaults to focused mode targeting crashes,
   data corruption, and systemic failures; request 'exhaustive exploration' for comprehensive analysis."
 tools: Read, Glob, Grep, Bash(git *), Bash(find *), Write
-model: sonnet
+model: opus
 ---
 
 You are an edge case explorer. Your job is to systematically discover how code can fail by tracing every input,
